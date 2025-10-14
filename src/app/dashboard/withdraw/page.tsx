@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,16 +11,29 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { addTransaction } from "@/lib/data"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
     const router = useRouter()
     const { toast } = useToast()
+    const [method, setMethod] = useState("jazzcash")
+    const [accountNumber, setAccountNumber] = useState("")
+    const [accountName, setAccountName] = useState("")
+    const [amount, setAmount] = useState("")
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        // Here you would typically handle the form submission,
-        // e.g., send the data to your backend.
+        
+        const newWithdrawal = {
+            id: `TXN${Math.floor(Math.random() * 1000000)}`,
+            type: 'Withdrawal' as const,
+            date: new Date().toISOString().split('T')[0],
+            amount: -parseFloat(amount), // Withdrawals are negative amounts
+            status: 'Pending' as const,
+        };
+
+        addTransaction(newWithdrawal);
 
         toast({
             title: t('withdraw.successTitle'),
@@ -45,7 +59,7 @@ export default function WithdrawPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
                 <Label className="mb-2 block">{t('withdraw.method')}</Label>
-                <RadioGroup defaultValue="jazzcash" className="flex gap-4">
+                <RadioGroup value={method} onValueChange={setMethod} className="flex gap-4">
                     <div className="flex items-center space-x-2">
                         <RadioGroupItem value="jazzcash" id="jazzcash" />
                         <Label htmlFor="jazzcash">JazzCash</Label>
@@ -58,15 +72,15 @@ export default function WithdrawPage() {
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="account-number">{t('withdraw.accountNumber')}</Label>
-                <Input id="account-number" type="tel" placeholder="03xxxxxxxxx" required />
+                <Input id="account-number" type="tel" placeholder="03xxxxxxxxx" value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} required />
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="account-name">{t('withdraw.accountName')}</Label>
-                <Input id="account-name" type="text" placeholder="Satoshi Nakamoto" required />
+                <Input id="account-name" type="text" placeholder="Satoshi Nakamoto" value={accountName} onChange={(e) => setAccountName(e.target.value)} required />
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="amount">{t('withdraw.amount')}</Label>
-                <Input id="amount" type="number" placeholder="1000" required />
+                <Input id="amount" type="number" placeholder="1000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
                  <p className="text-xs text-muted-foreground pt-1">{t('withdraw.feeNotice')}</p>
             </div>
             <Button type="submit" className="w-full">

@@ -54,13 +54,19 @@ export const mockUser: User = {
     ],
 };
 
-export const mockTransactions: Transaction[] = [
+export let mockTransactions: Transaction[] = [
   { id: 'TXN789012', type: 'Deposit', date: '2023-10-26', amount: 500, status: 'Completed' },
   { id: 'TXN456789', type: 'Investment', date: '2023-10-25', amount: -250, status: 'Completed' },
   { id: 'TXN123456', type: 'Withdrawal', date: '2023-10-24', amount: -100, status: 'Completed' },
   { id: 'TXN987654', type: 'Deposit', date: '2023-10-23', amount: 1000, status: 'Completed' },
   { id: 'TXN654321', type: 'Investment', date: '2023-10-22', amount: -500, status: 'Failed' },
 ];
+
+// Function to add a new transaction to the mock data
+export const addTransaction = (transaction: Transaction) => {
+  mockTransactions.unshift(transaction);
+};
+
 
 export const mockInvestmentPlans: InvestmentPlan[] = [
   { id: 1, name: 'Starter Pack', dailyReturn: 0.5, durationDays: 30, minInvestment: 50, maxInvestment: 500, requiredVipLevel: 1 },
@@ -69,4 +75,12 @@ export const mockInvestmentPlans: InvestmentPlan[] = [
   { id: 4, name: 'Wealth Accelerator', dailyReturn: 1.25, durationDays: 75, minInvestment: 10001, maxInvestment: 50000, requiredVipLevel: 3 },
   { id: 5, name: 'Pro Trader', dailyReturn: 1.5, durationDays: 90, minInvestment: 50001, maxInvestment: 100000, requiredVipLevel: 4 },
   { id: 6, name: 'Whale Fund', dailyReturn: 2.0, durationDays: 120, minInvestment: 100001, maxInvestment: 500000, requiredVipLevel: 5 },
+];
+
+export const mockReferredUsers = [
+  { id: "user-1", name: "Alice", totalDeposit: 15000, status: "Active" },
+  { id: "user-2", name: "Bob", totalDeposit: 30550, status: "Active" },
+  { id: "user-3", name: "Charlie", totalDeposit: 9520, status: "Inactive" },
+  { id: "user-4", name: "David", totalDeposit: 75000, status: "Active" },
+  { id: "user-5", name: "Eve", totalDeposit: 12000, status: "Active" },
 ];
