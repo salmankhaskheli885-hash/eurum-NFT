@@ -10,7 +10,9 @@ import {
   ShieldAlert,
   FileCog,
   LogOut,
-  Settings
+  Settings,
+  User,
+  Handshake
 } from "lucide-react"
 
 import {
@@ -47,6 +49,11 @@ export default function AdminLayout({
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
     { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
   ]
+  
+  const viewMenuItems = [
+    { href: "/dashboard", label: "View User Panel", icon: User },
+    { href: "/partner", label: "View Partner Panel", icon: Handshake },
+  ]
 
   return (
     <SidebarProvider>
@@ -64,6 +71,21 @@ export default function AdminLayout({
                 <Link href={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))}
+                    tooltip={item.label}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+             <SidebarMenuItem>
+              <hr className="my-2 border-sidebar-border" />
+            </SidebarMenuItem>
+            {viewMenuItems.map((item) => (
+               <SidebarMenuItem key={item.href}>
+                <Link href={item.href} target="_blank">
+                  <SidebarMenuButton
                     tooltip={item.label}
                   >
                     <item.icon />

@@ -1,3 +1,4 @@
+
 {
   "name": "nextn",
   "version": "0.1.0",
@@ -13,7 +14,7 @@
   },
   "dependencies": {
     "@genkit-ai/google-genai": "^1.20.0",
-    "@genkit-ai/next": "^1.20.0",
+    "@genkit-ai/next": "^1.1.0",
     "@hookform/resolvers": "^3.9.0",
     "@radix-ui/react-accordion": "^1.1.2",
     "@radix-ui/react-alert-dialog": "^1.0.5",
@@ -53,7 +54,8 @@
     "recharts": "2.12.7",
     "tailwind-merge": "^2.3.0",
     "tailwindcss-animate": "^1.0.7",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "lucide": "^0.395.0"
   },
   "devDependencies": {
     "@types/node": "^20",
