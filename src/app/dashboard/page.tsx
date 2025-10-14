@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Suspense } from "react"
+import { Suspense, useEffect, useState } from "react"
 import { useSearchParams } from 'next/navigation'
 import {
   Card,
@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { mockTransactions, mockAnnouncements } from "@/lib/data"
+import { type Transaction, type Announcement as AnnouncementType } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
@@ -21,20 +21,31 @@ import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Megaphone } from "lucide-react"
+import { useFirestore } from "@/firebase/provider"
+import { getLatestAnnouncement, getUserTransactions } from "@/lib/firestore"
 
 function Announcement() {
-    if (mockAnnouncements.length === 0) {
+    const firestore = useFirestore();
+    const [announcement, setAnnouncement] = useState<AnnouncementType | null>(null);
+    const [loading, setLoading] = useState(true);
+    
+    useEffect(() => {
+        if (!firestore) return;
+        getLatestAnnouncement(firestore)
+            .then(setAnnouncement)
+            .finally(() => setLoading(false));
+    }, [firestore]);
+
+    if (loading || !announcement) {
         return null;
     }
-
-    const latestAnnouncement = mockAnnouncements[0];
 
     return (
         <Alert>
             <Megaphone className="h-4 w-4" />
             <AlertTitle>Announcement!</AlertTitle>
             <AlertDescription>
-                {latestAnnouncement.message}
+                {announcement.message}
             </AlertDescription>
         </Alert>
     )
@@ -43,10 +54,22 @@ function Announcement() {
 function DashboardContent() {
   const { t } = useTranslation()
   const searchParams = useSearchParams()
-  // This allows an admin to view a specific user's dashboard
+  const firestore = useFirestore()
   const viewAsUserId = searchParams.get('userId'); 
 
-  const { user, loading } = useUser({ viewAsUserId });
+  const { user, loading: userLoading } = useUser({ viewAsUserId });
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactionsLoading, setTransactionsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!firestore || !user?.uid) return;
+    setTransactionsLoading(true);
+    getUserTransactions(firestore, user.uid, 5)
+        .then(setTransactions)
+        .catch(err => console.error("Failed to fetch transactions", err))
+        .finally(() => setTransactionsLoading(false));
+  }, [firestore, user?.uid]);
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -55,18 +78,16 @@ function DashboardContent() {
     }).format(amount)
   }
 
-  const recentTransactions = mockTransactions.slice(0, 5)
-
-  const getStatusVariant = (status: (typeof mockTransactions)[0]['status']) => {
+  const getStatusVariant = (status: Transaction['status']) => {
     switch (status) {
       case 'Completed': return 'default'
       case 'Pending': return 'secondary'
       case 'Failed': return 'destructive'
-      default: return 'outline'
+      default: 'outline'
     }
   }
 
-  if (loading) {
+  if (userLoading) {
       return (
         <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
@@ -197,21 +218,37 @@ function DashboardContent() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {recentTransactions.map((transaction) => (
-                    <TableRow key={transaction.id}>
-                    <TableCell className="font-medium">{transaction.id}</TableCell>
-                    <TableCell>{transaction.type}</TableCell>
-                    <TableCell>{transaction.date}</TableCell>
-                    <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(transaction.amount)}
-                    </TableCell>
-                    <TableCell className="text-center">
-                        <Badge variant={getStatusVariant(transaction.status)}>
-                            {transaction.status}
-                        </Badge>
-                    </TableCell>
+                {transactionsLoading ? (
+                    [...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : transactions.length > 0 ? (
+                    transactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                        <TableCell className="font-medium">{transaction.id.substring(0,8)}...</TableCell>
+                        <TableCell>{transaction.type}</TableCell>
+                        <TableCell>{transaction.date}</TableCell>
+                        <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(transaction.amount)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                            <Badge variant={getStatusVariant(transaction.status)}>
+                                {transaction.status}
+                            </Badge>
+                        </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">No recent transactions.</TableCell>
                     </TableRow>
-                ))}
+                )}
                 </TableBody>
             </Table>
           </CardContent>
@@ -227,5 +264,3 @@ export default function Dashboard() {
     </Suspense>
   )
 }
-
-    

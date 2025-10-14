@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import {
   Table,
   TableBody,
@@ -12,17 +13,36 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockTransactions, type Transaction } from "@/lib/data"
+import { type Transaction } from "@/lib/data"
 import { Card, CardContent } from "@/components/ui/card"
+import { useFirestore } from "@/firebase/provider"
+import { useUser } from "@/hooks/use-user"
+import { getUserTransactions } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionsPage() {
   const { t } = useTranslation()
+  const firestore = useFirestore()
+  const { user, loading: userLoading } = useUser()
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
+
+
+  React.useEffect(() => {
+    if (!firestore || !user?.uid) return;
+    setLoading(true);
+    getUserTransactions(firestore, user.uid)
+        .then(setTransactions)
+        .catch(err => console.error("Failed to fetch transactions", err))
+        .finally(() => setLoading(false));
+  }, [firestore, user?.uid]);
+
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      maximumFractionDigits: 0,
+      maximumFractionDigits: 2,
     }).format(amount)
   }
 
@@ -35,11 +55,11 @@ export default function TransactionsPage() {
     }
   }
 
-  const deposits = mockTransactions.filter(tx => tx.type === 'Deposit').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const withdrawals = mockTransactions.filter(tx => tx.type === 'Withdrawal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const allTransactions = [...mockTransactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const deposits = transactions.filter(tx => tx.type === 'Deposit');
+  const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal');
+  const investments = transactions.filter(tx => tx.type === 'Investment');
 
-  const renderTable = (transactions: Transaction[]) => (
+  const renderTable = (transactions: Transaction[], isLoading: boolean) => (
      <Table>
       <TableHeader>
         <TableRow>
@@ -51,10 +71,20 @@ export default function TransactionsPage() {
         </TableRow>
       </TableHeader>
       <TableBody>
-        {transactions.length > 0 ? (
+        {isLoading ? (
+            [...Array(5)].map((_, i) => (
+                <TableRow key={i}>
+                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                    <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                </TableRow>
+            ))
+        ) : transactions.length > 0 ? (
           transactions.map((transaction) => (
             <TableRow key={transaction.id}>
-              <TableCell className="font-medium">{transaction.id}</TableCell>
+              <TableCell className="font-medium">{transaction.id.substring(0,8)}...</TableCell>
               <TableCell>{transaction.type}</TableCell>
               <TableCell>{transaction.date}</TableCell>
               <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -85,19 +115,23 @@ export default function TransactionsPage() {
       <Card>
         <CardContent className="pt-6">
           <Tabs defaultValue="all">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="all">{t('transactions.all')}</TabsTrigger>
-              <TabsTrigger value="deposits">{t('transactions.deposits')}</TabsTrigger>
-              <TabsTrigger value="withdrawals">{t('transactions.withdrawals')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all">All</TabsTrigger>
+              <TabsTrigger value="deposits">Deposits</TabsTrigger>
+              <TabsTrigger value="withdrawals">Withdrawals</TabsTrigger>
+              <TabsTrigger value="investments">Investments</TabsTrigger>
             </TabsList>
             <TabsContent value="all">
-              {renderTable(allTransactions)}
+              {renderTable(transactions, userLoading || loading)}
             </TabsContent>
             <TabsContent value="deposits">
-              {renderTable(deposits)}
+              {renderTable(deposits, userLoading || loading)}
             </TabsContent>
             <TabsContent value="withdrawals">
-              {renderTable(withdrawals)}
+              {renderTable(withdrawals, userLoading || loading)}
+            </TabsContent>
+            <TabsContent value="investments">
+              {renderTable(investments, userLoading || loading)}
             </TabsContent>
           </Tabs>
         </CardContent>

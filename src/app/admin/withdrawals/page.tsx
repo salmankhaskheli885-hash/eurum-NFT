@@ -20,27 +20,48 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockTransactions, type Transaction, updateTransactionStatus } from "@/lib/data"
+import { type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { useFirestore } from "@/firebase/provider"
+import { getAllTransactions, updateTransactionStatus } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const firestore = useFirestore()
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [key, setKey] = React.useState(Date.now())
-
-  const withdrawals = React.useMemo(() => mockTransactions.filter(tx => tx.type === 'Withdrawal'), [key]);
-  const [filteredWithdrawals, setFilteredWithdrawals] = React.useState(withdrawals)
+  
+  const fetchTransactions = React.useCallback(async () => {
+    if (!firestore) return;
+    setLoading(true);
+    try {
+        const allTransactions = await getAllTransactions(firestore);
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal'));
+    } catch (error) {
+        console.error("Error fetching transactions:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load withdrawals",
+            description: "There was an error fetching withdrawal requests.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [firestore, toast]);
   
   React.useEffect(() => {
-    setFilteredWithdrawals(withdrawals);
-  }, [withdrawals]);
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  React.useEffect(() => {
+  const filteredWithdrawals = React.useMemo(() => {
+    if (!searchTerm) return transactions;
     const lowercasedFilter = searchTerm.toLowerCase();
-    const filteredData = withdrawals.filter(item => {
+    return transactions.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
         item.userName.toLowerCase().includes(lowercasedFilter) ||
@@ -48,17 +69,24 @@ export default function AdminWithdrawalsPage() {
         item.userId.toLowerCase().includes(lowercasedFilter)
       );
     });
-    setFilteredWithdrawals(filteredData);
-  }, [searchTerm, withdrawals]);
+  }, [searchTerm, transactions]);
 
-  const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
-    if (updateTransactionStatus(transactionId, status)) {
+  const handleAction = async (transactionId: string, status: 'Completed' | 'Failed') => {
+    if (!firestore) return;
+    try {
+        await updateTransactionStatus(firestore, transactionId, status)
         const action = status === 'Completed' ? 'approved' : 'rejected';
         toast({
           title: `Withdrawal ${action}`,
           description: `Transaction ${transactionId} has been ${action}.`,
         })
-        setKey(Date.now());
+        fetchTransactions();
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Action Failed",
+            description: error.message || "Could not update the transaction status.",
+        });
     }
   }
 
@@ -105,50 +133,68 @@ export default function AdminWithdrawalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredWithdrawals.map((withdrawal) => (
-                <TableRow key={withdrawal.id}>
-                  <TableCell className="font-medium">{withdrawal.id}</TableCell>
-                  <TableCell>
-                     <div className="font-medium">{withdrawal.userName}</div>
-                     <div className="text-sm text-muted-foreground">
-                        <span className="font-semibold">UID:</span> {withdrawal.userId}
-                     </div>
-                      {withdrawal.withdrawalDetails && (
-                        <div className="text-xs space-y-1 mt-2">
-                           <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
-                           <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
-                           <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell>
+                            <div className="space-y-2">
+                                <Skeleton className="h-5 w-32" />
+                                <Skeleton className="h-4 w-40" />
+                                <Skeleton className="h-4 w-48" />
+                            </div>
+                        </TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                    </TableRow>
+                ))
+              ) : filteredWithdrawals.length > 0 ? (
+                filteredWithdrawals.map((withdrawal) => (
+                    <TableRow key={withdrawal.id}>
+                    <TableCell className="font-medium">{withdrawal.id}</TableCell>
+                    <TableCell>
+                        <div className="font-medium">{withdrawal.userName}</div>
+                        <div className="text-sm text-muted-foreground">
+                            <span className="font-semibold">UID:</span> {withdrawal.userId}
                         </div>
-                      )}
-                  </TableCell>
-                  <TableCell>{withdrawal.date}</TableCell>
-                  <TableCell className="text-right text-destructive">
-                    {Math.abs(withdrawal.amount).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={getStatusVariant(withdrawal.status)}>
-                      {withdrawal.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {withdrawal.status === 'Pending' ? (
-                      <div className="flex gap-2 justify-center">
-                        <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal.id, 'Completed')}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Approve
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal.id, 'Failed')}>
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                       <span className="text-xs text-muted-foreground">No actions</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-               {filteredWithdrawals.length === 0 && (
+                        {withdrawal.withdrawalDetails && (
+                            <div className="text-xs space-y-1 mt-2">
+                            <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
+                            <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
+                            <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+                            </div>
+                        )}
+                    </TableCell>
+                    <TableCell>{withdrawal.date}</TableCell>
+                    <TableCell className="text-right text-destructive">
+                        {Math.abs(withdrawal.amount).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Badge variant={getStatusVariant(withdrawal.status)}>
+                        {withdrawal.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                        {withdrawal.status === 'Pending' ? (
+                        <div className="flex gap-2 justify-center">
+                            <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal.id, 'Completed')}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Approve
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal.id, 'Failed')}>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Reject
+                            </Button>
+                        </div>
+                        ) : (
+                        <span className="text-xs text-muted-foreground">No actions</span>
+                        )}
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
                 <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">No withdrawal requests found.</TableCell>
                 </TableRow>
@@ -160,5 +206,3 @@ export default function AdminWithdrawalsPage() {
     </div>
   )
 }
-
-    

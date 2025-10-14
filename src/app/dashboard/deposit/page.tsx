@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -10,26 +10,46 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
 import { Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction, appSettings } from "@/lib/data"
+import { type AppSettings } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
+import { useFirestore } from "@/firebase/provider"
+import { addTransaction, getAppSettings } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DepositPage() {
     const { t } = useTranslation()
-    const { user, loading } = useUser()
+    const { user, loading: userLoading } = useUser()
     const { toast } = useToast()
     const router = useRouter()
+    const firestore = useFirestore()
+
+    const [settings, setSettings] = useState<AppSettings | null>(null)
+    const [settingsLoading, setSettingsLoading] = useState(true)
+
     const [copied, setCopied] = useState(false)
     const [yourNumber, setYourNumber] = useState("")
     const [amount, setAmount] = useState("")
     const [tid, setTid] = useState("")
     const [receipt, setReceipt] = useState<File | null>(null)
 
+    useEffect(() => {
+        if (!firestore) return;
+        getAppSettings(firestore)
+            .then(setSettings)
+            .catch(err => {
+                console.error("Failed to fetch app settings", err);
+                toast({ variant: "destructive", title: "Could not load deposit info"});
+            })
+            .finally(() => setSettingsLoading(false));
+    }, [firestore, toast]);
+
 
     const handleCopy = () => {
+        if (!settings) return;
         const textToCopy = `
-        Account Name: ${appSettings.adminAccountHolderName}
-        Account Number: ${appSettings.adminWalletNumber}
-        Wallet: ${appSettings.adminWalletName}
+        Account Name: ${settings.adminAccountHolderName}
+        Account Number: ${settings.adminWalletNumber}
+        Wallet: ${settings.adminWalletName}
         `;
         navigator.clipboard.writeText(textToCopy.trim())
         setCopied(true)
@@ -39,9 +59,9 @@ export default function DepositPage() {
         setTimeout(() => setCopied(false), 2000)
     }
     
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!user) {
+        if (!user || !firestore) {
             toast({
                 variant: "destructive",
                 title: "Not Logged In",
@@ -50,23 +70,31 @@ export default function DepositPage() {
             return
         }
         
-        addTransaction({
-            userId: user.uid,
-            userName: user.displayName || 'Unknown User',
-            type: 'Deposit',
-            amount: parseFloat(amount),
-            status: 'Pending',
-        });
+        try {
+            await addTransaction(firestore, {
+                userId: user.uid,
+                userName: user.displayName || 'Unknown User',
+                type: 'Deposit',
+                amount: parseFloat(amount),
+                status: 'Pending',
+            });
 
-        toast({
-            title: "Deposit Request Submitted",
-            description: "Your deposit is being reviewed and will be processed shortly.",
-        })
+            toast({
+                title: "Deposit Request Submitted",
+                description: "Your deposit is being reviewed and will be processed shortly.",
+            })
 
-        router.push('/dashboard/transactions')
+            router.push('/dashboard/transactions')
+        } catch (error) {
+            toast({
+                variant: "destructive",
+                title: "Submission Failed",
+                description: "Could not submit your deposit request.",
+            })
+        }
     }
 
-  if (loading) return <div>Loading...</div>;
+  const isLoading = userLoading || settingsLoading;
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto">
@@ -83,22 +111,30 @@ export default function DepositPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-           <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
-                <div className="flex-1 space-y-2">
-                  <p className="text-sm font-medium leading-none">
-                    Account Name: <span className="text-muted-foreground">{appSettings.adminAccountHolderName}</span>
-                  </p>
-                  <p className="text-sm font-medium leading-none">
-                    Account Number: <span className="text-muted-foreground">{appSettings.adminWalletNumber}</span>
-                  </p>
-                  <p className="text-sm font-medium leading-none">
-                    Wallet: <span className="text-muted-foreground">{appSettings.adminWalletName}</span>
-                  </p>
+            {isLoading ? (
+                <div className="space-y-4 rounded-md border border-dashed p-4">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-5 w-1/2" />
+                    <Skeleton className="h-5 w-2/3" />
                 </div>
-                <Button variant="ghost" size="icon" onClick={handleCopy}>
-                    <Copy className="h-5 w-5" />
-                </Button>
-            </div>
+            ) : settings ? (
+                <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
+                    <div className="flex-1 space-y-2">
+                    <p className="text-sm font-medium leading-none">
+                        Account Name: <span className="text-muted-foreground">{settings.adminAccountHolderName}</span>
+                    </p>
+                    <p className="text-sm font-medium leading-none">
+                        Account Number: <span className="text-muted-foreground">{settings.adminWalletNumber}</span>
+                    </p>
+                    <p className="text-sm font-medium leading-none">
+                        Wallet: <span className="text-muted-foreground">{settings.adminWalletName}</span>
+                    </p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={handleCopy}>
+                        <Copy className="h-5 w-5" />
+                    </Button>
+                </div>
+            ) : <p>Could not load deposit information.</p>}
         </CardContent>
       </Card>
 
@@ -125,7 +161,7 @@ export default function DepositPage() {
                     <Label htmlFor="receipt">Payment Receipt</Label>
                     <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files ? e.target.files[0] : null)} />
                 </div>
-                <Button type="submit" className="w-full">
+                <Button type="submit" className="w-full" disabled={isLoading}>
                     <Camera className="mr-2 h-4 w-4" />
                     {t('deposit.submitButton')}
                 </Button>

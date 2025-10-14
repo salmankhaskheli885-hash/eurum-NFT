@@ -20,45 +20,73 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockTransactions, type Transaction, updateTransactionStatus } from "@/lib/data"
+import { type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import { useFirestore } from "@/firebase/provider"
+import { getAllTransactions, updateTransactionStatus } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const firestore = useFirestore()
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  const [key, setKey] = React.useState(Date.now()) // To force re-render
 
-  const deposits = React.useMemo(() => mockTransactions.filter(tx => tx.type === 'Deposit'), [key]);
-  const [filteredDeposits, setFilteredDeposits] = React.useState(deposits)
-
+  const fetchTransactions = React.useCallback(async () => {
+    if (!firestore) return;
+    setLoading(true);
+    try {
+        const allTransactions = await getAllTransactions(firestore);
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
+    } catch (error) {
+        console.error("Error fetching transactions:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load deposits",
+            description: "There was an error fetching deposit requests.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [firestore, toast]);
+  
   React.useEffect(() => {
-    setFilteredDeposits(deposits);
-  }, [deposits]);
+    fetchTransactions();
+  }, [fetchTransactions]);
 
-  React.useEffect(() => {
+  const filteredDeposits = React.useMemo(() => {
+    if (!searchTerm) return transactions;
     const lowercasedFilter = searchTerm.toLowerCase();
-    const filteredData = deposits.filter(item => {
+    return transactions.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
         item.userName.toLowerCase().includes(lowercasedFilter) ||
         item.status.toLowerCase().includes(lowercasedFilter)
       );
     });
-    setFilteredDeposits(filteredData);
-  }, [searchTerm, deposits]);
+  }, [searchTerm, transactions]);
 
 
-  const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
-    if (updateTransactionStatus(transactionId, status)) {
-        const action = status === 'Completed' ? 'approved' : 'rejected';
-        toast({
-          title: `Deposit ${action}`,
-          description: `Transaction ${transactionId} has been ${action}.`,
-        })
-        setKey(Date.now()); // Re-render the component to reflect changes
+  const handleAction = async (transactionId: string, status: 'Completed' | 'Failed') => {
+    if (!firestore) return;
+    try {
+      await updateTransactionStatus(firestore, transactionId, status)
+      const action = status === 'Completed' ? 'approved' : 'rejected';
+      toast({
+        title: `Deposit ${action}`,
+        description: `Transaction ${transactionId} has been ${action}.`,
+      })
+      fetchTransactions(); // Re-fetch transactions to update UI
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Action failed",
+        description: error.message || "Could not update the transaction status.",
+      })
     }
   }
 
@@ -105,36 +133,48 @@ export default function AdminDepositsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredDeposits.map((deposit) => (
-                <TableRow key={deposit.id}>
-                  <TableCell className="font-medium">{deposit.id}</TableCell>
-                  <TableCell>{deposit.userName}</TableCell>
-                  <TableCell>{deposit.date}</TableCell>
-                  <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={getStatusVariant(deposit.status)}>
-                      {deposit.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    {deposit.status === 'Pending' ? (
-                      <div className="flex gap-2 justify-center">
-                        <Button variant="outline" size="sm" onClick={() => handleAction(deposit.id, 'Completed')}>
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Approve
-                        </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleAction(deposit.id, 'Failed')}>
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">No actions</span>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-               {filteredDeposits.length === 0 && (
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                    </TableRow>
+                ))
+              ) : filteredDeposits.length > 0 ? (
+                filteredDeposits.map((deposit) => (
+                    <TableRow key={deposit.id}>
+                    <TableCell className="font-medium">{deposit.id}</TableCell>
+                    <TableCell>{deposit.userName}</TableCell>
+                    <TableCell>{deposit.date}</TableCell>
+                    <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
+                    <TableCell className="text-center">
+                        <Badge variant={getStatusVariant(deposit.status)}>
+                        {deposit.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                        {deposit.status === 'Pending' ? (
+                        <div className="flex gap-2 justify-center">
+                            <Button variant="outline" size="sm" onClick={() => handleAction(deposit.id, 'Completed')}>
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Approve
+                            </Button>
+                            <Button variant="destructive" size="sm" onClick={() => handleAction(deposit.id, 'Failed')}>
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Reject
+                            </Button>
+                        </div>
+                        ) : (
+                        <span className="text-xs text-muted-foreground">No actions</span>
+                        )}
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
                 <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">No deposit requests found.</TableCell>
                 </TableRow>

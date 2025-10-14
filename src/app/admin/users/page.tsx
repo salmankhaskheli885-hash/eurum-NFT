@@ -46,54 +46,86 @@ import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Search, Eye } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { Input } from "@/components/ui/input"
-import { mockUsers, updateUser, deleteUser, type User } from "@/lib/data"
+import type { User } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
+import { useFirestore } from "@/firebase/provider"
+import { getAllUsers, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminUsersPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [key, setKey] = React.useState(Date.now())
+  const firestore = useFirestore()
+  
+  const [users, setUsers] = React.useState<User[]>([])
+  const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-  
-  const users = React.useMemo(() => mockUsers, [key]);
-  const [filteredUsers, setFilteredUsers] = React.useState(users)
 
-  React.useEffect(() => {
-    setFilteredUsers(users);
-  }, [users]);
+  const fetchUsers = React.useCallback(async () => {
+    if (!firestore) return;
+    setLoading(true);
+    try {
+        const fetchedUsers = await getAllUsers(firestore);
+        setUsers(fetchedUsers);
+    } catch (error) {
+        console.error("Error fetching users:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load users",
+            description: "There was an error fetching the user list from the database.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [firestore, toast]);
   
-  const forceUpdate = () => setKey(Date.now())
-
   React.useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+  
+  const filteredUsers = React.useMemo(() => {
+    if (!searchTerm) return users;
     const lowercasedFilter = searchTerm.toLowerCase();
-    const filteredData = users.filter(item => {
+    return users.filter(item => {
       return (
         item.displayName?.toLowerCase().includes(lowercasedFilter) ||
         item.email?.toLowerCase().includes(lowercasedFilter) ||
         item.uid.toLowerCase().includes(lowercasedFilter)
       );
     });
-    setFilteredUsers(filteredData);
   }, [searchTerm, users]);
 
-  const handleStatusChange = (userId: string, status: User['status']) => {
-    if (updateUser(userId, { status })) {
+
+  const handleStatusChange = async (userId: string, status: User['status']) => {
+    if (!firestore) return;
+    try {
+        await updateUserInDb(firestore, userId, { status });
         toast({ title: `User ${status}`, description: `User status has been updated.` });
-        forceUpdate();
+        fetchUsers();
+    } catch (error) {
+        toast({ variant: "destructive", title: "Update Failed", description: "Could not update user status."})
     }
   }
 
-  const handleRoleChange = (userId: string, role: User['role']) => {
-    if (updateUser(userId, { role })) {
+  const handleRoleChange = async (userId: string, role: User['role']) => {
+    if (!firestore) return;
+    try {
+        await updateUserInDb(firestore, userId, { role });
         toast({ title: `Role Updated`, description: `User role has been set to ${role}.` });
-        forceUpdate();
+        fetchUsers();
+    } catch (error) {
+        toast({ variant: "destructive", title: "Update Failed", description: "Could not update user role."})
     }
   }
 
-  const handleDelete = (userId: string) => {
-    if (deleteUser(userId)) {
+  const handleDelete = async (userId: string) => {
+    if (!firestore) return;
+    try {
+        await deleteUserInDb(firestore, userId);
         toast({ variant: "destructive", title: "User Deleted", description: "The user has been permanently removed." });
-        forceUpdate();
+        fetchUsers();
+    } catch (error) {
+        toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the user."})
     }
   }
 
@@ -133,74 +165,86 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.uid}>
-                  <TableCell className="font-medium">{user.displayName || "N/A"}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                   <TableCell>
-                     <Badge variant={user.role === 'partner' ? 'secondary' : (user.role === 'admin' ? 'outline' : 'default') }>
-                        {user.role}
-                     </Badge>
-                   </TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={user.status === 'Active' ? 'default' : 'destructive'}>
-                      {user.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{"-not tracked-"}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button aria-haspopup="true" size="icon" variant="ghost">
-                          <MoreHorizontal className="h-4 w-4" />
-                          <span className="sr-only">Toggle menu</span>
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                         <DropdownMenuItem asChild>
-                           <Link href={`/dashboard?userId=${user.uid}`} target="_blank" className="flex items-center">
-                             <Eye className="mr-2 h-4 w-4"/>
-                             View as User
-                           </Link>
-                         </DropdownMenuItem>
-                        <DropdownMenuSub>
-                           <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
-                           <DropdownMenuSubContent>
-                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'user')}>Set as User</DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'partner')}>Set as Partner</DropdownMenuItem>
-                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'admin')}>Set as Admin</DropdownMenuItem>
-                           </DropdownMenuSubContent>
-                        </DropdownMenuSub>
-                         {user.status === 'Active' ? (
-                            <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Suspended')}>Suspend</DropdownMenuItem>
-                         ) : (
-                            <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Active')}>Activate</DropdownMenuItem>
-                         )}
-                        <DropdownMenuSeparator />
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This action cannot be undone. This will permanently delete the user account.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={() => handleDelete(user.uid)}>Delete</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {filteredUsers.length === 0 && (
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                    </TableRow>
+                ))
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map((user) => (
+                    <TableRow key={user.uid}>
+                    <TableCell className="font-medium">{user.displayName || "N/A"}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                        <Badge variant={user.role === 'partner' ? 'secondary' : (user.role === 'admin' ? 'outline' : 'default') }>
+                            {user.role}
+                        </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                        <Badge variant={user.status === 'Active' ? 'default' : 'destructive'}>
+                        {user.status}
+                        </Badge>
+                    </TableCell>
+                    <TableCell>{"-not tracked-"}</TableCell>
+                    <TableCell>
+                        <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button aria-haspopup="true" size="icon" variant="ghost">
+                            <MoreHorizontal className="h-4 w-4" />
+                            <span className="sr-only">Toggle menu</span>
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                            <Link href={`/dashboard?userId=${user.uid}`} target="_blank" className="flex items-center">
+                                <Eye className="mr-2 h-4 w-4"/>
+                                View as User
+                            </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuSub>
+                            <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
+                            <DropdownMenuSubContent>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'user')}>Set as User</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'partner')}>Set as Partner</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'admin')}>Set as Admin</DropdownMenuItem>
+                            </DropdownMenuSubContent>
+                            </DropdownMenuSub>
+                            {user.status === 'Active' ? (
+                                <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Suspended')}>Suspend</DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Active')}>Activate</DropdownMenuItem>
+                            )}
+                            <DropdownMenuSeparator />
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This action cannot be undone. This will permanently delete the user account.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={() => handleDelete(user.uid)}>Delete</AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </DropdownMenuContent>
+                        </DropdownMenu>
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
                 <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">No users found.</TableCell>
                 </TableRow>
@@ -212,5 +256,3 @@ export default function AdminUsersPage() {
     </div>
   )
 }
-
-    

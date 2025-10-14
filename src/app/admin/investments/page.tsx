@@ -48,26 +48,30 @@ import {
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, PlusCircle, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockInvestmentPlans, type InvestmentPlan, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/data"
+import type { InvestmentPlan } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
+import { useFirestore } from "@/firebase/provider"
+import { getAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
+    const firestore = useFirestore();
     const [open, setOpen] = React.useState(false);
     const { toast } = useToast()
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
-        ? { ...plan } 
+        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, maxInvestment: plan.maxInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl } 
         : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/placeholder/600/400' }
     );
 
     React.useEffect(() => {
         if (open) {
           if (plan) {
-              setFormData({ ...plan });
+              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, maxInvestment: plan.maxInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl });
           } else {
               setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/newplan/600/400' });
           }
@@ -80,7 +84,9 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        if (!firestore) return;
+
         if (!formData.name || formData.dailyReturn <= 0 || formData.durationDays <= 0 || formData.minInvestment <= 0) {
             toast({
                 variant: "destructive",
@@ -90,21 +96,29 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
-        if (plan) {
-            updateInvestmentPlan({ ...formData, id: plan.id });
+        try {
+            if (plan) {
+                await updateInvestmentPlan(firestore, { ...formData, id: plan.id });
+                toast({
+                    title: "Plan Updated",
+                    description: `The plan "${formData.name}" has been updated.`,
+                });
+            } else {
+                await addInvestmentPlan(firestore, formData);
+                toast({
+                    title: "New Plan Added",
+                    description: `The plan "${formData.name}" has been created.`,
+                });
+            }
+            onSave();
+            setOpen(false);
+        } catch (error) {
             toast({
-                title: "Plan Updated",
-                description: `The plan "${formData.name}" has been updated.`,
-            });
-        } else {
-            addInvestmentPlan(formData);
-            toast({
-                title: "New Plan Added",
-                description: `The plan "${formData.name}" has been created.`,
+                variant: "destructive",
+                title: "Save Failed",
+                description: "Could not save the plan to the database.",
             });
         }
-        onSave();
-        setOpen(false);
     };
 
     return (
@@ -161,11 +175,33 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
 export default function AdminInvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  // Force re-render by creating a new key
-  const [key, setKey] = React.useState(Date.now())
+  const firestore = useFirestore()
+  const [plans, setPlans] = React.useState<InvestmentPlan[]>([]);
+  const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
+  
+  const fetchPlans = React.useCallback(async () => {
+    if (!firestore) return;
+    setLoading(true);
+    try {
+        const fetchedPlans = await getAllInvestmentPlans(firestore);
+        setPlans(fetchedPlans);
+    } catch (error) {
+        console.error("Error fetching plans:", error);
+        toast({
+            variant: "destructive",
+            title: "Failed to load plans",
+            description: "There was an error fetching investment plans from the database.",
+        });
+    } finally {
+        setLoading(false);
+    }
+  }, [firestore, toast]);
 
-  const plans = React.useMemo(() => mockInvestmentPlans, [key]);
+  React.useEffect(() => {
+    fetchPlans();
+  }, [fetchPlans]);
+
   
   const filteredPlans = React.useMemo(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -175,19 +211,24 @@ export default function AdminInvestmentsPage() {
     );
   }, [searchTerm, plans]);
 
-  const forceUpdate = () => {
-    setKey(Date.now());
-  }
 
-  const handleDeletePlan = (planId: number) => {
+  const handleDeletePlan = async (planId: string) => {
+    if (!firestore) return;
     const planName = plans.find(p => p.id === planId)?.name || '';
-    if (deleteInvestmentPlan(planId)) {
+    try {
+        await deleteInvestmentPlan(firestore, planId);
         toast({
             variant: "destructive",
             title: `Plan Deleted`,
             description: `The plan "${planName}" has been removed.`,
         });
-        forceUpdate();
+        fetchPlans();
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Deletion Failed",
+            description: "Could not delete the plan from the database.",
+        });
     }
   }
 
@@ -199,7 +240,7 @@ export default function AdminInvestmentsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.investments')}</h1>
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
-            <PlanForm onSave={forceUpdate}>
+            <PlanForm onSave={fetchPlans}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New Plan
@@ -237,7 +278,23 @@ export default function AdminInvestmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredPlans.map((plan) => (
+              {loading ? (
+                [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell className="flex items-center gap-3">
+                            <Skeleton className="h-10 w-10 rounded-md" />
+                            <Skeleton className="h-5 w-24" />
+                        </TableCell>
+                        <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-12" /></TableCell>
+                        <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
+                    </TableRow>
+                ))
+              ) : filteredPlans.length > 0 ? (
+                filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium flex items-center gap-3">
                      <Image 
@@ -265,7 +322,7 @@ export default function AdminInvestmentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <PlanForm plan={plan} onSave={forceUpdate}>
+                        <PlanForm plan={plan} onSave={fetchPlans}>
                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left">Edit</button>
                         </PlanForm>
                         <AlertDialog>
@@ -289,8 +346,8 @@ export default function AdminInvestmentsPage() {
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ))}
-               {filteredPlans.length === 0 && (
+              ))
+              ) : (
                 <TableRow>
                     <TableCell colSpan={7} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
                 </TableRow>
@@ -302,5 +359,3 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
-
-    

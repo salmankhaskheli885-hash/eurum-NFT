@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Card,
   CardContent,
@@ -15,32 +15,50 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Textarea } from "@/components/ui/textarea"
-import { appSettings, updateAppSettings, addAnnouncement } from "@/lib/data"
+import type { AppSettings } from "@/lib/data"
+import { useFirestore } from "@/firebase/provider"
+import { getAppSettings, updateAppSettings, addAnnouncement } from "@/lib/firestore"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const firestore = useFirestore()
   
-  const [walletNumber, setWalletNumber] = useState(appSettings.adminWalletNumber)
-  const [walletName, setWalletName] = useState(appSettings.adminWalletName)
-  const [accountHolderName, setAccountHolderName] = useState(appSettings.adminAccountHolderName)
-  const [withdrawalFee, setWithdrawalFee] = useState(appSettings.withdrawalFee)
+  const [settings, setSettings] = useState<Partial<AppSettings>>({})
+  const [loading, setLoading] = useState(true)
   const [announcement, setAnnouncement] = useState("")
 
-  const handleSettingsSave = () => {
-    updateAppSettings({ 
-        adminWalletNumber: walletNumber, 
-        adminWalletName: walletName,
-        adminAccountHolderName: accountHolderName, 
-        withdrawalFee 
-    });
-    toast({
-      title: "Settings Saved",
-      description: "Application settings have been updated successfully.",
-    })
+  useEffect(() => {
+    if (!firestore) return;
+    setLoading(true);
+    getAppSettings(firestore)
+        .then(setSettings)
+        .finally(() => setLoading(false));
+  }, [firestore]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setSettings(prev => ({ ...prev, [id]: value }));
+  }
+
+  const handleSettingsSave = async () => {
+    if (!firestore) return;
+    try {
+        await updateAppSettings(firestore, settings);
+        toast({
+            title: "Settings Saved",
+            description: "Application settings have been updated successfully.",
+        });
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Save Failed",
+            description: "Could not update settings in the database.",
+        });
+    }
   }
   
-  const handleAnnouncementPost = () => {
+  const handleAnnouncementPost = async () => {
     if (!announcement.trim()) {
         toast({
             variant: "destructive",
@@ -49,12 +67,21 @@ export default function AdminSettingsPage() {
         });
         return;
     }
-    addAnnouncement(announcement);
-    toast({
-      title: "Announcement Sent",
-      description: "The announcement has been broadcast to all users.",
-    })
-    setAnnouncement("")
+    if (!firestore) return;
+    try {
+        await addAnnouncement(firestore, announcement);
+        toast({
+        title: "Announcement Sent",
+        description: "The announcement has been broadcast to all users.",
+        })
+        setAnnouncement("")
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Post Failed",
+            description: "Could not post the announcement.",
+        });
+    }
   }
 
   return (
@@ -74,53 +101,57 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="wallet-name">Admin Wallet Name</Label>
+              <Label htmlFor="adminWalletName">Admin Wallet Name</Label>
               <Input 
-                id="wallet-name" 
-                value={walletName} 
-                onChange={(e) => setWalletName(e.target.value)}
+                id="adminWalletName" 
+                value={settings.adminWalletName || ""} 
+                onChange={handleInputChange}
                 placeholder="e.g., JazzCash, Easypaisa"
+                disabled={loading}
               />
                <p className="text-xs text-muted-foreground">
                 The name of the wallet service.
               </p>
             </div>
              <div className="space-y-2">
-              <Label htmlFor="account-holder-name">Account Holder Name</Label>
+              <Label htmlFor="adminAccountHolderName">Account Holder Name</Label>
               <Input 
-                id="account-holder-name" 
-                value={accountHolderName} 
-                onChange={(e) => setAccountHolderName(e.target.value)}
+                id="adminAccountHolderName" 
+                value={settings.adminAccountHolderName || ""} 
+                onChange={handleInputChange}
                 placeholder="e.g., John Doe"
+                disabled={loading}
               />
                <p className="text-xs text-muted-foreground">
                 The name of the account holder.
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="wallet-number">Admin Deposit Wallet Number</Label>
+              <Label htmlFor="adminWalletNumber">Admin Deposit Wallet Number</Label>
               <Input 
-                id="wallet-number" 
-                value={walletNumber} 
-                onChange={(e) => setWalletNumber(e.target.value)}
+                id="adminWalletNumber" 
+                value={settings.adminWalletNumber || ""} 
+                onChange={handleInputChange}
+                disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
                 This is the number users will send deposits to.
               </p>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="withdrawal-fee">Withdrawal Fee (%)</Label>
+              <Label htmlFor="withdrawalFee">Withdrawal Fee (%)</Label>
               <Input 
-                id="withdrawal-fee" 
+                id="withdrawalFee" 
                 type="number"
-                value={withdrawalFee} 
-                onChange={(e) => setWithdrawalFee(e.target.value)}
+                value={settings.withdrawalFee || ""} 
+                onChange={handleInputChange}
+                disabled={loading}
               />
               <p className="text-xs text-muted-foreground">
                 The percentage fee deducted from all user withdrawals.
               </p>
             </div>
-            <Button onClick={handleSettingsSave}>Save Payment Settings</Button>
+            <Button onClick={handleSettingsSave} disabled={loading}>Save Payment Settings</Button>
           </CardContent>
         </Card>
 

@@ -35,13 +35,15 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import { useToast } from "@/hooks/use-toast"
-import { mockInvestmentPlans, addTransaction } from "@/lib/data"
 import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import { Lock, Info } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useFirestore } from "@/firebase/provider"
+import { getAllInvestmentPlans, addTransaction } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (plan: InvestmentPlan, amount: number) => void }) {
@@ -137,10 +139,27 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const { user, loading, refetchUser } = useUser();
+  const { user, loading: userLoading, refetchUser } = useUser();
+  const firestore = useFirestore();
+  const [plans, setPlans] = React.useState<InvestmentPlan[]>([]);
+  const [plansLoading, setPlansLoading] = React.useState(true);
 
-  const handleInvest = (plan: InvestmentPlan, amount: number) => {
-    if (!user) {
+
+  React.useEffect(() => {
+    if (!firestore) return;
+    setPlansLoading(true);
+    getAllInvestmentPlans(firestore)
+        .then(setPlans)
+        .catch(err => {
+            console.error("Failed to fetch investment plans", err);
+            toast({ variant: "destructive", title: "Could not load plans" });
+        })
+        .finally(() => setPlansLoading(false));
+  }, [firestore, toast]);
+
+
+  const handleInvest = async (plan: InvestmentPlan, amount: number) => {
+    if (!user || !firestore) {
         toast({ variant: "destructive", title: "Not Logged In" });
         return;
     }
@@ -153,22 +172,29 @@ export default function InvestmentsPage() {
         return;
     }
 
-    addTransaction({
-        userId: user.uid,
-        userName: user.displayName || 'Unknown',
-        type: 'Investment',
-        amount: -amount,
-        status: 'Completed',
-        details: `Investment in ${plan.name}`
-    });
+    try {
+        await addTransaction(firestore, {
+            userId: user.uid,
+            userName: user.displayName || 'Unknown',
+            type: 'Investment',
+            amount: -amount,
+            status: 'Completed',
+            details: `Investment in ${plan.name}`
+        });
 
-    toast({
-      title: t('investments.successTitle'),
-      description: t('investments.successDescription', { planName: plan.name }),
-    });
+        toast({
+        title: t('investments.successTitle'),
+        description: t('investments.successDescription', { planName: plan.name }),
+        });
 
-    // Refetch user to update balance in UI
-    refetchUser();
+        refetchUser();
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Investment Failed",
+            description: error.message || "Could not process your investment.",
+        });
+    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -178,8 +204,36 @@ export default function InvestmentsPage() {
     }).format(amount)
   }
 
-  if (loading) {
-      return <div>Loading investment plans...</div>
+  const isLoading = userLoading || plansLoading;
+
+  if (isLoading) {
+      return (
+        <div className="flex flex-col gap-4">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">{t('investments.title')}</h1>
+                <p className="text-muted-foreground">{t('investments.description')}</p>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {[...Array(3)].map((_, i) => (
+                    <Card key={i} className="flex flex-col">
+                        <CardHeader>
+                            <Skeleton className="h-40 w-full mb-4 rounded-t-lg"/>
+                            <Skeleton className="h-7 w-3/4" />
+                            <Skeleton className="h-4 w-1/2 mt-1" />
+                        </CardHeader>
+                        <CardContent className="flex-grow grid gap-4">
+                            <Skeleton className="h-5 w-full"/>
+                            <Skeleton className="h-5 w-full"/>
+                            <Skeleton className="h-5 w-full"/>
+                        </CardContent>
+                        <CardFooter>
+                            <Skeleton className="h-10 w-full"/>
+                        </CardFooter>
+                    </Card>
+                ))}
+            </div>
+        </div>
+      )
   }
 
   return (
@@ -189,7 +243,7 @@ export default function InvestmentsPage() {
         <p className="text-muted-foreground">{t('investments.description')}</p>
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {mockInvestmentPlans.map((plan) => {
+        {plans.map((plan) => {
           const isLocked = (user?.vipLevel ?? 1) < plan.requiredVipLevel
           return (
             <Card key={plan.id} className={`flex flex-col ${isLocked ? 'bg-muted/50 border-dashed' : ''}`}>
@@ -240,7 +294,7 @@ export default function InvestmentsPage() {
             </Card>
           )
         })}
-        {mockInvestmentPlans.length === 0 && (
+        {!plansLoading && plans.length === 0 && (
             <Card className="md:col-span-3 text-center">
                 <CardHeader>
                     <CardTitle>No Plans Available</CardTitle>
@@ -252,5 +306,3 @@ export default function InvestmentsPage() {
     </div>
   )
 }
-
-    
