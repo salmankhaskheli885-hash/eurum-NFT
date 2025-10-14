@@ -10,14 +10,22 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { useToast } from "@/hooks/use-toast"
 import { mockUser, mockInvestmentPlans } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import { Lock } from "lucide-react"
 
 export default function InvestmentsPage() {
   const { t } = useTranslation()
+  const { toast } = useToast()
   const userVipLevel = mockUser.vipLevel
+
+  const handleInvest = (planName: string) => {
+    toast({
+      title: "Investment Successful",
+      description: `You have invested in the ${planName} plan.`,
+    })
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-PK", {
@@ -69,7 +77,7 @@ export default function InvestmentsPage() {
                     {t('investments.locked')}
                   </Button>
                 ) : (
-                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground" onClick={() => handleInvest(plan.name)}>
                     {t('investments.invest')}
                   </Button>
                 )}
