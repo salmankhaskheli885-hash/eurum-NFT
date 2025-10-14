@@ -183,7 +183,13 @@
         "noAccountPartner": "پارٹنر نہیں ہیں؟",
         "signUpLink": "سائن اپ کریں",
         "userTab": "صارف",
-        "partnerTab": "پارٹنر"
+        "partnerTab": "پارٹنر",
+        "processing": "کارروائی ہو رہی ہے...",
+        "successTitle": "کامیابی سے سائن ان ہوگئے!",
+        "verification": {
+            "title": "ای میل کی تصدیق نہیں ہوئی",
+            "description": "لاگ ان کرنے سے پہلے براہ کرم اپنے ای میل کی تصدیق کریں۔ تصدیقی لنک کے لیے اپنا ان باکس چیک کریں۔"
+        }
     },
     "register": {
         "title": "اکاؤنٹ بنائیں",
@@ -199,7 +205,9 @@
         "hasAccountPartner": "پہلے سے پارٹنر ہیں؟",
         "signInLink": "سائن ان کریں",
         "userTab": "صارف",
-        "partnerTab": "پارٹنر"
+        "partnerTab": "پارٹنر",
+        "successTitle": "رجسٹریشن کامیاب!",
+        "successDescription": "ایک تصدیقی ای میل بھیج دی گئی ہے۔ براہ کرم اپنا ان باکس چیک کریں۔"
     },
     "languages": {
         "english": "English",

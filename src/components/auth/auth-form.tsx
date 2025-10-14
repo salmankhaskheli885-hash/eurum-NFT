@@ -77,8 +77,8 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
         
         toast({
-          title: 'Registration Successful!',
-          description: 'A verification email has been sent. Please check your inbox.',
+          title: t('register.successTitle'),
+          description: t('register.successDescription'),
         });
 
         // Redirect to login page after registration
@@ -104,8 +104,8 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         if (!authUser.emailVerified) {
             toast({
                 variant: 'destructive',
-                title: 'Email Not Verified',
-                description: 'Please verify your email before logging in. Check your inbox for the verification link.',
+                title: t('login.verification.title'),
+                description: t('login.verification.description'),
             });
             setLoading(false);
             return;
@@ -116,7 +116,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
 
         if (userDocSnap.exists()) {
           const userProfile = userDocSnap.data() as UserProfile;
-          toast({ title: 'Sign in successful!' });
+          toast({ title: t('login.successTitle') });
 
           switch (userProfile.role) {
             case 'admin':
@@ -185,7 +185,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading
-          ? 'Processing...'
+          ? t('login.processing')
           : isRegister
           ? t('register.button')
           : t('login.button')}

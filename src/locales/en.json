@@ -183,7 +183,13 @@
         "noAccountPartner": "Not a partner?",
         "signUpLink": "Sign Up",
         "userTab": "User",
-        "partnerTab": "Partner"
+        "partnerTab": "Partner",
+        "processing": "Processing...",
+        "successTitle": "Sign in successful!",
+        "verification": {
+            "title": "Email Not Verified",
+            "description": "Please verify your email before logging in. Check your inbox for the verification link."
+        }
     },
     "register": {
         "title": "Create Account",
@@ -199,7 +205,9 @@
         "hasAccountPartner": "Already a partner?",
         "signInLink": "Sign In",
         "userTab": "User",
-        "partnerTab": "Partner"
+        "partnerTab": "Partner",
+        "successTitle": "Registration Successful!",
+        "successDescription": "A verification email has been sent. Please check your inbox."
     },
     "languages": {
         "english": "English",
