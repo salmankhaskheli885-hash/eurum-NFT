@@ -18,9 +18,9 @@ export default function Dashboard() {
   const { t } = useTranslation()
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-PK", {
       style: "currency",
-      currency: mockUser.currency,
+      currency: "PKR",
     }).format(amount)
   }
 
@@ -93,54 +93,6 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-        
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>{t('dashboard.quickActions')}</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <Button variant="outline" asChild className="h-24 flex-col items-start justify-between p-4">
-              <Link href="/dashboard/investments">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">{t('dashboard.investments.title')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.investments.description')}</p>
-                <ArrowRight className="h-4 w-4 self-end" />
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-24 flex-col items-start justify-between p-4">
-              <Link href="/dashboard/profile">
-                <div className="flex items-center gap-2">
-                  <UserIcon className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">{t('dashboard.profile.title')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.profile.description')}</p>
-                <ArrowRight className="h-4 w-4 self-end" />
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-24 flex-col items-start justify-between p-4">
-              <Link href="/dashboard/kyc">
-                <div className="flex items-center gap-2">
-                  <Briefcase className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">{t('dashboard.kyc.title')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.kyc.description')}</p>
-                <ArrowRight className="h-4 w-4 self-end" />
-              </Link>
-            </Button>
-            <Button variant="outline" asChild className="h-24 flex-col items-start justify-between p-4">
-              <Link href="/dashboard/referrals">
-                <div className="flex items-center gap-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">{t('dashboard.referrals.title')}</span>
-                </div>
-                <p className="text-sm text-muted-foreground">{t('dashboard.referrals.description')}</p>
-                <ArrowRight className="h-4 w-4 self-end" />
-              </Link>
-            </Button>
           </CardContent>
         </Card>
       </div>
