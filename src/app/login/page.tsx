@@ -2,8 +2,6 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
