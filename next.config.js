@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+require('dotenv').config({ path: './.env' });
+
 const nextConfig = {
   /* config options here */
   typescript: {
@@ -22,7 +24,7 @@ const nextConfig = {
         pathname: '/**',
       },
       {
-        protocol: 'https',
+        protocol: 'https://picsum.photos',
         hostname: 'picsum.photos',
         port: '',
         pathname: '/**',
