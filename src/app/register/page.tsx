@@ -24,7 +24,7 @@ export default function RegisterPage() {
                 <Logo className="w-16 h-16 text-primary" />
             </Link>
           <CardTitle className="text-2xl">{t('register.title')}</CardTitle>
-          <CardDescription>{t('register.description')}</CardDescription>
+          <CardDescription>Click the button below to sign up with Google.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="pt-4 space-y-4">

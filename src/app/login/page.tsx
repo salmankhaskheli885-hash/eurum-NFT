@@ -25,18 +25,12 @@ export default function LoginPage() {
                 </Link>
                 <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
                 <CardDescription>
-                  Start your journey with Fynix Pro today
+                  Click the button below to sign in with Google.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="pt-4 space-y-4">
                   <AuthForm />
-                </div>
-                 <div className="mt-4 text-center text-sm">
-                    Don't have an account?{" "}
-                    <Link href="/register" className="underline text-primary">
-                    Sign Up
-                    </Link>
                 </div>
             </CardContent>
         </Card>
