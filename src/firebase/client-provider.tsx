@@ -8,7 +8,11 @@ import { firebaseConfig } from './index';
 // This component ensures Firebase is initialized only once on the client.
 export function FirebaseClientProvider({ children }: { children: ReactNode }) {
     const app = useMemo(() => {
-        return getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
+        const apps = getApps();
+        if (apps.length > 0) {
+            return apps[0];
+        }
+        return initializeApp(firebaseConfig);
     }, []);
 
     return <FirebaseProvider app={app}>{children}</FirebaseProvider>;
