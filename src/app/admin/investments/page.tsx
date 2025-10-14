@@ -52,6 +52,7 @@ import { mockInvestmentPlans, type InvestmentPlan, addInvestmentPlan, updateInve
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
+import Image from "next/image"
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
@@ -60,7 +61,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
         ? { ...plan } 
-        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1 }
+        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/placeholder/600/400' }
     );
 
     React.useEffect(() => {
@@ -68,7 +69,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
           if (plan) {
               setFormData({ ...plan });
           } else {
-              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1 });
+              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/newplan/600/400' });
           }
         }
     }, [open, plan]);
@@ -142,6 +143,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="requiredVipLevel" className="text-right">Required VIP</Label>
                         <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} className="col-span-3" />
+                    </div>
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
+                        <Input id="imageUrl" name="imageUrl" value={formData.imageUrl} onChange={handleChange} className="col-span-3" />
                     </div>
                 </div>
                 <DialogFooter>
@@ -220,7 +225,7 @@ export default function AdminInvestmentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Plan Name</TableHead>
+                <TableHead>Plan</TableHead>
                 <TableHead>Daily Return (%)</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>Min Investment</TableHead>
@@ -234,7 +239,17 @@ export default function AdminInvestmentsPage() {
             <TableBody>
               {filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell className="font-medium">{plan.name}</TableCell>
+                  <TableCell className="font-medium flex items-center gap-3">
+                     <Image 
+                        src={plan.imageUrl} 
+                        alt={plan.name} 
+                        width={40} 
+                        height={40} 
+                        className="rounded-md object-cover"
+                        data-ai-hint="investment product"
+                     />
+                    {plan.name}
+                  </TableCell>
                   <TableCell>{plan.dailyReturn}</TableCell>
                   <TableCell>{plan.durationDays}</TableCell>
                   <TableCell>{plan.minInvestment.toLocaleString()}</TableCell>
@@ -287,3 +302,5 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
+
+    

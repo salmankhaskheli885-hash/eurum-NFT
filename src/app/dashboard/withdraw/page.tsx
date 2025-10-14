@@ -16,7 +16,7 @@ import { useUser } from "@/hooks/use-user"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
-    const { user, loading } = useUser()
+    const { user, loading, refetchUser } = useUser()
     const router = useRouter()
     const { toast } = useToast()
     const [method, setMethod] = useState("jazzcash")
@@ -34,14 +34,27 @@ export default function WithdrawPage() {
             })
             return
         }
+
+        const withdrawalAmount = parseFloat(amount);
+        if (user.balance < withdrawalAmount) {
+             toast({
+                variant: "destructive",
+                title: "Insufficient Balance",
+                description: `You cannot withdraw more than your current balance of $${user.balance.toFixed(2)}.`,
+            });
+            return;
+        }
         
         addTransaction({
             userId: user.uid,
             userName: user.displayName || 'Unknown User',
             type: 'Withdrawal',
-            amount: -parseFloat(amount), // Withdrawals are negative amounts
+            amount: -withdrawalAmount, // Withdrawals are negative amounts
             status: 'Pending',
         });
+        
+        // Refetch user to update balance in UI immediately
+        refetchUser();
 
         toast({
             title: t('withdraw.successTitle'),
@@ -64,6 +77,9 @@ export default function WithdrawPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t('withdraw.formTitle')}</CardTitle>
+          <CardDescription>
+            Your current balance is <span className="font-bold text-primary">${user?.balance.toFixed(2)}</span>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -103,3 +119,5 @@ export default function WithdrawPage() {
     </div>
   )
 }
+
+    

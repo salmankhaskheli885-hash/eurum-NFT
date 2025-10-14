@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import type { UserProfile } from '@/lib/schema';
 import { useAuth } from '@/firebase/provider';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
@@ -16,6 +16,11 @@ export function useUser() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
+  const [key, setKey] = useState(0); // Add a key to force re-renders
+
+  const refetchUser = useCallback(() => {
+    setKey(prevKey => prevKey + 1);
+  }, []);
 
   useEffect(() => {
     if (!auth) {
@@ -41,8 +46,9 @@ export function useUser() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth]);
+  }, [auth, key]); // Rerun effect when auth or key changes
 
-  return { user, loading, error };
+  return { user, loading, error, refetchUser };
 }
 
+    

@@ -1,4 +1,6 @@
+
 import { UserProfile } from "./schema";
+import { type User as FirebaseUser } from "firebase/auth";
 
 
 export type User = UserProfile & {
@@ -13,6 +15,7 @@ export type Transaction = {
   date: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
+  details?: string;
 };
 
 export type InvestmentPlan = {
@@ -23,6 +26,7 @@ export type InvestmentPlan = {
   minInvestment: number;
   maxInvestment: number;
   requiredVipLevel: number;
+  imageUrl: string;
 };
 
 export type AppSettings = {
@@ -65,27 +69,56 @@ export const mockReferredUsers = [
 
 
 // Function to add a new transaction to the mock data
-export const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {
+export const addTransaction = (transactionData: Omit<Transaction, 'id' | 'date'>) => {
     const newTransaction: Transaction = {
-        ...transaction,
+        ...transactionData,
         id: `TXN${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
         date: new Date().toISOString().split('T')[0]
     };
-  mockTransactions.unshift(newTransaction);
+    
+    // Update user balance for withdrawals and investments immediately
+    const user = mockUsers.find(u => u.uid === newTransaction.userId);
+    if (user && newTransaction.amount < 0) {
+        user.balance += newTransaction.amount; // amount is negative
+    }
+
+    mockTransactions.unshift(newTransaction);
 };
 
 export const updateTransactionStatus = (transactionId: string, newStatus: 'Completed' | 'Pending' | 'Failed') => {
     const transaction = mockTransactions.find(tx => tx.id === transactionId);
-    if (transaction) {
-        transaction.status = newStatus;
-        return true;
+    if (!transaction) return false;
+
+    const oldStatus = transaction.status;
+    transaction.status = newStatus;
+
+    // Logic to update user balance on status change
+    if (oldStatus === 'Pending' && newStatus === 'Completed') {
+        const user = mockUsers.find(u => u.uid === transaction.userId);
+        if (user) {
+            // Only add deposit amount, withdrawal/investment is pre-deducted
+            if (transaction.type === 'Deposit') {
+                 user.balance += transaction.amount;
+            }
+        }
+    } else if (oldStatus === 'Pending' && newStatus === 'Failed') {
+        // If a withdrawal or investment fails, refund the user
+        const user = mockUsers.find(u => u.uid === transaction.userId);
+        if (user && transaction.amount < 0) {
+            user.balance -= transaction.amount; // amount is negative, so this adds it back
+        }
     }
-    return false;
+    
+    return true;
 }
 
 // Functions to manage investment plans
 export const addInvestmentPlan = (plan: Omit<InvestmentPlan, 'id'>) => {
-    const newPlan = { ...plan, id: Date.now() };
+    const newPlan: InvestmentPlan = { 
+        ...plan, 
+        id: Date.now(),
+        imageUrl: plan.imageUrl || 'https://picsum.photos/seed/default/600/400'
+    };
     mockInvestmentPlans.push(newPlan);
     return newPlan;
 }
@@ -144,10 +177,11 @@ export const deleteUser = (userId: string) => {
 }
 
 // Helper to get a user, creating them if they don't exist
-export function getOrCreateUser(firebaseUser: { uid: string, email: string | null, displayName: string | null }): User {
+export function getOrCreateUser(firebaseUser: FirebaseUser): User {
     let user = mockUsers.find(u => u.uid === firebaseUser.uid);
     if (user) {
-        return user;
+        // Return a copy to avoid direct mutation of the mock data from client components
+        return { ...user };
     }
 
     const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
@@ -162,7 +196,7 @@ export function getOrCreateUser(firebaseUser: { uid: string, email: string | nul
         displayName: firebaseUser.displayName,
         role: role,
         shortUid: firebaseUser.uid.substring(0, 8),
-        balance: 1337.42, // Default starting values in USD
+        balance: 10000, // Default starting values in USD
         currency: 'USD',
         vipLevel: 1,
         vipProgress: 0,
@@ -172,5 +206,8 @@ export function getOrCreateUser(firebaseUser: { uid: string, email: string | nul
     };
 
     addUser(newUser);
-    return newUser;
+    // Return a copy
+    return { ...newUser };
 }
+
+    

@@ -36,7 +36,7 @@
         "formTitle": "Confirm Your Deposit",
         "formDescription": "After sending the money, fill in the details below.",
         "yourNumber": "Your Number (from which you sent money)",
-        "amount": "Amount Sent",
+        "amount": "Amount Sent (USD)",
         "tidNumber": "Transaction ID (TID)",
         "submitButton": "Submit Deposit Request"
     },
@@ -47,7 +47,7 @@
         "method": "Withdrawal Method",
         "accountNumber": "Account Number",
         "accountName": "Account Holder Name",
-        "amount": "Amount to Withdraw",
+        "amount": "Amount to Withdraw (USD)",
         "feeNotice": "A 2% fee will be deducted from the withdrawal amount. Funds will be transferred within 12-24 hours.",
         "submitButton": "Submit Withdrawal Request",
         "successTitle": "Withdrawal Request Submitted",
@@ -59,7 +59,7 @@
         "id": "ID",
         "type": "Type",
         "date": "Date",
-        "amount": "Amount",
+        "amount": "Amount (USD)",
         "status": "Status",
         "all": "All",
         "deposits": "Deposits",
@@ -75,6 +75,7 @@
         "duration": "Duration",
         "days": "Days",
         "investmentRange": "Investment",
+        "investmentAmount": "Investment Amount (USD)",
         "successTitle": "Investment Successful",
         "successDescription": "You have invested in the {planName} plan.",
         "confirmTitle": "Confirm Investment",
@@ -94,7 +95,7 @@
         "referredUsersListDescription": "A list of all users you have referred.",
         "table": {
             "name": "Name",
-            "totalDeposit": "Total Deposit",
+            "totalDeposit": "Total Deposit (USD)",
             "status": "Status",
             "statusValue": {
                 "active": "Active",
@@ -275,9 +276,9 @@
         "dashboardDescription": "Manage all aspects of the Fynix Pro application.",
         "stats": {
             "totalUsers": "Total Users",
-            "totalDeposits": "Total Deposits",
+            "totalDeposits": "Total Deposits (USD)",
             "pendingWithdrawals": "Pending Withdrawals",
-            "totalInvested": "Total Invested",
+            "totalInvested": "Total Invested (USD)",
             "pendingKyc": "Pending KYC"
         },
         "manualActions": "Manual Actions",
@@ -301,3 +302,5 @@
         }
     }
 }
+
+    

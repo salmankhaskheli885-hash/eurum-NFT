@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -21,15 +22,31 @@ import {
   DialogTrigger,
   DialogClose,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 import { useToast } from "@/hooks/use-toast"
-import { mockInvestmentPlans } from "@/lib/data"
+import { mockInvestmentPlans, addTransaction } from "@/lib/data"
 import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import { Lock, Info } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
-function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (planName: string) => void }) {
+
+function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (plan: InvestmentPlan, amount: number) => void }) {
     const { t } = useTranslation()
+    const [amount, setAmount] = React.useState(plan.minInvestment);
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat("en-US", {
@@ -57,7 +74,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                         <span className="text-muted-foreground">{t('investments.planName')}</span>
                         <span className="font-semibold">{plan.name}</span>
                     </div>
-                    <div className="flex justify-between">
+                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('investments.dailyReturn')}</span>
                         <span className="font-semibold text-primary">{plan.dailyReturn}%</span>
                     </div>
@@ -71,14 +88,46 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                         {formatCurrency(plan.minInvestment)} - {formatCurrency(plan.maxInvestment)}
                         </span>
                     </div>
+                    <div className="grid w-full items-center gap-1.5">
+                        <Label htmlFor="amount">{t('investments.investmentAmount')}</Label>
+                        <Input 
+                            id="amount" 
+                            type="number" 
+                            value={amount} 
+                            onChange={(e) => setAmount(Number(e.target.value))}
+                            min={plan.minInvestment}
+                            max={plan.maxInvestment}
+                        />
+                    </div>
                 </div>
                 <DialogFooter>
                     <DialogClose asChild>
                         <Button variant="outline">{t('investments.cancel')}</Button>
                     </DialogClose>
-                    <DialogClose asChild>
-                        <Button type="submit" onClick={() => onConfirm(plan.name)}>{t('investments.confirmButton')}</Button>
-                    </DialogClose>
+
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button type="submit">
+                                {t('investments.confirmButton')}
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will deduct {formatCurrency(amount)} from your balance and start the "{plan.name}" plan. This action cannot be undone.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                               <DialogClose asChild>
+                                <AlertDialogAction onClick={() => onConfirm(plan, amount)}>
+                                    Proceed
+                                </AlertDialogAction>
+                               </DialogClose>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -88,14 +137,38 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const { user } = useUser();
-  const userVipLevel = user?.vipLevel ?? 1;
+  const { user, loading, refetchUser } = useUser();
 
-  const handleInvest = (planName: string) => {
+  const handleInvest = (plan: InvestmentPlan, amount: number) => {
+    if (!user) {
+        toast({ variant: "destructive", title: "Not Logged In" });
+        return;
+    }
+    if (user.balance < amount) {
+        toast({
+            variant: "destructive",
+            title: "Insufficient Balance",
+            description: `You need at least $${amount} to invest. Your current balance is $${user.balance.toFixed(2)}.`,
+        });
+        return;
+    }
+
+    addTransaction({
+        userId: user.uid,
+        userName: user.displayName || 'Unknown',
+        type: 'Investment',
+        amount: -amount,
+        status: 'Completed',
+        details: `Investment in ${plan.name}`
+    });
+
     toast({
       title: t('investments.successTitle'),
-      description: t('investments.successDescription', { planName }),
-    })
+      description: t('investments.successDescription', { planName: plan.name }),
+    });
+
+    // Refetch user to update balance in UI
+    refetchUser();
   }
 
   const formatCurrency = (amount: number) => {
@@ -103,6 +176,10 @@ export default function InvestmentsPage() {
       style: "currency",
       currency: "USD",
     }).format(amount)
+  }
+
+  if (loading) {
+      return <div>Loading investment plans...</div>
   }
 
   return (
@@ -113,10 +190,19 @@ export default function InvestmentsPage() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {mockInvestmentPlans.map((plan) => {
-          const isLocked = userVipLevel < plan.requiredVipLevel
+          const isLocked = (user?.vipLevel ?? 1) < plan.requiredVipLevel
           return (
             <Card key={plan.id} className={`flex flex-col ${isLocked ? 'bg-muted/50 border-dashed' : ''}`}>
               <CardHeader>
+                <div className="relative h-40 w-full mb-4">
+                    <Image 
+                        src={plan.imageUrl} 
+                        alt={plan.name}
+                        fill
+                        className="rounded-t-lg object-cover"
+                        data-ai-hint="investment product"
+                     />
+                </div>
                 <div className="flex justify-between items-start">
                   <CardTitle>{plan.name}</CardTitle>
                   {isLocked && <Lock className="text-muted-foreground" />}
@@ -154,7 +240,17 @@ export default function InvestmentsPage() {
             </Card>
           )
         })}
+        {mockInvestmentPlans.length === 0 && (
+            <Card className="md:col-span-3 text-center">
+                <CardHeader>
+                    <CardTitle>No Plans Available</CardTitle>
+                    <CardDescription>The administrator has not added any investment plans yet. Please check back later.</CardDescription>
+                </CardHeader>
+            </Card>
+        )}
       </div>
     </div>
   )
 }
+
+    
