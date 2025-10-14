@@ -75,7 +75,7 @@ export default function LoginPage() {
                                 <Input id="partner-password" type="password" required />
                             </div>
                             <Button type="submit" className="w-full">
-                                <Link href="/admin" className="w-full h-full flex items-center justify-center">{t("login.buttonPartner")}</Link>
+                                <Link href="/partner" className="w-full h-full flex items-center justify-center">{t("login.buttonPartner")}</Link>
                             </Button>
                         </div>
                          <div className="mt-4 text-center text-sm">

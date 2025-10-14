@@ -29,7 +29,7 @@ const mockUsers = [
   { id: "user-4", name: "Gavin Wood", email: "gavin@fynix.pro", balance: 88.00, kycStatus: "unsubmitted" },
 ];
 
-export default function AdminUsersPage() {
+export default function PartnerUsersPage() {
   const { t } = useTranslation()
 
   const formatCurrency = (amount: number) => {
@@ -52,8 +52,8 @@ export default function AdminUsersPage() {
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('admin.users.title')}</h1>
-        <p className="text-muted-foreground">{t('admin.users.description')}</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('partner.users.title')}</h1>
+        <p className="text-muted-foreground">{t('partner.users.description')}</p>
       </div>
 
       <Card>
@@ -64,12 +64,12 @@ export default function AdminUsersPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('admin.users.table.name')}</TableHead>
-                <TableHead>{t('admin.users.table.email')}</TableHead>
-                <TableHead className="text-right">{t('admin.users.table.balance')}</TableHead>
-                <TableHead className="text-center">{t('admin.users.table.kycStatus')}</TableHead>
+                <TableHead>{t('partner.users.table.name')}</TableHead>
+                <TableHead>{t('partner.users.table.email')}</TableHead>
+                <TableHead className="text-right">{t('partner.users.table.balance')}</TableHead>
+                <TableHead className="text-center">{t('partner.users.table.kycStatus')}</TableHead>
                 <TableHead>
-                  <span className="sr-only">{t('admin.users.table.actions')}</span>
+                  <span className="sr-only">{t('partner.users.table.actions')}</span>
                 </TableHead>
               </TableRow>
             </TableHeader>

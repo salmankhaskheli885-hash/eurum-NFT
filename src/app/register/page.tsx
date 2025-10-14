@@ -82,7 +82,7 @@ export default function RegisterPage() {
                             <Input id="partner-password" type="password" required/>
                         </div>
                         <Button type="submit" className="w-full">
-                            <Link href="/admin" className="w-full h-full flex items-center justify-center">{t('register.buttonPartner')}</Link>
+                            <Link href="/partner" className="w-full h-full flex items-center justify-center">{t('register.buttonPartner')}</Link>
                         </Button>
                     </div>
                      <div className="mt-4 text-center text-sm">

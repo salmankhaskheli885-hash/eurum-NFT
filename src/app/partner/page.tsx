@@ -4,20 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
 import { DollarSign, Shield, Users } from "lucide-react"
 
-export default function AdminDashboardPage() {
+export default function PartnerDashboardPage() {
   const { t } = useTranslation()
 
   const stats = [
-    { title: t('admin.dashboard.totalUsers'), value: '1,250', icon: Users },
-    { title: t('admin.dashboard.totalInvested'), value: '$1.5M', icon: DollarSign },
-    { title: t('admin.dashboard.pendingKyc'), value: '15', icon: Shield },
+    { title: t('partner.dashboard.totalUsers'), value: '1,250', icon: Users },
+    { title: t('partner.dashboard.totalInvested'), value: '$1.5M', icon: DollarSign },
+    { title: t('partner.dashboard.pendingKyc'), value: '15', icon: Shield },
   ]
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('admin.dashboard.title')}</h1>
-        <p className="text-muted-foreground">{t('admin.dashboard.description')}</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('partner.dashboard.title')}</h1>
+        <p className="text-muted-foreground">{t('partner.dashboard.description')}</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">

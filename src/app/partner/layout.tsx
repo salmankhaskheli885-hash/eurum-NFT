@@ -1,6 +1,6 @@
 import DashboardLayout from "../dashboard/layout";
 
-export default function AdminLayout({
+export default function PartnerLayout({
   children,
 }: {
   children: React.ReactNode

@@ -7,10 +7,10 @@
         "referrals": "Referrals",
         "profile": "Profile",
         "logout": "Logout",
-        "partners": "Partners",
-        "admin": {
-            "dashboard": "Admin",
-            "users": "Users",
+        "partners": "My Network",
+        "partner": {
+            "dashboard": "Partner Hub",
+            "users": "User Management",
             "kyc": "KYC Management"
         }
     },
@@ -138,17 +138,17 @@
         "english": "English",
         "urdu": "Urdu"
     },
-    "admin": {
+    "partner": {
         "dashboard": {
-            "title": "Admin Dashboard",
-            "description": "Overview of the entire platform.",
-            "totalUsers": "Total Users",
-            "totalInvested": "Total Invested",
-            "pendingKyc": "Pending KYC"
+            "title": "Partner Dashboard",
+            "description": "Overview of your network and earnings.",
+            "totalUsers": "Total Users in Network",
+            "totalInvested": "Total Network Investment",
+            "pendingKyc": "Pending KYC Submissions"
         },
         "users": {
             "title": "User Management",
-            "description": "View and manage all users on the platform.",
+            "description": "View and manage all users in your network.",
             "table": {
                 "name": "Name",
                 "email": "Email",
@@ -159,7 +159,7 @@
         },
         "kyc": {
             "title": "KYC Management",
-            "description": "Review and process KYC submissions.",
+            "description": "Review and process KYC submissions from your users.",
             "table": {
                 "user": "User",
                 "submissionDate": "Submission Date",

@@ -26,14 +26,14 @@ const mockKycSubmissions = [
   { id: "kyc-3", name: "Anatoly Yakovenko", submissionDate: "2023-10-26", status: "pending" },
 ];
 
-export default function AdminKycPage() {
+export default function PartnerKycPage() {
   const { t } = useTranslation()
 
   return (
     <div className="flex flex-col gap-4">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('admin.kyc.title')}</h1>
-        <p className="text-muted-foreground">{t('admin.kyc.description')}</p>
+        <h1 className="text-3xl font-bold tracking-tight">{t('partner.kyc.title')}</h1>
+        <p className="text-muted-foreground">{t('partner.kyc.description')}</p>
       </div>
 
       <Card>
@@ -44,10 +44,10 @@ export default function AdminKycPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t('admin.kyc.table.user')}</TableHead>
-                <TableHead>{t('admin.kyc.table.submissionDate')}</TableHead>
-                <TableHead className="text-center">{t('admin.kyc.table.status')}</TableHead>
-                <TableHead className="text-right">{t('admin.kyc.table.actions')}</TableHead>
+                <TableHead>{t('partner.kyc.table.user')}</TableHead>
+                <TableHead>{t('partner.kyc.table.submissionDate')}</TableHead>
+                <TableHead className="text-center">{t('partner.kyc.table.status')}</TableHead>
+                <TableHead className="text-right">{t('partner.kyc.table.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -61,8 +61,8 @@ export default function AdminKycPage() {
                     </Badge>
                   </TableCell>
                    <TableCell className="text-right space-x-2">
-                      <Button variant="outline" size="sm"><Check className="mr-2 h-4 w-4" />{t('admin.kyc.approve')}</Button>
-                      <Button variant="destructive" size="sm"><X className="mr-2 h-4 w-4" />{t('admin.kyc.reject')}</Button>
+                      <Button variant="outline" size="sm"><Check className="mr-2 h-4 w-4" />{t('partner.kyc.approve')}</Button>
+                      <Button variant="destructive" size="sm"><X className="mr-2 h-4 w-4" />{t('partner.kyc.reject')}</Button>
                   </TableCell>
                 </TableRow>
               ))}

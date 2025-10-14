@@ -37,7 +37,7 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const { t } = useTranslation()
 
-  const isAdmin = pathname.startsWith('/admin');
+  const isPartner = pathname.startsWith('/partner');
 
   const userMenuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
@@ -48,19 +48,19 @@ export default function DashboardLayout({
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
   ]
 
-  const adminMenuItems = [
-    { href: "/admin", label: t('nav.admin.dashboard'), icon: LayoutDashboard },
-    { href: "/admin/users", label: t('nav.admin.users'), icon: Users },
-    { href: "/admin/kyc", label: t('nav.admin.kyc'), icon: Shield },
+  const partnerMenuItems = [
+    { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
+    { href: "/partner/users", label: t('nav.partner.users'), icon: Users },
+    { href: "/partner/kyc", label: t('nav.partner.kyc'), icon: Shield },
   ]
 
-  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+  const menuItems = isPartner ? partnerMenuItems : userMenuItems;
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link href={isAdmin ? "/admin" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link href={isPartner ? "/partner" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">{t('appName')}</span>
           </Link>

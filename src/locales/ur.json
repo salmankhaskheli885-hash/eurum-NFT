@@ -7,10 +7,10 @@
         "referrals": "ریفرلز",
         "profile": "پروفائل",
         "logout": "لاگ آؤٹ",
-        "partners": "پارٹنرز",
-        "admin": {
-            "dashboard": "ایڈمن",
-            "users": "صارفین",
+        "partners": "میرا نیٹ ورک",
+        "partner": {
+            "dashboard": "پارٹنر ہب",
+            "users": "صارفین کا انتظام",
             "kyc": "KYC مینجمنٹ"
         }
     },
@@ -138,17 +138,17 @@
         "english": "English",
         "urdu": "اردو"
     },
-    "admin": {
+    "partner": {
         "dashboard": {
-            "title": "ایڈمن ڈیش بورڈ",
-            "description": "پورے پلیٹ فارم کا جائزہ۔",
-            "totalUsers": "کل صارفین",
-            "totalInvested": "کل سرمایہ کاری",
-            "pendingKyc": "زیر التواء KYC"
+            "title": "پارٹنر ڈیش بورڈ",
+            "description": "آپ کے نیٹ ورک اور آمدنی کا جائزہ۔",
+            "totalUsers": "نیٹ ورک میں کل صارفین",
+            "totalInvested": "کل نیٹ ورک سرمایہ کاری",
+            "pendingKyc": "زیر التواء KYC گذارشات"
         },
         "users": {
             "title": "صارف مینجمنٹ",
-            "description": "پلیٹ فارم پر تمام صارفین کو دیکھیں اور ان کا نظم کریں۔",
+            "description": "اپنے نیٹ ورک میں تمام صارفین کو دیکھیں اور ان کا نظم کریں۔",
             "table": {
                 "name": "نام",
                 "email": "ای میل",
@@ -159,7 +159,7 @@
         },
         "kyc": {
             "title": "KYC مینجمنٹ",
-            "description": "KYC گذارشات کا جائزہ لیں اور ان پر کارروائی کریں۔",
+            "description": "اپنے صارفین سے KYC گذارشات کا جائزہ لیں اور ان پر کارروائی کریں۔",
             "table": {
                 "user": "صارف",
                 "submissionDate": "جمع کرانے کی تاریخ",
