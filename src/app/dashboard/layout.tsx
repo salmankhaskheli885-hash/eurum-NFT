@@ -4,7 +4,6 @@ import { usePathname } from "next/navigation"
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
-  FileCheck,
   LayoutDashboard,
   LogOut,
   Share2,
@@ -49,7 +48,6 @@ export default function DashboardLayout({
     { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
-    { href: "/dashboard/kyc", label: t('nav.kyc'), icon: FileCheck },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
   ]
@@ -57,7 +55,6 @@ export default function DashboardLayout({
   const partnerMenuItems = [
     { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
     { href: "/partner/users", label: t('nav.partner.users'), icon: Users },
-    { href: "/partner/kyc", label: t('nav.partner.kyc'), icon: Shield },
   ]
 
   const menuItems = isPartner ? partnerMenuItems : userMenuItems;

@@ -6,15 +6,13 @@
         "withdraw": "نکالیں",
         "transactions": "ٹرانزیکشنز",
         "investments": "سرمایہ کاری",
-        "kyc": "KYC تصدیق",
         "referrals": "ریفرلز",
         "profile": "پروفائل",
         "logout": "لاگ آؤٹ",
         "partners": "میرا نیٹ ورک",
         "partner": {
             "dashboard": "پارٹنر ہب",
-            "users": "صارفین کا انتظام",
-            "kyc": "KYC مینجمنٹ"
+            "users": "صارفین کا انتظام"
         }
     },
     "dashboard": {
@@ -69,20 +67,6 @@
         "invest": "ابھی سرمایہ کاری کریں",
         "locked": "مقفل",
         "requiredVip": "VIP لیول {level} درکار ہے"
-    },
-    "kyc": {
-        "title": "KYC تصدیق",
-        "description": "اپنے اکاؤنٹ کی تصدیق کے لیے اپنی دستاویزات جمع کرائیں۔",
-        "uploadCnic": "CNIC اپ لوڈ کریں",
-        "uploadPhoto": "تصویر اپ لوڈ کریں",
-        "submit": "تصدیق کے لیے جمع کرائیں",
-        "status": "آپ کی KYC حیثیت:",
-        "statusPill": {
-            "pending": "زیر التواء",
-            "approved": "منظور شدہ",
-            "rejected": "مسترد",
-            "unsubmitted": "جمع نہیں کرایا"
-        }
     },
     "referrals": {
         "title": "ریفرلز",
@@ -181,18 +165,6 @@
                 "kycStatus": "KYC حیثیت",
                 "actions": "کارروائیاں"
             }
-        },
-        "kyc": {
-            "title": "KYC مینجمنٹ",
-            "description": "اپنے صارفین سے KYC گذارشات کا جائزہ لیں اور ان پر کارروائی کریں۔",
-            "table": {
-                "user": "صارف",
-                "submissionDate": "جمع کرانے کی تاریخ",
-                "status": "حیثیت",
-                "actions": "کارروائیاں"
-            },
-            "approve": "منظور کریں",
-            "reject": "مسترد کریں"
         }
     }
 }

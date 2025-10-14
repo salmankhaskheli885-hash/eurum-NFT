@@ -6,15 +6,13 @@
         "withdraw": "Withdraw",
         "transactions": "Transactions",
         "investments": "Investments",
-        "kyc": "KYC Verification",
         "referrals": "Referrals",
         "profile": "Profile",
         "logout": "Logout",
         "partners": "My Network",
         "partner": {
             "dashboard": "Partner Hub",
-            "users": "User Management",
-            "kyc": "KYC Management"
+            "users": "User Management"
         }
     },
     "dashboard": {
@@ -69,20 +67,6 @@
         "invest": "Invest Now",
         "locked": "Locked",
         "requiredVip": "Requires VIP Level {level}"
-    },
-    "kyc": {
-        "title": "KYC Verification",
-        "description": "Submit your documents to get your account verified.",
-        "uploadCnic": "Upload CNIC",
-        "uploadPhoto": "Upload Photo",
-        "submit": "Submit for Verification",
-        "status": "Your KYC Status:",
-        "statusPill": {
-            "pending": "Pending",
-            "approved": "Approved",
-            "rejected": "Rejected",
-            "unsubmitted": "Not Submitted"
-        }
     },
     "referrals": {
         "title": "Referrals",
@@ -181,18 +165,6 @@
                 "kycStatus": "KYC Status",
                 "actions": "Actions"
             }
-        },
-        "kyc": {
-            "title": "KYC Management",
-            "description": "Review and process KYC submissions from your users.",
-            "table": {
-                "user": "User",
-                "submissionDate": "Submission Date",
-                "status": "Status",
-                "actions": "Actions"
-            },
-            "approve": "Approve",
-            "reject": "Reject"
         }
     }
 }
