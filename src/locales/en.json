@@ -70,7 +70,18 @@
         "description": "Explore investment plans unlocked for your VIP level.",
         "invest": "Invest Now",
         "locked": "Locked",
-        "requiredVip": "Requires VIP Level {level}"
+        "requiredVip": "Requires VIP Level {level}",
+        "dailyReturn": "Daily Return",
+        "duration": "Duration",
+        "days": "Days",
+        "investmentRange": "Investment",
+        "successTitle": "Investment Successful",
+        "successDescription": "You have invested in the {planName} plan.",
+        "confirmTitle": "Confirm Investment",
+        "confirmDescription": "You are about to invest in the {planName} plan. Please review the details below.",
+        "planName": "Plan Name",
+        "confirmButton": "Confirm Investment",
+        "cancel": "Cancel"
     },
     "referrals": {
         "title": "Referrals",
