@@ -27,9 +27,7 @@ import { Label } from "@/components/ui/label"
 
 // Sample data for demonstration
 const securityLogs = [
-  { id: 1, event: "Failed Login", user: "user@example.com", ip: "192.168.1.10", timestamp: "2023-11-15 10:30:00" },
-  { id: 2, event: "Suspicious Withdrawal Attempt", user: "satoshi@fynix.pro", ip: "10.0.0.5", timestamp: "2023-11-15 09:15:00" },
-  { id: 3, event: "Password Changed", user: "alice@example.com", ip: "203.0.113.25", timestamp: "2023-11-14 18:00:00" },
+  // Start with empty logs
 ];
 
 export default function AdminSecurityPage() {
@@ -40,26 +38,23 @@ export default function AdminSecurityPage() {
 
   const handleToggle2fa = (enabled: boolean) => {
     setIs2faEnabled(enabled)
-    // In a real app, this would trigger a backend call to enforce/disable 2FA
     toast({
       title: "Security Setting Updated",
-      description: `Two-Factor Authentication has been ${enabled ? 'Enabled' : 'Disabled'} for all admin accounts.`,
+      description: `Two-Factor Authentication has been ${enabled ? 'Enabled' : 'Disabled'} for all admin accounts. (This is a demo)`,
     })
   }
 
   const handleConfigureIpWhitelist = () => {
-     // In a real app, this would open a dialog to manage IP addresses
     toast({
-      title: "Action Required",
-      description: "IP Whitelisting configuration is not yet implemented.",
+      title: "Feature Not Implemented",
+      description: "IP Whitelisting configuration is a placeholder for now.",
     })
   }
   
   const handleManageRoles = () => {
-    // In a real app, this would navigate to a role management page
     toast({
-      title: "Action Required",
-      description: "Role management is not yet implemented.",
+      title: "Feature Not Implemented",
+      description: "Detailed role management is a placeholder for now.",
     })
   }
 
@@ -140,17 +135,23 @@ export default function AdminSecurityPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {securityLogs.map((log) => (
-                <TableRow key={log.id} className={log.event.includes('Suspicious') ? 'bg-destructive/10 text-destructive' : ''}>
-                  <TableCell className="font-medium flex items-center gap-2">
-                    {log.event.includes('Suspicious') && <ShieldAlert className="w-4 h-4"/>}
-                    {log.event}
-                  </TableCell>
-                  <TableCell>{log.user}</TableCell>
-                  <TableCell>{log.ip}</TableCell>
-                  <TableCell>{log.timestamp}</TableCell>
+              {securityLogs.length === 0 ? (
+                <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">No security logs found.</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                securityLogs.map((log) => (
+                    <TableRow key={log.id} className={log.event.includes('Suspicious') ? 'bg-destructive/10 text-destructive' : ''}>
+                    <TableCell className="font-medium flex items-center gap-2">
+                        {log.event.includes('Suspicious') && <ShieldAlert className="w-4 h-4"/>}
+                        {log.event}
+                    </TableCell>
+                    <TableCell>{log.user}</TableCell>
+                    <TableCell>{log.ip}</TableCell>
+                    <TableCell>{log.timestamp}</TableCell>
+                    </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>

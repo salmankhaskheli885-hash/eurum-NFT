@@ -43,6 +43,7 @@ export default function AdminWithdrawalsPage() {
     const filteredData = withdrawals.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
+        item.userName.toLowerCase().includes(lowercasedFilter) ||
         item.status.toLowerCase().includes(lowercasedFilter)
       );
     });
@@ -50,13 +51,14 @@ export default function AdminWithdrawalsPage() {
   }, [searchTerm, withdrawals]);
 
   const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
-    updateTransactionStatus(transactionId, status);
-    const action = status === 'Completed' ? 'approved' : 'rejected';
-    toast({
-      title: `Withdrawal ${action}`,
-      description: `Transaction ${transactionId} has been ${action}.`,
-    })
-    setKey(Date.now());
+    if (updateTransactionStatus(transactionId, status)) {
+        const action = status === 'Completed' ? 'approved' : 'rejected';
+        toast({
+          title: `Withdrawal ${action}`,
+          description: `Transaction ${transactionId} has been ${action}.`,
+        })
+        setKey(Date.now());
+    }
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -82,7 +84,7 @@ export default function AdminWithdrawalsPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by transaction ID..."
+              placeholder="Search by transaction ID or user..."
               className="w-full pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -105,7 +107,7 @@ export default function AdminWithdrawalsPage() {
               {filteredWithdrawals.map((withdrawal) => (
                 <TableRow key={withdrawal.id}>
                   <TableCell className="font-medium">{withdrawal.id}</TableCell>
-                  <TableCell>Satoshi N.</TableCell> {/* Placeholder */}
+                  <TableCell>{withdrawal.userName}</TableCell>
                   <TableCell>{withdrawal.date}</TableCell>
                   <TableCell className="text-right text-destructive">
                     {Math.abs(withdrawal.amount).toLocaleString()}
@@ -133,6 +135,11 @@ export default function AdminWithdrawalsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+               {filteredWithdrawals.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">No withdrawal requests found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

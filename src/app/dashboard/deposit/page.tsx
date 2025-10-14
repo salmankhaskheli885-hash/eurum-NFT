@@ -11,9 +11,11 @@ import { useTranslation } from "@/hooks/use-translation"
 import { Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { addTransaction, appSettings } from "@/lib/data"
+import { useUser } from "@/hooks/use-user"
 
 export default function DepositPage() {
     const { t } = useTranslation()
+    const { user, loading } = useUser()
     const { toast } = useToast()
     const router = useRouter()
     const [copied, setCopied] = useState(false)
@@ -39,16 +41,22 @@ export default function DepositPage() {
     
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+        if (!user) {
+            toast({
+                variant: "destructive",
+                title: "Not Logged In",
+                description: "You must be logged in to make a deposit.",
+            })
+            return
+        }
         
-        const newDeposit = {
-            id: `TXN${Math.floor(Math.random() * 1000000)}`,
-            type: 'Deposit' as const,
-            date: new Date().toISOString().split('T')[0],
+        addTransaction({
+            userId: user.uid,
+            userName: user.displayName || 'Unknown User',
+            type: 'Deposit',
             amount: parseFloat(amount),
-            status: 'Pending' as const,
-        };
-
-        addTransaction(newDeposit);
+            status: 'Pending',
+        });
 
         toast({
             title: "Deposit Request Submitted",
@@ -57,6 +65,8 @@ export default function DepositPage() {
 
         router.push('/dashboard/transactions')
     }
+
+  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto">

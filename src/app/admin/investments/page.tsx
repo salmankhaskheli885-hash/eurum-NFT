@@ -80,6 +80,15 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     };
 
     const handleSubmit = () => {
+        if (!formData.name || formData.dailyReturn <= 0 || formData.durationDays <= 0 || formData.minInvestment <= 0) {
+            toast({
+                variant: "destructive",
+                title: "Invalid Input",
+                description: "Please fill all fields with valid values.",
+            });
+            return;
+        }
+
         if (plan) {
             updateInvestmentPlan({ ...formData, id: plan.id });
             toast({
@@ -266,6 +275,11 @@ export default function AdminInvestmentsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+               {filteredPlans.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

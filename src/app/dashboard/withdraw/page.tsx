@@ -12,9 +12,11 @@ import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { addTransaction } from "@/lib/data"
+import { useUser } from "@/hooks/use-user"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
+    const { user, loading } = useUser()
     const router = useRouter()
     const { toast } = useToast()
     const [method, setMethod] = useState("jazzcash")
@@ -24,16 +26,22 @@ export default function WithdrawPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
+         if (!user) {
+            toast({
+                variant: "destructive",
+                title: "Not Logged In",
+                description: "You must be logged in to make a withdrawal.",
+            })
+            return
+        }
         
-        const newWithdrawal = {
-            id: `TXN${Math.floor(Math.random() * 1000000)}`,
-            type: 'Withdrawal' as const,
-            date: new Date().toISOString().split('T')[0],
+        addTransaction({
+            userId: user.uid,
+            userName: user.displayName || 'Unknown User',
+            type: 'Withdrawal',
             amount: -parseFloat(amount), // Withdrawals are negative amounts
-            status: 'Pending' as const,
-        };
-
-        addTransaction(newWithdrawal);
+            status: 'Pending',
+        });
 
         toast({
             title: t('withdraw.successTitle'),
@@ -43,6 +51,8 @@ export default function WithdrawPage() {
         // Redirect to transaction history page
         router.push('/dashboard/transactions')
     }
+
+  if (loading) return <div>Loading...</div>
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto">

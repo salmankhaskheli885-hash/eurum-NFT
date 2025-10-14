@@ -1,18 +1,51 @@
-"use client"
 
+"use client"
+import React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
 import { DollarSign, Users, TrendingUp, ShieldCheck, Landmark, Hourglass } from "lucide-react"
+import { mockUsers, mockTransactions } from "@/lib/data"
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation()
 
+  // Make stats dynamic
+  const totalUsers = React.useMemo(() => mockUsers.length, [mockUsers]);
+  const totalDeposits = React.useMemo(() => 
+    mockTransactions
+      .filter(tx => tx.type === 'Deposit' && tx.status === 'Completed')
+      .reduce((sum, tx) => sum + tx.amount, 0), 
+    [mockTransactions]
+  );
+  const pendingWithdrawals = React.useMemo(() => 
+    mockTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length,
+    [mockTransactions]
+  );
+  const totalInvested = React.useMemo(() => 
+    mockTransactions
+      .filter(tx => tx.type === 'Investment')
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0),
+    [mockTransactions]
+  );
+   const pendingKyc = React.useMemo(() => 
+    mockUsers.filter(user => user.kycStatus === 'pending').length,
+    [mockUsers]
+  );
+  
+   const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-PK", {
+      style: "currency",
+      currency: "PKR",
+      notation: "compact"
+    }).format(amount)
+  }
+
   const stats = [
-    { title: t('admin.stats.totalUsers'), value: '1,250', icon: Users },
-    { title: t('admin.stats.totalDeposits'), value: 'PKR 2.5M', icon: DollarSign },
-    { title: t('admin.stats.pendingWithdrawals'), value: '25', icon: Hourglass },
-    { title: t('admin.stats.totalInvested'), value: 'PKR 1.5M', icon: TrendingUp },
-    { title: t('admin.stats.pendingKyc'), value: '15', icon: ShieldCheck },
+    { title: t('admin.stats.totalUsers'), value: totalUsers.toString(), icon: Users },
+    { title: t('admin.stats.totalDeposits'), value: formatCurrency(totalDeposits), icon: DollarSign },
+    { title: t('admin.stats.pendingWithdrawals'), value: pendingWithdrawals.toString(), icon: Hourglass },
+    { title: t('admin.stats.totalInvested'), value: formatCurrency(totalInvested), icon: TrendingUp },
+    { title: t('admin.stats.pendingKyc'), value: pendingKyc.toString(), icon: ShieldCheck },
   ]
 
   return (

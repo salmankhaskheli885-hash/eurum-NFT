@@ -1,21 +1,14 @@
 import { UserProfile } from "./schema";
 
 
-export type User = {
-  name: string;
-  email: string;
-  uid: string;
-  shortUid: string;
-  balance: number;
-  currency: string;
-  vipLevel: number;
-  vipProgress: number; // Percentage
-  kycStatus: 'approved' | 'pending' | 'rejected' | 'unsubmitted';
-  referralLink: string;
+export type User = UserProfile & {
+  status: 'Active' | 'Suspended';
 };
 
 export type Transaction = {
   id: string;
+  userId: string;
+  userName: string;
   type: 'Deposit' | 'Withdrawal' | 'Investment';
   date: string;
   amount: number;
@@ -54,38 +47,15 @@ export let appSettings: AppSettings = {
 
 export let mockAnnouncements: Announcement[] = [];
 
-export const mockUser: UserProfile = {
-  displayName: 'Satoshi Nakamoto',
-  email: 'satoshi@fynix.pro',
-  uid: 'abc-123-def-456-ghi-789',
-  shortUid: 'a1b2c3d4',
-  balance: 133742.00,
-  currency: 'PKR',
-  vipLevel: 2,
-  vipProgress: 65, // Percentage
-  kycStatus: 'approved',
-  referralLink: 'https://fynix.pro/ref/a1b2c3d4',
-  role: 'user',
-};
+// Starting all data from zero as requested
+export let mockUsers: User[] = [];
 
-export let mockTransactions: Transaction[] = [
-  { id: 'TXN789012', type: 'Deposit', date: '2023-10-26', amount: 50000, status: 'Completed' },
-  { id: 'TXN456789', type: 'Investment', date: '2023-10-25', amount: -25000, status: 'Completed' },
-  { id: 'TXN123456', type: 'Withdrawal', date: '2023-10-24', amount: -10000, status: 'Pending' },
-  { id: 'TXN987654', type: 'Deposit', date: '2023-10-23', amount: 100000, status: 'Pending' },
-  { id: 'TXN654321', type: 'Investment', date: '2023-10-22', amount: -50000, status: 'Failed' },
-];
+export let mockTransactions: Transaction[] = [];
 
-export let mockInvestmentPlans: InvestmentPlan[] = [
-  { id: 1, name: 'Starter Pack', dailyReturn: 0.5, durationDays: 30, minInvestment: 5000, maxInvestment: 50000, requiredVipLevel: 1 },
-  { id: 2, name: 'Growth Engine', dailyReturn: 0.75, durationDays: 45, minInvestment: 50001, maxInvestment: 250000, requiredVipLevel: 1 },
-  { id: 3, name: 'Momentum Builder', dailyReturn: 1.0, durationDays: 60, minInvestment: 250001, maxInvestment: 1000000, requiredVipLevel: 2 },
-  { id: 4, name: 'Wealth Accelerator', dailyReturn: 1.25, durationDays: 75, minInvestment: 1000001, maxInvestment: 5000000, requiredVipLevel: 3 },
-  { id: 5, name: 'Pro Trader', dailyReturn: 1.5, durationDays: 90, minInvestment: 5000001, maxInvestment: 10000000, requiredVipLevel: 4 },
-  { id: 6, name: 'Whale Fund', dailyReturn: 2.0, durationDays: 120, minInvestment: 10000001, maxInvestment: 50000000, requiredVipLevel: 5 },
-];
+export let mockInvestmentPlans: InvestmentPlan[] = [];
 
 export const mockReferredUsers = [
+  // This can remain as is, as it's not managed by the admin panel directly.
   { id: "user-1", name: "Alice", totalDeposit: 15000, status: "Active" },
   { id: "user-2", name: "Bob", totalDeposit: 30550, status: "Active" },
   { id: "user-3", name: "Charlie", totalDeposit: 9520, status: "Inactive" },
@@ -95,8 +65,13 @@ export const mockReferredUsers = [
 
 
 // Function to add a new transaction to the mock data
-export const addTransaction = (transaction: Transaction) => {
-  mockTransactions.unshift(transaction);
+export const addTransaction = (transaction: Omit<Transaction, 'id' | 'date'>) => {
+    const newTransaction: Transaction = {
+        ...transaction,
+        id: `TXN${Math.random().toString(36).substr(2, 6).toUpperCase()}`,
+        date: new Date().toISOString().split('T')[0]
+    };
+  mockTransactions.unshift(newTransaction);
 };
 
 export const updateTransactionStatus = (transactionId: string, newStatus: 'Completed' | 'Pending' | 'Failed') => {
@@ -146,3 +121,56 @@ export const addAnnouncement = (message: string) => {
     mockAnnouncements.unshift(newAnnouncement); // Add to the beginning of the array
     return newAnnouncement;
 };
+
+// --- New User Management Functions for Admin ---
+
+export const addUser = (user: User) => {
+    mockUsers.push(user);
+};
+
+export const updateUser = (userId: string, updates: Partial<User>) => {
+    const userIndex = mockUsers.findIndex(u => u.uid === userId);
+    if (userIndex !== -1) {
+        mockUsers[userIndex] = { ...mockUsers[userIndex], ...updates };
+        return true;
+    }
+    return false;
+}
+
+export const deleteUser = (userId: string) => {
+    const initialLength = mockUsers.length;
+    mockUsers = mockUsers.filter(u => u.uid !== userId);
+    return mockUsers.length < initialLength;
+}
+
+// Helper to get a user, creating them if they don't exist
+export function getOrCreateUser(firebaseUser: { uid: string, email: string | null, displayName: string | null }): User {
+    let user = mockUsers.find(u => u.uid === firebaseUser.uid);
+    if (user) {
+        return user;
+    }
+
+    const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
+    const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
+    let role: UserProfile['role'] = 'user';
+    if (isAdmin) role = 'admin';
+    else if (isPartner) role = 'partner';
+
+    const newUser: User = {
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        role: role,
+        shortUid: firebaseUser.uid.substring(0, 8),
+        balance: 133742.00, // Default starting values
+        currency: 'PKR',
+        vipLevel: 1,
+        vipProgress: 0,
+        kycStatus: 'unsubmitted',
+        referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
+        status: 'Active',
+    };
+
+    addUser(newUser);
+    return newUser;
+}

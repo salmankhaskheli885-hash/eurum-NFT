@@ -22,74 +22,79 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { MoreHorizontal, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { Input } from "@/components/ui/input"
-
-// Sample data - this will be replaced with live Firebase data
-const users = [
-  {
-    id: "usr_1",
-    name: "Satoshi Nakamoto",
-    email: "satoshi@fynix.pro",
-    status: "Active",
-    registered: "2023-10-01",
-    role: "User",
-  },
-  {
-    id: "usr_2",
-    name: "Alice",
-    email: "alice@example.com",
-    status: "Active",
-    registered: "2023-10-05",
-    role: "User",
-  },
-  {
-    id: "usr_3",
-    name: "Bob",
-    email: "bob@example.com",
-    status: "Suspended",
-    registered: "2023-10-12",
-    role: "User",
-  },
-    {
-    id: "usr_4",
-    name: "Vitalik Buterin",
-    email: "vitalik@fynix.pro",
-    status: "Active",
-    registered: "2023-09-20",
-    role: "Partner",
-  },
-  {
-    id: "usr_5",
-    name: "Charlie",
-    email: "charlie@example.com",
-    status: "Active",
-    registered: "2023-11-01",
-    role: "User",
-  },
-]
+import { mockUsers, updateUser, deleteUser, type User } from "@/lib/data"
+import { useToast } from "@/hooks/use-toast"
 
 export default function AdminUsersPage() {
   const { t } = useTranslation()
+  const { toast } = useToast()
+  const [key, setKey] = React.useState(Date.now())
   const [searchTerm, setSearchTerm] = React.useState("")
+  
+  const users = React.useMemo(() => mockUsers, [key]);
   const [filteredUsers, setFilteredUsers] = React.useState(users)
+
+  React.useEffect(() => {
+    setFilteredUsers(users);
+  }, [users]);
+  
+  const forceUpdate = () => setKey(Date.now())
 
   React.useEffect(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
     const filteredData = users.filter(item => {
       return (
-        item.name.toLowerCase().includes(lowercasedFilter) ||
-        item.email.toLowerCase().includes(lowercasedFilter) ||
-        item.id.toLowerCase().includes(lowercasedFilter)
+        item.displayName?.toLowerCase().includes(lowercasedFilter) ||
+        item.email?.toLowerCase().includes(lowercasedFilter) ||
+        item.uid.toLowerCase().includes(lowercasedFilter)
       );
     });
     setFilteredUsers(filteredData);
-  }, [searchTerm]);
+  }, [searchTerm, users]);
+
+  const handleStatusChange = (userId: string, status: User['status']) => {
+    if (updateUser(userId, { status })) {
+        toast({ title: `User ${status}`, description: `User status has been updated.` });
+        forceUpdate();
+    }
+  }
+
+  const handleRoleChange = (userId: string, role: User['role']) => {
+    if (updateUser(userId, { role })) {
+        toast({ title: `Role Updated`, description: `User role has been set to ${role}.` });
+        forceUpdate();
+    }
+  }
+
+  const handleDelete = (userId: string) => {
+    if (deleteUser(userId)) {
+        toast({ variant: "destructive", title: "User Deleted", description: "The user has been permanently removed." });
+        forceUpdate();
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -128,11 +133,11 @@ export default function AdminUsersPage() {
             </TableHeader>
             <TableBody>
               {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
+                <TableRow key={user.uid}>
+                  <TableCell className="font-medium">{user.displayName || "N/A"}</TableCell>
                   <TableCell>{user.email}</TableCell>
                    <TableCell>
-                     <Badge variant={user.role === 'Partner' ? 'secondary' : 'outline'}>
+                     <Badge variant={user.role === 'Partner' ? 'secondary' : (user.role === 'admin' ? 'outline' : 'default') }>
                         {user.role}
                      </Badge>
                    </TableCell>
@@ -141,7 +146,7 @@ export default function AdminUsersPage() {
                       {user.status}
                     </Badge>
                   </TableCell>
-                  <TableCell>{user.registered}</TableCell>
+                  <TableCell>{"-not tracked-"}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -152,14 +157,47 @@ export default function AdminUsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
-                        <DropdownMenuItem>Suspend</DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                        <DropdownMenuSub>
+                           <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
+                           <DropdownMenuSubContent>
+                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'user')}>Set as User</DropdownMenuItem>
+                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'partner')}>Set as Partner</DropdownMenuItem>
+                               <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'admin')}>Set as Admin</DropdownMenuItem>
+                           </DropdownMenuSubContent>
+                        </DropdownMenuSub>
+                         {user.status === 'Active' ? (
+                            <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Suspended')}>Suspend</DropdownMenuItem>
+                         ) : (
+                            <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Active')}>Activate</DropdownMenuItem>
+                         )}
+                        <DropdownMenuSeparator />
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                        This action cannot be undone. This will permanently delete the user account.
+                                    </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDelete(user.uid)}>Delete</AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
+              {filteredUsers.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">No users found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

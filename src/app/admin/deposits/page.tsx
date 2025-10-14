@@ -43,6 +43,7 @@ export default function AdminDepositsPage() {
     const filteredData = deposits.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
+        item.userName.toLowerCase().includes(lowercasedFilter) ||
         item.status.toLowerCase().includes(lowercasedFilter)
       );
     });
@@ -51,13 +52,14 @@ export default function AdminDepositsPage() {
 
 
   const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
-    updateTransactionStatus(transactionId, status);
-    const action = status === 'Completed' ? 'approved' : 'rejected';
-    toast({
-      title: `Deposit ${action}`,
-      description: `Transaction ${transactionId} has been ${action}.`,
-    })
-    setKey(Date.now()); // Re-render the component to reflect changes
+    if (updateTransactionStatus(transactionId, status)) {
+        const action = status === 'Completed' ? 'approved' : 'rejected';
+        toast({
+          title: `Deposit ${action}`,
+          description: `Transaction ${transactionId} has been ${action}.`,
+        })
+        setKey(Date.now()); // Re-render the component to reflect changes
+    }
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -83,7 +85,7 @@ export default function AdminDepositsPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by transaction ID..."
+              placeholder="Search by transaction ID or user..."
               className="w-full pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -106,7 +108,7 @@ export default function AdminDepositsPage() {
               {filteredDeposits.map((deposit) => (
                 <TableRow key={deposit.id}>
                   <TableCell className="font-medium">{deposit.id}</TableCell>
-                  <TableCell>Satoshi N.</TableCell> {/* Placeholder */}
+                  <TableCell>{deposit.userName}</TableCell>
                   <TableCell>{deposit.date}</TableCell>
                   <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                   <TableCell className="text-center">
@@ -132,6 +134,11 @@ export default function AdminDepositsPage() {
                   </TableCell>
                 </TableRow>
               ))}
+               {filteredDeposits.length === 0 && (
+                <TableRow>
+                    <TableCell colSpan={6} className="h-24 text-center">No deposit requests found.</TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>
