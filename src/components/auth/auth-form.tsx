@@ -40,13 +40,12 @@ export function AuthForm() {
       let userProfile: UserProfile;
 
       if (!userDocSnap.exists()) {
-        // User is signing in for the first time, create a profile
         const shortUid = authUser.uid.substring(0, 8);
         userProfile = {
           uid: authUser.uid,
           email: authUser.email,
           displayName: authUser.displayName,
-          role: 'user', // Default role for new users
+          role: 'user',
           shortUid,
           balance: 0,
           currency: 'PKR',
@@ -58,12 +57,10 @@ export function AuthForm() {
         await setDoc(userDocRef, userProfile);
         toast({ title: "Welcome!", description: "Your account has been created." });
       } else {
-        // User exists, get their profile
         userProfile = userDocSnap.data() as UserProfile;
         toast({ title: t('login.successTitle') });
       }
 
-      // Redirect based on role
       switch (userProfile.role) {
         case 'admin':
           router.push('/admin');
@@ -77,17 +74,21 @@ export function AuthForm() {
           break;
       }
     } catch (error: any) {
+      // Improved error handling
       let errorMessage = "An unexpected error occurred during sign-in.";
       if (error instanceof FirebaseError) {
           switch (error.code) {
               case 'auth/popup-closed-by-user':
-                  errorMessage = "Sign-in popup was closed. Please try again.";
+                  errorMessage = "Sign-in popup was closed by user. Please try again.";
                   break;
               case 'auth/cancelled-popup-request':
-                  errorMessage = "Multiple sign-in attempts detected. Please try again.";
+                  errorMessage = "Multiple sign-in attempts detected. Please complete one before trying another.";
                   break;
+              case 'auth/unauthorized-domain':
+                   errorMessage = `This domain is not authorized for sign-in. Please contact support. (Domain: ${window.location.hostname})`;
+                   break;
               default:
-                  errorMessage = `Firebase error: ${error.message}`;
+                  errorMessage = `An unexpected error occurred. (Code: ${error.code})`;
                   break;
           }
       }
