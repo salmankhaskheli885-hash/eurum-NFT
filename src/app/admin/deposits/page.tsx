@@ -1,0 +1,110 @@
+
+"use client"
+
+import * as React from "react"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { useTranslation } from "@/hooks/use-translation"
+import { mockTransactions, type Transaction } from "@/lib/data"
+import { useToast } from "@/hooks/use-toast"
+import { CheckCircle, XCircle } from "lucide-react"
+
+// Sample data - this will be replaced with live Firebase data
+const deposits = mockTransactions.filter(tx => tx.type === 'Deposit');
+
+export default function AdminDepositsPage() {
+  const { t } = useTranslation()
+  const { toast } = useToast()
+
+  const handleAction = (transactionId: string, action: 'approved' | 'rejected') => {
+    toast({
+      title: `Deposit ${action}`,
+      description: `Transaction ${transactionId} has been ${action}.`,
+    })
+    // In a real app, you would update the transaction status in Firebase here
+  }
+
+  const getStatusVariant = (status: Transaction['status']) => {
+    switch (status) {
+      case 'Completed': return 'default'
+      case 'Pending': return 'secondary'
+      case 'Failed': return 'destructive'
+      default: return 'outline'
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+       <div>
+        <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.deposits')}</h1>
+        <p className="text-muted-foreground">Review and manage all user deposit requests.</p>
+      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Deposit Requests</CardTitle>
+          <CardDescription>A list of all deposits made by users.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Transaction ID</TableHead>
+                <TableHead>User</TableHead>
+                <TableHead>Date</TableHead>
+                <TableHead className="text-right">Amount (PKR)</TableHead>
+                <TableHead className="text-center">Status</TableHead>
+                <TableHead className="text-center">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {deposits.map((deposit) => (
+                <TableRow key={deposit.id}>
+                  <TableCell className="font-medium">{deposit.id}</TableCell>
+                  <TableCell>Satoshi N.</TableCell> {/* Placeholder */}
+                  <TableCell>{deposit.date}</TableCell>
+                  <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={getStatusVariant(deposit.status)}>
+                      {deposit.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {deposit.status === 'Pending' ? (
+                      <div className="flex gap-2 justify-center">
+                        <Button variant="outline" size="sm" onClick={() => handleAction(deposit.id, 'approved')}>
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Approve
+                        </Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleAction(deposit.id, 'rejected')}>
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Reject
+                        </Button>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No actions</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
