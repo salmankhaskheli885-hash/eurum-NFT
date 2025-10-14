@@ -7,39 +7,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { mockUser, mockTransactions } from "@/lib/data"
+import { mockUser } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
-import { DonutChart, type ChartConfig } from "@/components/ui/chart"
 import Link from "next/link"
 import { ArrowRight, Briefcase, DollarSign, Gift, User as UserIcon } from "lucide-react"
-
-const chartConfig = {
-  value: {
-    label: "Value",
-  },
-  stocks: {
-    label: "Stocks",
-    color: "hsl(var(--chart-1))",
-  },
-  crypto: {
-    label: "Crypto",
-    color: "hsl(var(--chart-2))",
-  },
-  commodities: {
-    label: "Commodities",
-    color: "hsl(var(--chart-3))",
-  },
-} satisfies ChartConfig
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -93,52 +65,6 @@ export default function Dashboard() {
             <div className="text-xs text-muted-foreground">
               +10% from last month
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>{t('dashboard.recentTransactions')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('dashboard.transactionId')}</TableHead>
-                <TableHead>{t('dashboard.transactionType')}</TableHead>
-                <TableHead>{t('dashboard.transactionDate')}</TableHead>
-                <TableHead className="text-right">{t('dashboard.transactionAmount')}</TableHead>
-                <TableHead className="text-center">{t('dashboard.transactionStatus')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockTransactions.slice(0, 5).map((transaction) => (
-                <TableRow key={transaction.id}>
-                  <TableCell className="font-medium">{transaction.id}</TableCell>
-                  <TableCell>{transaction.type}</TableCell>
-                  <TableCell>{transaction.date}</TableCell>
-                  <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={transaction.status === 'Completed' ? 'default' : transaction.status === 'Pending' ? 'secondary' : 'destructive'}>
-                        {transaction.status}
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-          </CardContent>
-        </Card>
-
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>{t('dashboard.portfolioOverview')}</CardTitle>
-            <CardDescription>{t('dashboard.portfolioSubtitle')}</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <DonutChart data={mockUser.portfolio} config={chartConfig} />
           </CardContent>
         </Card>
       </div>
