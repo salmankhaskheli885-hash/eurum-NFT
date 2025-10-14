@@ -17,7 +17,7 @@ import { useTranslation } from "@/hooks/use-translation"
 import { Textarea } from "@/components/ui/textarea"
 import type { AppSettings } from "@/lib/data"
 import { useFirestore } from "@/firebase/provider"
-import { getAppSettings, updateAppSettings, addAnnouncement } from "@/lib/firestore"
+import { listenToAppSettings, updateAppSettings, addAnnouncement } from "@/lib/firestore"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
@@ -31,9 +31,11 @@ export default function AdminSettingsPage() {
   useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    getAppSettings(firestore)
-        .then(setSettings)
-        .finally(() => setLoading(false));
+    const unsubscribe = listenToAppSettings(firestore, (newSettings) => {
+        setSettings(newSettings);
+        setLoading(false);
+    });
+    return () => unsubscribe();
   }, [firestore]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

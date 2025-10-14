@@ -42,7 +42,7 @@ import { useUser } from "@/hooks/use-user"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useFirestore } from "@/firebase/provider"
-import { getAllInvestmentPlans, addTransaction } from "@/lib/firestore"
+import { listenToAllInvestmentPlans, addTransaction } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 
@@ -139,7 +139,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const { user, loading: userLoading, refetchUser } = useUser();
+  const { user, loading: userLoading } = useUser();
   const firestore = useFirestore();
   const [plans, setPlans] = React.useState<InvestmentPlan[]>([]);
   const [plansLoading, setPlansLoading] = React.useState(true);
@@ -148,14 +148,12 @@ export default function InvestmentsPage() {
   React.useEffect(() => {
     if (!firestore) return;
     setPlansLoading(true);
-    getAllInvestmentPlans(firestore)
-        .then(setPlans)
-        .catch(err => {
-            console.error("Failed to fetch investment plans", err);
-            toast({ variant: "destructive", title: "Could not load plans" });
-        })
-        .finally(() => setPlansLoading(false));
-  }, [firestore, toast]);
+    const unsubscribe = listenToAllInvestmentPlans(firestore, (fetchedPlans) => {
+        setPlans(fetchedPlans);
+        setPlansLoading(false);
+    });
+    return () => unsubscribe();
+  }, [firestore]);
 
 
   const handleInvest = async (plan: InvestmentPlan, amount: number) => {
@@ -187,7 +185,6 @@ export default function InvestmentsPage() {
         description: t('investments.successDescription', { planName: plan.name }),
         });
 
-        refetchUser();
     } catch (error: any) {
         toast({
             variant: "destructive",

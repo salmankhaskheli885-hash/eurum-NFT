@@ -54,7 +54,7 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import Image from "next/image"
 import { useFirestore } from "@/firebase/provider"
-import { getAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
+import { listenToAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 // Component for Add/Edit Plan Dialog
@@ -180,28 +180,15 @@ export default function AdminInvestmentsPage() {
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   
-  const fetchPlans = React.useCallback(async () => {
+  React.useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    try {
-        const fetchedPlans = await getAllInvestmentPlans(firestore);
+    const unsubscribe = listenToAllInvestmentPlans(firestore, (fetchedPlans) => {
         setPlans(fetchedPlans);
-    } catch (error) {
-        console.error("Error fetching plans:", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to load plans",
-            description: "There was an error fetching investment plans from the database.",
-        });
-    } finally {
         setLoading(false);
-    }
-  }, [firestore, toast]);
-
-  React.useEffect(() => {
-    fetchPlans();
-  }, [fetchPlans]);
-
+    });
+    return () => unsubscribe();
+  }, [firestore]);
   
   const filteredPlans = React.useMemo(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -222,7 +209,6 @@ export default function AdminInvestmentsPage() {
             title: `Plan Deleted`,
             description: `The plan "${planName}" has been removed.`,
         });
-        fetchPlans();
     } catch (error) {
         toast({
             variant: "destructive",
@@ -240,7 +226,7 @@ export default function AdminInvestmentsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.investments')}</h1>
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
-            <PlanForm onSave={fetchPlans}>
+            <PlanForm onSave={() => { /* No-op as listener will update UI */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New Plan
@@ -322,7 +308,7 @@ export default function AdminInvestmentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <PlanForm plan={plan} onSave={fetchPlans}>
+                        <PlanForm plan={plan} onSave={() => {}}>
                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left">Edit</button>
                         </PlanForm>
                         <AlertDialog>

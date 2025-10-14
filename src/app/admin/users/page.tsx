@@ -49,7 +49,7 @@ import { Input } from "@/components/ui/input"
 import type { User } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore } from "@/firebase/provider"
-import { getAllUsers, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/firestore"
+import { listenToAllUsers, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminUsersPage() {
@@ -61,27 +61,15 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
 
-  const fetchUsers = React.useCallback(async () => {
+  React.useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    try {
-        const fetchedUsers = await getAllUsers(firestore);
+    const unsubscribe = listenToAllUsers(firestore, (fetchedUsers) => {
         setUsers(fetchedUsers);
-    } catch (error) {
-        console.error("Error fetching users:", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to load users",
-            description: "There was an error fetching the user list from the database.",
-        });
-    } finally {
         setLoading(false);
-    }
-  }, [firestore, toast]);
-  
-  React.useEffect(() => {
-    fetchUsers();
-  }, [fetchUsers]);
+    });
+    return () => unsubscribe();
+  }, [firestore]);
   
   const filteredUsers = React.useMemo(() => {
     if (!searchTerm) return users;
@@ -101,7 +89,6 @@ export default function AdminUsersPage() {
     try {
         await updateUserInDb(firestore, userId, { status });
         toast({ title: `User ${status}`, description: `User status has been updated.` });
-        fetchUsers();
     } catch (error) {
         toast({ variant: "destructive", title: "Update Failed", description: "Could not update user status."})
     }
@@ -112,7 +99,6 @@ export default function AdminUsersPage() {
     try {
         await updateUserInDb(firestore, userId, { role });
         toast({ title: `Role Updated`, description: `User role has been set to ${role}.` });
-        fetchUsers();
     } catch (error) {
         toast({ variant: "destructive", title: "Update Failed", description: "Could not update user role."})
     }
@@ -123,7 +109,6 @@ export default function AdminUsersPage() {
     try {
         await deleteUserInDb(firestore, userId);
         toast({ variant: "destructive", title: "User Deleted", description: "The user has been permanently removed." });
-        fetchUsers();
     } catch (error) {
         toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the user."})
     }

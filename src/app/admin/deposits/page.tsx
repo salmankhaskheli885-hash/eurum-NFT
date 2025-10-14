@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
-import { getAllTransactions, updateTransactionStatus } from "@/lib/firestore"
+import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminDepositsPage() {
@@ -35,28 +35,16 @@ export default function AdminDepositsPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
-
-  const fetchTransactions = React.useCallback(async () => {
-    if (!firestore) return;
-    setLoading(true);
-    try {
-        const allTransactions = await getAllTransactions(firestore);
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
-    } catch (error) {
-        console.error("Error fetching transactions:", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to load deposits",
-            description: "There was an error fetching deposit requests.",
-        });
-    } finally {
-        setLoading(false);
-    }
-  }, [firestore, toast]);
   
   React.useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    if (!firestore) return;
+    setLoading(true);
+    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [firestore]);
 
   const filteredDeposits = React.useMemo(() => {
     if (!searchTerm) return transactions;
@@ -80,7 +68,6 @@ export default function AdminDepositsPage() {
         title: `Deposit ${action}`,
         description: `Transaction ${transactionId} has been ${action}.`,
       })
-      fetchTransactions(); // Re-fetch transactions to update UI
     } catch (error: any) {
       toast({
         variant: "destructive",

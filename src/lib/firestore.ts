@@ -15,20 +15,13 @@ import {
   where,
   addDoc,
   updateDoc,
+  onSnapshot, // Import onSnapshot
+  type Unsubscribe,
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement } from './data';
 import { useFirestore } from '@/firebase/provider';
 
-
-// Helper function to get the firestore instance
-const db = () => {
-    const firestore = useFirestore();
-    if (!firestore) {
-        throw new Error("Firestore not initialized. Make sure you are using the FirebaseProvider.");
-    }
-    return firestore;
-}
 
 // USER FUNCTIONS
 export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser): Promise<User> {
@@ -61,16 +54,19 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
     }
 }
 
-export async function getUserById(firestore: ReturnType<typeof getFirestore>, userId: string): Promise<User | null> {
+export function listenToUser(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (user: User | null) => void): Unsubscribe {
     const userRef = doc(firestore, 'users', userId);
-    const userSnap = await getDoc(userRef);
-    return userSnap.exists() ? userSnap.data() as User : null;
+    return onSnapshot(userRef, (doc) => {
+        callback(doc.exists() ? doc.data() as User : null);
+    });
 }
 
-export async function getAllUsers(firestore: ReturnType<typeof getFirestore>): Promise<User[]> {
+export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, callback: (users: User[]) => void): Unsubscribe {
     const usersCollection = collection(firestore, 'users');
-    const usersSnapshot = await getDocs(usersCollection);
-    return usersSnapshot.docs.map(doc => doc.data() as User);
+    return onSnapshot(usersCollection, (snapshot) => {
+        const users = snapshot.docs.map(doc => doc.data() as User);
+        callback(users);
+    });
 }
 
 export async function updateUser(firestore: ReturnType<typeof getFirestore>, userId: string, updates: Partial<User>) {
@@ -96,14 +92,15 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
     
     const user = userSnap.data() as User;
     const batch = writeBatch(firestore);
+    
+    const newBalance = user.balance + transactionData.amount;
 
-    // Deduct balance for withdrawals or investments
+    // Check for sufficient balance for withdrawals or investments
     if (transactionData.amount < 0) {
         if (user.balance < Math.abs(transactionData.amount)) {
-            console.error("Transaction failed: Insufficient balance.");
             throw new Error("Insufficient Balance");
         }
-        batch.update(userRef, { balance: user.balance + transactionData.amount });
+        batch.update(userRef, { balance: newBalance });
     }
 
     const newTransaction: Omit<Transaction, 'id'> = {
@@ -112,7 +109,7 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
     };
     
     const transactionsCollection = collection(firestore, 'transactions');
-    const newDocRef = doc(transactionsCollection); // Creates a new doc with a random ID
+    const newDocRef = doc(transactionsCollection);
     batch.set(newDocRef, newTransaction);
     
     await batch.commit();
@@ -130,7 +127,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
     const transaction = transactionSnap.data() as Transaction;
     const oldStatus = transaction.status;
 
-    if (oldStatus !== 'Pending') return false; // Can only change status of pending transactions
+    if (oldStatus !== 'Pending') return false; 
 
     const batch = writeBatch(firestore);
     batch.update(transactionRef, { status: newStatus });
@@ -144,7 +141,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             batch.update(userRef, { balance: user.balance + transaction.amount });
         } else if (newStatus === 'Failed' && (transaction.type === 'Withdrawal' || transaction.type === 'Investment')) {
             // Refund the user if a withdrawal or investment fails
-            batch.update(userRef, { balance: user.balance - transaction.amount }); // amount is negative, so this adds it back
+            batch.update(userRef, { balance: user.balance - transaction.amount });
         }
     }
 
@@ -153,14 +150,28 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 }
 
 
-export async function getAllTransactions(firestore: ReturnType<typeof getFirestore>): Promise<Transaction[]> {
+export function listenToAllTransactions(firestore: ReturnType<typeof getFirestore>, callback: (transactions: Transaction[]) => void): Unsubscribe {
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection, orderBy("date", "desc"));
-    const transactionsSnapshot = await getDocs(q);
-    return transactionsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+    return onSnapshot(q, (snapshot) => {
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        callback(transactions);
+    });
 }
 
-// INVESTMENT PLAN FUNCTIONS (CRUD)
+export function listenToUserTransactions(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (transactions: Transaction[]) => void, count?: number): Unsubscribe {
+    const transactionsCollection = collection(firestore, 'transactions');
+    let q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"));
+    if (count) {
+        q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"), limit(count));
+    }
+    return onSnapshot(q, (snapshot) => {
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        callback(transactions);
+    });
+}
+
+// INVESTMENT PLAN FUNCTIONS
 export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, plan: Omit<InvestmentPlan, 'id'>): Promise<InvestmentPlan> {
     const plansCollection = collection(firestore, 'investment_plans');
     const newDocRef = await addDoc(plansCollection, plan);
@@ -169,7 +180,6 @@ export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestor
 
 export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planToUpdate: InvestmentPlan) {
     const planRef = doc(firestore, 'investment_plans', planToUpdate.id);
-    // Don't pass the ID into the document data
     const { id, ...planData } = planToUpdate;
     await setDoc(planRef, planData, { merge: true });
 }
@@ -179,26 +189,29 @@ export async function deleteInvestmentPlan(firestore: ReturnType<typeof getFires
     await deleteDoc(planRef);
 }
 
-export async function getAllInvestmentPlans(firestore: ReturnType<typeof getFirestore>): Promise<InvestmentPlan[]> {
+export function listenToAllInvestmentPlans(firestore: ReturnType<typeof getFirestore>, callback: (plans: InvestmentPlan[]) => void): Unsubscribe {
     const plansCollection = collection(firestore, 'investment_plans');
-    const plansSnapshot = await getDocs(plansCollection);
-    return plansSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InvestmentPlan));
+    return onSnapshot(plansCollection, (snapshot) => {
+        const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InvestmentPlan));
+        callback(plans);
+    });
 }
 
 // APP SETTINGS FUNCTIONS
-export async function getAppSettings(firestore: ReturnType<typeof getFirestore>): Promise<AppSettings> {
+export function listenToAppSettings(firestore: ReturnType<typeof getFirestore>, callback: (settings: AppSettings) => void): Unsubscribe {
     const settingsRef = doc(firestore, 'app', 'settings');
-    const settingsSnap = await getDoc(settingsRef);
-    if (settingsSnap.exists()) {
-        return settingsSnap.data() as AppSettings;
-    }
-    // Return default settings if not found in DB
-    return {
-        adminWalletNumber: "0300-1234567",
-        adminWalletName: "JazzCash",
-        adminAccountHolderName: "Fynix Pro Admin",
-        withdrawalFee: "2"
-    };
+    return onSnapshot(settingsRef, (doc) => {
+        if (doc.exists()) {
+            callback(doc.data() as AppSettings);
+        } else {
+            callback({
+                adminWalletNumber: "0300-1234567",
+                adminWalletName: "JazzCash",
+                adminAccountHolderName: "Fynix Pro Admin",
+                withdrawalFee: "2"
+            });
+        }
+    });
 }
 
 export async function updateAppSettings(firestore: ReturnType<typeof getFirestore>, newSettings: Partial<AppSettings>) {
@@ -217,13 +230,15 @@ export async function addAnnouncement(firestore: ReturnType<typeof getFirestore>
     return { ...newAnnouncement, id: newDocRef.id };
 }
 
-export async function getLatestAnnouncement(firestore: ReturnType<typeof getFirestore>): Promise<Announcement | null> {
+export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFirestore>, callback: (announcement: Announcement | null) => void): Unsubscribe {
     const announcementsCollection = collection(firestore, 'announcements');
     const q = query(announcementsCollection, orderBy("date", "desc"), limit(1));
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
-        return null;
-    }
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as Announcement;
+    return onSnapshot(q, (snapshot) => {
+        if (snapshot.empty) {
+            callback(null);
+        } else {
+            const doc = snapshot.docs[0];
+            callback({ id: doc.id, ...doc.data() } as Announcement);
+        }
+    });
 }

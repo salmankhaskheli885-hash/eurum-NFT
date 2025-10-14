@@ -22,7 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Megaphone } from "lucide-react"
 import { useFirestore } from "@/firebase/provider"
-import { getLatestAnnouncement, getUserTransactions } from "@/lib/firestore"
+import { listenToLatestAnnouncement, listenToUserTransactions } from "@/lib/firestore"
 
 function Announcement() {
     const firestore = useFirestore();
@@ -31,9 +31,12 @@ function Announcement() {
     
     useEffect(() => {
         if (!firestore) return;
-        getLatestAnnouncement(firestore)
-            .then(setAnnouncement)
-            .finally(() => setLoading(false));
+        setLoading(true);
+        const unsubscribe = listenToLatestAnnouncement(firestore, (newAnnouncement) => {
+            setAnnouncement(newAnnouncement);
+            setLoading(false);
+        });
+        return () => unsubscribe();
     }, [firestore]);
 
     if (loading || !announcement) {
@@ -64,10 +67,11 @@ function DashboardContent() {
   useEffect(() => {
     if (!firestore || !user?.uid) return;
     setTransactionsLoading(true);
-    getUserTransactions(firestore, user.uid, 5)
-        .then(setTransactions)
-        .catch(err => console.error("Failed to fetch transactions", err))
-        .finally(() => setTransactionsLoading(false));
+    const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
+        setTransactions(newTransactions);
+        setTransactionsLoading(false);
+    }, 5);
+    return () => unsubscribe();
   }, [firestore, user?.uid]);
 
 
@@ -83,7 +87,7 @@ function DashboardContent() {
       case 'Completed': return 'default'
       case 'Pending': return 'secondary'
       case 'Failed': return 'destructive'
-      default: 'outline'
+      default: return 'outline'
     }
   }
 

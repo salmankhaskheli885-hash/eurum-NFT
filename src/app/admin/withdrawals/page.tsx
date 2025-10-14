@@ -25,7 +25,7 @@ import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
-import { getAllTransactions, updateTransactionStatus } from "@/lib/firestore"
+import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminWithdrawalsPage() {
@@ -36,27 +36,15 @@ export default function AdminWithdrawalsPage() {
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   
-  const fetchTransactions = React.useCallback(async () => {
+  React.useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    try {
-        const allTransactions = await getAllTransactions(firestore);
+    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
         setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal'));
-    } catch (error) {
-        console.error("Error fetching transactions:", error);
-        toast({
-            variant: "destructive",
-            title: "Failed to load withdrawals",
-            description: "There was an error fetching withdrawal requests.",
-        });
-    } finally {
         setLoading(false);
-    }
-  }, [firestore, toast]);
-  
-  React.useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    });
+    return () => unsubscribe();
+  }, [firestore]);
 
   const filteredWithdrawals = React.useMemo(() => {
     if (!searchTerm) return transactions;
@@ -80,7 +68,6 @@ export default function AdminWithdrawalsPage() {
           title: `Withdrawal ${action}`,
           description: `Transaction ${transactionId} has been ${action}.`,
         })
-        fetchTransactions();
     } catch (error: any) {
         toast({
             variant: "destructive",

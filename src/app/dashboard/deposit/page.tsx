@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast"
 import { type AppSettings } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
-import { addTransaction, getAppSettings } from "@/lib/firestore"
+import { addTransaction, listenToAppSettings } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DepositPage() {
@@ -34,14 +34,13 @@ export default function DepositPage() {
 
     useEffect(() => {
         if (!firestore) return;
-        getAppSettings(firestore)
-            .then(setSettings)
-            .catch(err => {
-                console.error("Failed to fetch app settings", err);
-                toast({ variant: "destructive", title: "Could not load deposit info"});
-            })
-            .finally(() => setSettingsLoading(false));
-    }, [firestore, toast]);
+        setSettingsLoading(true);
+        const unsubscribe = listenToAppSettings(firestore, (newSettings) => {
+            setSettings(newSettings);
+            setSettingsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [firestore]);
 
 
     const handleCopy = () => {

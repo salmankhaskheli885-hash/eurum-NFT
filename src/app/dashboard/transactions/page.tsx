@@ -17,7 +17,7 @@ import { type Transaction } from "@/lib/data"
 import { Card, CardContent } from "@/components/ui/card"
 import { useFirestore } from "@/firebase/provider"
 import { useUser } from "@/hooks/use-user"
-import { getUserTransactions } from "@/lib/firestore"
+import { listenToUserTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TransactionsPage() {
@@ -31,10 +31,11 @@ export default function TransactionsPage() {
   React.useEffect(() => {
     if (!firestore || !user?.uid) return;
     setLoading(true);
-    getUserTransactions(firestore, user.uid)
-        .then(setTransactions)
-        .catch(err => console.error("Failed to fetch transactions", err))
-        .finally(() => setLoading(false));
+    const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
+        setTransactions(newTransactions);
+        setLoading(false);
+    });
+    return () => unsubscribe();
   }, [firestore, user?.uid]);
 
 
