@@ -6,6 +6,10 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth } from '@/firebase/provider';
+import { AuthError } from 'firebase/auth';
+
 
 function GoogleIcon(props: any) {
     return (
@@ -41,23 +45,47 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const { toast } = useToast();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-
-  // This is a simulated login to bypass Firebase domain authorization issues.
-  const handleSimulatedSignIn = async () => {
+  const auth = useAuth();
+  
+  const handleGoogleSignIn = async () => {
+    if (!auth) return;
     setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
 
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+        toast({
+            title: t('login.successTitle'),
+            description: `Welcome, ${user.displayName}! Redirecting...`,
+        });
 
-    setLoading(false);
-    
-    toast({
-      title: t('login.successTitle'),
-      description: 'Redirecting to your dashboard...',
-    });
+        // Redirect to dashboard on successful login
+        router.push('/dashboard');
+        
+    } catch (error: any) {
+        let title = 'An unknown error occurred';
+        let description = 'Please try again later.';
 
-    // Redirect to dashboard on successful "simulation"
-    router.push('/dashboard');
+        if (error instanceof AuthError) {
+            if (error.code === 'auth/unauthorized-domain') {
+                title = "Domain Not Authorized";
+                description = "This domain is not authorized for sign-in. Please add it to your Firebase project's authorized domains list.";
+            } else {
+                title = 'Authentication Error';
+                description = error.message;
+            }
+        }
+        
+        toast({
+            variant: "destructive",
+            title: title,
+            description: description,
+        });
+
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -65,7 +93,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Button 
             variant="outline" 
             className="w-full h-12 text-base"
-            onClick={handleSimulatedSignIn}
+            onClick={handleGoogleSignIn}
             disabled={loading}
         >
             <GoogleIcon className="mr-2 h-6 w-6" />

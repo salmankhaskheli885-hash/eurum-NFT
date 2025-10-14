@@ -2,35 +2,63 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { mockUser } from '@/lib/data';
 import type { UserProfile } from '@/lib/schema';
+import { useAuth } from '@/firebase/provider';
+import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 
 /**
- * This is a mock implementation of the useUser hook.
- * It bypasses Firebase Authentication and returns a static mock user
- * AFTER a simulated delay. This is to avoid Firebase domain authorization issues
- * while still providing a realistic login flow.
+ * This hook provides the currently logged-in user's profile and authentication state.
+ * It listens to Firebase's auth state changes and provides the user object.
  */
 export function useUser() {
+  const auth = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    // This simulates fetching a user. In a real scenario, this would be
-    // onAuthStateChanged which provides the user object after login.
-    // For now, we simulate that no user is logged in initially.
-    const path = window.location.pathname;
-    if (path.startsWith('/dashboard') || path.startsWith('/partner') || path.startsWith('/admin')) {
-         // If we are on a protected route, simulate fetching the user.
-        setTimeout(() => {
-            setUser(mockUser);
-            setLoading(false);
-        }, 500);
-    } else {
-        // On public routes like /login, assume no user is logged in.
+    if (!auth) {
         setLoading(false);
+        // This might happen if Firebase hasn't initialized yet.
+        // The provider should handle this, but as a safeguard:
+        console.warn("Firebase Auth is not available yet.");
+        return;
     }
-  }, []);
 
-  return { user, loading, error: null };
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        // In a real application, you would fetch the user's profile
+        // from Firestore here based on their UID.
+        // For this simulation, we'll construct a profile from the auth object
+        // and supplement with mock data.
+        const userProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          // Default values, would be fetched from Firestore
+          role: 'user', 
+          shortUid: firebaseUser.uid.substring(0, 8),
+          balance: 133742.00,
+          currency: 'PKR',
+          vipLevel: 2,
+          vipProgress: 65,
+          kycStatus: 'approved',
+          referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
+        };
+        setUser(userProfile);
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    }, (error) => {
+        console.error("Auth state change error:", error);
+        setError(error);
+        setLoading(false);
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, [auth]);
+
+  return { user, loading, error };
 }
