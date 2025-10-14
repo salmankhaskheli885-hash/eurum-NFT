@@ -5,10 +5,11 @@
 // this file in your source control. See https://firebase.google.com/docs/web/start
 // for more information.
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "API_KEY",
+  authDomain: "earnify-7f26c.firebaseapp.com",
+  projectId: "earnify-7f26c",
+  storageBucket: "earnify-7f26c.appspot.com",
+  messagingSenderId: "SENDER_ID",
+  appId: "APP_ID",
+  measurementId: "MEASUREMENT_ID"
 };
