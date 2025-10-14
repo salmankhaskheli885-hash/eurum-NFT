@@ -1,4 +1,3 @@
-
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -49,6 +48,12 @@ export async function handleGoogleSignIn(auth: Auth | null, role: 'user' | 'part
   
   // Store the selected role in session storage before redirecting
   sessionStorage.setItem('fynix-pro-role', role);
+
+  // This custom parameter is a workaround for development environments like Firebase Studio
+  // where the domain might be dynamic or restricted, causing "auth/unauthorized-domain" errors.
+  provider.setCustomParameters({
+    auth_type: 'reauthenticate',
+  });
 
   await signInWithRedirect(auth, provider);
 }
