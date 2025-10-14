@@ -30,21 +30,18 @@ let app: FirebaseApp;
 let auth: Auth;
 let firestore: Firestore;
 
-// Initialize Firebase only once
-if (!getApps().length) {
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  firestore = getFirestore(app);
-} else {
-  app = getApp();
-  auth = getAuth(app);
-  firestore = getFirestore(app);
-}
-
 export function initializeFirebase(): {
   app: FirebaseApp;
   auth: Auth;
   firestore: Firestore;
 } {
+  if (!getApps().length) {
+    app = initializeApp(firebaseConfig);
+  } else {
+    app = getApp();
+  }
+  auth = getAuth(app);
+  firestore = getFirestore(app);
+
   return { app, auth, firestore };
 }
