@@ -83,7 +83,11 @@ export function AuthForm() {
       } catch (error: any) {
          let errorMessage = "An unexpected error occurred during sign-in.";
          if (error instanceof FirebaseError) {
-             errorMessage = `An unexpected Firebase error occurred. (Code: ${error.code})`;
+             if (error.code === 'auth/unauthorized-domain') {
+                 errorMessage = "This domain is not authorized for sign-in. Please add it to your Firebase project's authorized domains.";
+             } else {
+                errorMessage = `An unexpected Firebase error occurred. (Code: ${error.code})`;
+             }
          }
          toast({
            variant: 'destructive',
