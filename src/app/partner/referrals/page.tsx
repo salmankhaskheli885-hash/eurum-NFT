@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import {
   Card,
   CardContent,
@@ -18,14 +19,35 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockReferredUsers } from "@/lib/data"
 import { DollarSign, Users, TrendingUp } from "lucide-react"
+import { useFirestore } from "@/firebase/provider"
+import { useUser } from "@/hooks/use-user"
+import type { User } from "@/lib/data"
+import { listenToAllUsers } from "@/lib/firestore"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ReferralsPage() {
   const { t } = useTranslation()
+  const firestore = useFirestore()
+  const { user: currentUser, loading: userLoading } = useUser()
+  
+  const [referredUsers, setReferredUsers] = React.useState<User[]>([])
+  const [loading, setLoading] = React.useState(true)
 
-  const totalReferredUsers = mockReferredUsers.length;
-  const totalDeposits = mockReferredUsers.reduce((acc, user) => acc + user.totalDeposit, 0);
+  React.useEffect(() => {
+    if (!firestore || !currentUser) return;
+    setLoading(true);
+    // In a real app, you'd query for users where `referredBy === currentUser.uid`
+    // For this demo, we'll just show all users except the current one as "referred"
+    const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
+        setReferredUsers(allUsers.filter(u => u.uid !== currentUser.uid));
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [firestore, currentUser]);
+
+  const totalReferredUsers = referredUsers.length;
+  const totalDeposits = referredUsers.reduce((acc, user) => acc + (user.balance > 0 ? user.balance : 0), 0); // Simplified logic
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -33,6 +55,8 @@ export default function ReferralsPage() {
       currency: "USD",
     }).format(amount)
   }
+  
+  const isLoading = userLoading || loading;
 
   return (
     <div className="flex flex-col gap-4">
@@ -48,7 +72,7 @@ export default function ReferralsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalReferredUsers}</div>
+            {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalReferredUsers}</div>}
           </CardContent>
         </Card>
         <Card>
@@ -57,7 +81,7 @@ export default function ReferralsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>
+            {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>}
           </CardContent>
         </Card>
          <Card>
@@ -82,22 +106,36 @@ export default function ReferralsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('referrals.table.name')}</TableHead>
-                <TableHead className="text-right">{t('referrals.table.totalDeposit')}</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead className="text-center">{t('referrals.table.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockReferredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(user.totalDeposit)}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={user.status === 'Active' ? 'default' : 'secondary'}>
-                      {t(`referrals.table.statusValue.${user.status.toLowerCase()}`)}
-                    </Badge>
-                  </TableCell>
+              {isLoading ? (
+                [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                    </TableRow>
+                ))
+              ) : referredUsers.length > 0 ? (
+                referredUsers.map((user) => (
+                    <TableRow key={user.uid}>
+                    <TableCell className="font-medium">{user.displayName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="text-center">
+                        <Badge variant={user.status === 'Active' ? 'default' : 'destructive'}>
+                            {user.status}
+                        </Badge>
+                    </TableCell>
+                    </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">No referred users found.</TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

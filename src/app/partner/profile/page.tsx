@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -11,13 +12,30 @@ import { useTranslation } from "@/hooks/use-translation"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useUser } from "@/hooks/use-user"
-import { mockTransactions } from "@/lib/data"
+import { useFirestore } from "@/firebase/provider"
+import { listenToUserTransactions } from "@/lib/firestore"
+import type { Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function ProfilePage() {
     const { t } = useTranslation()
-    const { user, loading } = useUser()
+    const firestore = useFirestore()
+    const { user, loading: userLoading } = useUser()
+    const [transactions, setTransactions] = React.useState<Transaction[]>([])
+    const [transactionsLoading, setTransactionsLoading] = React.useState(true)
+    
     const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
+
+    React.useEffect(() => {
+        if (!firestore || !user?.uid) return;
+        setTransactionsLoading(true);
+        const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
+            setTransactions(newTransactions);
+            setTransactionsLoading(false);
+        }, 5); // Fetch latest 5
+        return () => unsubscribe();
+    }, [firestore, user?.uid]);
+
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat("en-US", {
@@ -25,6 +43,17 @@ export default function ProfilePage() {
             currency: user?.currency || "USD",
         }).format(amount)
     }
+    
+    const getStatusVariant = (status: Transaction['status']) => {
+        switch (status) {
+        case 'Completed': return 'default'
+        case 'Pending': return 'secondary'
+        case 'Failed': return 'destructive'
+        default: return 'outline'
+        }
+    }
+    
+    const loading = userLoading || transactionsLoading;
 
      if (loading) {
         return (
@@ -135,19 +164,25 @@ export default function ProfilePage() {
                             </TableRow>
                             </TableHeader>
                             <TableBody>
-                            {mockTransactions.slice(0, 5).map((transaction) => (
-                                <TableRow key={transaction.id}>
-                                <TableCell className="font-medium">{transaction.id}</TableCell>
-                                <TableCell>{transaction.type}</TableCell>
-                                <TableCell>{transaction.date}</TableCell>
-                                <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
-                                <TableCell className="text-center">
-                                    <Badge variant={transaction.status === 'Completed' ? 'default' : transaction.status === 'Pending' ? 'secondary' : 'destructive'}>
-                                        {transaction.status}
-                                    </Badge>
-                                </TableCell>
-                                </TableRow>
-                            ))}
+                                 {transactions.length > 0 ? (
+                                    transactions.map((transaction) => (
+                                        <TableRow key={transaction.id}>
+                                        <TableCell className="font-medium">{transaction.id.substring(0, 8)}...</TableCell>
+                                        <TableCell>{transaction.type}</TableCell>
+                                        <TableCell>{transaction.date}</TableCell>
+                                        <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant={getStatusVariant(transaction.status)}>
+                                                {transaction.status}
+                                            </Badge>
+                                        </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                     <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">No recent transactions.</TableCell>
+                                    </TableRow>
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>

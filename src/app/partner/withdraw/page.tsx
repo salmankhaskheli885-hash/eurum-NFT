@@ -11,38 +11,102 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction } from "@/lib/data"
+import { addTransaction } from "@/lib/firestore"
+import { useUser } from "@/hooks/use-user"
+import { useFirestore } from "@/firebase/provider"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
+    const { user, loading } = useUser()
     const router = useRouter()
     const { toast } = useToast()
+    const firestore = useFirestore()
+
     const [method, setMethod] = useState("jazzcash")
     const [accountNumber, setAccountNumber] = useState("")
     const [accountName, setAccountName] = useState("")
     const [amount, setAmount] = useState("")
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+         if (!user || !firestore) {
+            toast({
+                variant: "destructive",
+                title: "Not Logged In",
+                description: "You must be logged in to make a withdrawal.",
+            })
+            return
+        }
+
+        const withdrawalAmount = parseFloat(amount);
+        if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
+            toast({ variant: "destructive", title: "Invalid Amount" });
+            return;
+        }
+
+        if (user.balance < withdrawalAmount) {
+             toast({
+                variant: "destructive",
+                title: "Insufficient Balance",
+                description: `You cannot withdraw more than your current balance of $${user.balance.toFixed(2)}.`,
+            });
+            return;
+        }
         
-        const newWithdrawal = {
-            id: `TXN${Math.floor(Math.random() * 1000000)}`,
-            type: 'Withdrawal' as const,
-            date: new Date().toISOString().split('T')[0],
-            amount: -parseFloat(amount), // Withdrawals are negative amounts
-            status: 'Pending' as const,
-        };
+        try {
+            await addTransaction(firestore, {
+                userId: user.uid,
+                userName: user.displayName || 'Unknown User',
+                type: 'Withdrawal',
+                amount: -withdrawalAmount, // Withdrawals are negative amounts
+                status: 'Pending',
+                withdrawalDetails: {
+                    accountName,
+                    accountNumber,
+                    method,
+                }
+            });
 
-        addTransaction(newWithdrawal);
+            toast({
+                title: t('withdraw.successTitle'),
+                description: t('withdraw.successDescription'),
+            })
 
-        toast({
-            title: t('withdraw.successTitle'),
-            description: t('withdraw.successDescription'),
-        })
+            router.push('/partner/transactions')
 
-        // Redirect to transaction history page
-        router.push('/partner/transactions')
+        } catch (error: any) {
+             toast({
+                variant: "destructive",
+                title: "Withdrawal Failed",
+                description: error.message || "Could not process your withdrawal request.",
+            });
+        }
     }
+
+  if (loading) {
+      return (
+        <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+            <div>
+                <Skeleton className="h-10 w-48"/>
+                <Skeleton className="h-4 w-full mt-2"/>
+            </div>
+             <Card>
+                <CardHeader>
+                    <Skeleton className="h-7 w-40"/>
+                    <Skeleton className="h-5 w-52 mt-2"/>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <Skeleton className="h-10 w-full"/>
+                    <Skeleton className="h-10 w-full"/>
+                    <Skeleton className="h-10 w-full"/>
+                    <Skeleton className="h-10 w-full"/>
+                    <Skeleton className="h-12 w-full"/>
+                </CardContent>
+            </Card>
+        </div>
+      )
+  }
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto">
@@ -54,6 +118,9 @@ export default function WithdrawPage() {
       <Card>
         <CardHeader>
           <CardTitle>{t('withdraw.formTitle')}</CardTitle>
+          <CardDescription>
+            Your current balance is <span className="font-bold text-primary">${user?.balance.toFixed(2)}</span>
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
