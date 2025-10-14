@@ -374,7 +374,11 @@ export function DonutChart({ data, config }: { data: any[], config: ChartConfig 
           nameKey="name"
           innerRadius="60%"
           strokeWidth={5}
-        />
+        >
+          {data.map((entry, index) => (
+              <RechartsPrimitive.Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+        </Pie>
       </PieChart>
     </ChartContainer>
   )
