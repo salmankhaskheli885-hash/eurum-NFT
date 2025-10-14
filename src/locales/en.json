@@ -205,15 +205,16 @@
             "description": "Overview of your network and earnings.",
             "totalUsers": "Total Users in Network",
             "totalInvested": "Total Network Investment",
-            "totalCommission": "Total Commission Earned"
+            "totalCommission": "Total Commission Earned",
+            "pendingKyc": "Pending KYC Submissions"
         },
         "referrals": {
-            "commissionRate": "Commission Rate (5%)"
+            "commissionRate": "Commission Rate (10%)"
         },
         "faq": {
             "q1": {
-                "question": "How does the 5% commission work?",
-                "answer": "As a partner, you earn a 5% commission on the first deposit of every user who signs up using your unique referral link."
+                "question": "How does the 10% commission work?",
+                "answer": "As a partner, you earn a 10% commission on the first deposit of every user who signs up using your unique referral link."
             },
             "q2": {
                 "question": "How do I withdraw my commission?",

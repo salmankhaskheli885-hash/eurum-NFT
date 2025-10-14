@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Users, TrendingUp } from "lucide-react"
+import { DollarSign, Users, TrendingUp, ShieldCheck } from "lucide-react"
 
 export default function PartnerDashboardPage() {
   const { t } = useTranslation()
@@ -11,6 +11,7 @@ export default function PartnerDashboardPage() {
     { title: t('partner.dashboard.totalUsers'), value: '1,250', icon: Users },
     { title: t('partner.dashboard.totalInvested'), value: 'PKR 1.5M', icon: DollarSign },
     { title: t('partner.dashboard.totalCommission'), value: 'PKR 150K', icon: TrendingUp },
+    { title: t('partner.dashboard.pendingKyc'), value: '15', icon: ShieldCheck },
   ]
 
   return (
@@ -20,7 +21,7 @@ export default function PartnerDashboardPage() {
         <p className="text-muted-foreground">{t('partner.dashboard.description')}</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.title}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

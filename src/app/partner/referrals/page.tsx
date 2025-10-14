@@ -1,4 +1,3 @@
-
 "use client"
 
 import {
@@ -18,7 +17,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockUser, mockReferredUsers } from "@/lib/data"
+import { mockReferredUsers } from "@/lib/data"
 import { DollarSign, Users, TrendingUp } from "lucide-react"
 
 export default function ReferralsPage() {
@@ -66,7 +65,7 @@ export default function ReferralsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5%</div>
+            <div className="text-2xl font-bold">10%</div>
              <p className="text-xs text-muted-foreground">{t('referrals.commissionNotice')}</p>
           </CardContent>
         </Card>
