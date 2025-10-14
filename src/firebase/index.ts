@@ -2,12 +2,12 @@
 import { type FirebaseApp } from 'firebase/app';
 
 export const firebaseConfig = {
-    "projectId": "earnify-7f26c",
-    "appId": "1:484358708808:web:79c5ccf925865239cb427d",
-    "apiKey": "AIzaSyAPAkx06OCDGxuiXaX2D9U0MSWDyGRjkoY",
-    "authDomain": "earnify-7f26c.firebaseapp.com",
-    "storageBucket": "earnify-7f26c.appspot.com",
-    "messagingSenderId": "484358708808"
+    "projectId": "fynixpro222",
+    "appId": "1:652865910892:web:aa38865298818c399b245a",
+    "apiKey": "AIzaSyCHi4113Y_DBQh_8N7uXxy3xICe9kdtYDE",
+    "authDomain": "fynixpro222.firebaseapp.com",
+    "storageBucket": "fynixpro222.appspot.com",
+    "messagingSenderId": "652865910892"
 };
 
 // Note: The app initialization is now handled in FirebaseClientProvider
