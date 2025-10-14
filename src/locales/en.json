@@ -9,6 +9,7 @@
         "investments": "Investments",
         "referrals": "Referrals",
         "profile": "Profile",
+        "settings": "Settings",
         "logout": "Logout",
         "partner": {
             "dashboard": "Partner Hub",
@@ -46,7 +47,7 @@
         "accountNumber": "Account Number",
         "accountName": "Account Holder Name",
         "amount": "Amount to Withdraw",
-        "feeNotice": "A 2% fee will be deducted from the withdrawal amount.",
+        "feeNotice": "A 2% fee will be deducted from the withdrawal amount. Funds will be transferred within 12-24 hours.",
         "submitButton": "Submit Withdrawal Request",
         "successTitle": "Withdrawal Request Submitted",
         "successDescription": "Your request has been received and will be processed within 12-24 hours."
@@ -106,6 +107,60 @@
         "password": "Password",
         "changePassword": "Change Password"
     },
+    "settings": {
+        "title": "Settings",
+        "description": "Manage your account and app preferences.",
+        "tabs": {
+            "password": "Password",
+            "faq": "FAQ",
+            "services": "Services",
+            "privacy": "Privacy",
+            "guidelines": "Guidelines"
+        },
+        "password": {
+            "title": "Change Password",
+            "description": "Update your account password. Use a strong, unique password for security.",
+            "current": "Current Password",
+            "new": "New Password",
+            "confirm": "Confirm New Password",
+            "submitButton": "Update Password",
+            "mismatchTitle": "Passwords do not match",
+            "mismatchDescription": "The new password and confirmation do not match.",
+            "successTitle": "Password Updated",
+            "successDescription": "Your password has been changed successfully."
+        },
+        "faq": {
+            "title": "Frequently Asked Questions",
+            "description": "Find answers to common questions about our platform.",
+            "q1": {
+                "question": "How do I make a deposit?",
+                "answer": "To make a deposit, go to the 'Deposit' page, transfer the amount to the provided admin wallet, and then fill out the form with your transaction details."
+            },
+            "q2": {
+                "question": "How long do withdrawals take?",
+                "answer": "Withdrawal requests are typically processed within 12 to 24 hours. You can track the status on your 'Transactions' page."
+            },
+            "q3": {
+                "question": "How does the referral system work?",
+                "answer": "Share your unique referral link from the 'Referrals' page. You'll earn a 5% commission on every deposit made by users who sign up through your link."
+            }
+        },
+        "services": {
+            "title": "Terms of Service",
+            "description": "Read our terms and conditions.",
+            "content": "This is a placeholder for the Terms of Service content. In a real application, this would contain the full legal terms governing the use of Fynix Pro."
+        },
+        "privacy": {
+            "title": "Privacy Policy",
+            "description": "How we handle your data.",
+            "content": "This is a placeholder for the Privacy Policy. It would detail the data we collect, how it's used, and your rights regarding your personal information."
+        },
+        "guidelines": {
+            "title": "Community Guidelines",
+            "description": "Rules for using our platform.",
+            "content": "This is a placeholder for the Community Guidelines. It would outline the expected conduct for all users to ensure a safe and respectful environment."
+        }
+    },
     "login": {
         "title": "Welcome Back",
         "description": "Sign in to access your account",
@@ -140,6 +195,12 @@
     "languages": {
         "english": "English",
         "urdu": "Urdu"
+    },
+    "liveChat": {
+        "title": "Live Chat",
+        "welcome": "Hello! How can we help you today?",
+        "supportReply": "Thanks for your message. An agent will be with you shortly.",
+        "placeholder": "Type your message..."
     },
     "partner": {
         "dashboard": {

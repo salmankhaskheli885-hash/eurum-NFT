@@ -4,7 +4,7 @@ import Link from "next/link"
 import Image from "next/image"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { mockUser } from "@/lib/data"
-import { LogOut, User as UserIcon } from "lucide-react"
+import { LogOut, User as UserIcon, Settings } from "lucide-react"
 
 import { useTranslation } from "@/hooks/use-translation"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -56,6 +56,12 @@ export function UserNav() {
             <DropdownMenuItem>
               <UserIcon className="mr-2 h-4 w-4" />
               <span>{t('nav.profile')}</span>
+            </DropdownMenuItem>
+          </Link>
+           <Link href="/dashboard/settings" passHref>
+            <DropdownMenuItem>
+              <Settings className="mr-2 h-4 w-4" />
+              <span>{t('nav.settings')}</span>
             </DropdownMenuItem>
           </Link>
         </DropdownMenuGroup>

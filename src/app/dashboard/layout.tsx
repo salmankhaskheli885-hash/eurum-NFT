@@ -12,6 +12,7 @@ import {
   Users,
   Shield,
   History,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -30,6 +31,7 @@ import { Logo } from "@/components/icons"
 import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { LiveChat } from "@/components/live-chat"
 
 export default function DashboardLayout({
   children,
@@ -43,12 +45,13 @@ export default function DashboardLayout({
 
   const userMenuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
     { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
-    { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
+    { href: "/dashboard/settings", label: t('nav.settings'), icon: Settings },
   ]
 
   const partnerMenuItems = [
@@ -107,6 +110,7 @@ export default function DashboardLayout({
         <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
             {children}
         </main>
+        <LiveChat />
       </SidebarInset>
     </SidebarProvider>
   )
