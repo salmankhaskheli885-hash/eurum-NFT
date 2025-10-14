@@ -7,8 +7,9 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
+  type Auth,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, type Firestore } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -26,7 +27,6 @@ import { Input } from '@/components/ui/input';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/schema';
-import { Auth, Firestore } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email(),

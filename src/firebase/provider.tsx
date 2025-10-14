@@ -1,10 +1,8 @@
 
 'use client';
 
-import { createContext, useContext, type ReactNode, useMemo } from 'react';
-import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth, type Auth } from 'firebase/auth';
-import { getFirestore, type Firestore } from 'firebase/firestore';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { app, auth, firestore, type Auth, type Firestore, type FirebaseApp } from '@/firebase';
 
 type FirebaseContextValue = {
   auth: Auth;
@@ -14,25 +12,15 @@ type FirebaseContextValue = {
 
 const FirebaseContext = createContext<FirebaseContextValue | null>(null);
 
-const firebaseConfig = {
-    "projectId": "earnify-7f26c",
-    "appId": "1:484358708808:web:79c5ccf925865239cb427d",
-    "apiKey": "AIzaSyAPAkx06OCDGxuiXaX2D9U0MSWDyGRjkoY",
-    "authDomain": "earnify-7f26c.firebaseapp.com",
-    "storageBucket": "earnify-7f26c.appspot.com",
-    "messagingSenderId": "484358708808"
-};
-
 export function FirebaseProvider({ children }: { children: ReactNode }) {
-    const value = useMemo(() => {
-        const app = getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const firestore = getFirestore(app);
-        return { app, auth, firestore };
-    }, []);
+    const contextValue = useMemo(() => ({
+        app,
+        auth,
+        firestore
+    }), []);
 
     return (
-        <FirebaseContext.Provider value={value}>
+        <FirebaseContext.Provider value={contextValue}>
             {children}
         </FirebaseContext.Provider>
     );
