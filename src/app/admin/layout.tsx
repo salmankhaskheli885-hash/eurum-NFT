@@ -1,3 +1,4 @@
+
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -62,7 +63,7 @@ export default function AdminLayout({
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))}
                     tooltip={item.label}
                   >
                     <item.icon />
