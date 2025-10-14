@@ -74,7 +74,6 @@ export function AuthForm() {
           break;
       }
     } catch (error: any) {
-      // Improved error handling
       let errorMessage = "An unexpected error occurred during sign-in.";
       if (error instanceof FirebaseError) {
           switch (error.code) {
@@ -85,10 +84,10 @@ export function AuthForm() {
                   errorMessage = "Multiple sign-in attempts detected. Please complete one before trying another.";
                   break;
               case 'auth/unauthorized-domain':
-                   errorMessage = `This domain is not authorized for sign-in. Please contact support. (Domain: ${window.location.hostname})`;
+                   errorMessage = `This domain is not authorized for sign-in. Please go to your Firebase Console -> Authentication -> Settings -> Authorized domains and add this domain: ${window.location.hostname}`;
                    break;
               default:
-                  errorMessage = `An unexpected error occurred. (Code: ${error.code})`;
+                  errorMessage = `An unexpected Firebase error occurred. (Code: ${error.code})`;
                   break;
           }
       }
@@ -96,6 +95,7 @@ export function AuthForm() {
         variant: 'destructive',
         title: 'Sign In Failed',
         description: errorMessage,
+        duration: 9000,
       });
     } finally {
       setLoading(false);
