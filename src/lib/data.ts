@@ -14,7 +14,7 @@ export type Transaction = {
   id: string;
   userId: string;
   userName: string;
-  type: 'Deposit' | 'Withdrawal' | 'Investment' | 'Payout';
+  type: 'Deposit' | 'Withdrawal' | 'Investment' | 'Payout' | 'Commission';
   date: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
@@ -144,5 +144,6 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         kycStatus: 'unsubmitted',
         referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
         status: 'Active',
+        referredBy: undefined
     };
 }

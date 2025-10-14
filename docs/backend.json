@@ -45,6 +45,10 @@
         },
         "referralLink": {
             "type": "string"
+        },
+        "referredBy": {
+            "type": "string",
+            "description": "The UID of the user who referred this user."
         }
       },
       "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus"]
