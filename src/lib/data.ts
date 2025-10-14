@@ -16,6 +16,11 @@ export type Transaction = {
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
   details?: string;
+  withdrawalDetails?: {
+    accountNumber: string;
+    accountName: string;
+    method: string;
+  }
 };
 
 export type InvestmentPlan = {
@@ -60,11 +65,6 @@ export let mockInvestmentPlans: InvestmentPlan[] = [];
 
 export const mockReferredUsers = [
   // This can remain as is, as it's not managed by the admin panel directly.
-  { id: "user-1", name: "Alice", totalDeposit: 15000, status: "Active" },
-  { id: "user-2", name: "Bob", totalDeposit: 30550, status: "Active" },
-  { id: "user-3", name: "Charlie", totalDeposit: 9520, status: "Inactive" },
-  { id: "user-4", name: "David", totalDeposit: 75000, status: "Active" },
-  { id: "user-5", name: "Eve", totalDeposit: 12000, status: "Active" },
 ];
 
 
@@ -76,13 +76,11 @@ export const addTransaction = (transactionData: Omit<Transaction, 'id' | 'date'>
         date: new Date().toISOString().split('T')[0]
     };
     
-    // Update user balance for withdrawals and investments immediately
     const user = mockUsers.find(u => u.uid === newTransaction.userId);
     if (user && newTransaction.amount < 0) { // For withdrawals and investments
         if (user.balance >= Math.abs(newTransaction.amount)) {
             user.balance += newTransaction.amount; // amount is negative, so it deducts
         } else {
-            // This case should be handled in the UI, but as a safeguard:
             console.error("Transaction failed: Insufficient balance.");
             return null; // Indicate failure
         }
@@ -99,20 +97,18 @@ export const updateTransactionStatus = (transactionId: string, newStatus: 'Compl
     const oldStatus = transaction.status;
     transaction.status = newStatus;
 
-    // Logic to update user balance on status change
     if (oldStatus === 'Pending' && newStatus === 'Completed') {
         const user = mockUsers.find(u => u.uid === transaction.userId);
         if (user) {
-            // Only add deposit amount, withdrawal/investment is pre-deducted
             if (transaction.type === 'Deposit') {
                  user.balance += transaction.amount;
             }
+            // For withdrawals, the amount is already deducted at the time of request.
         }
     } else if (oldStatus === 'Pending' && newStatus === 'Failed') {
-        // If a withdrawal fails, refund the user.
-        // Investments are considered final and don't fail this way in this mock logic.
         const user = mockUsers.find(u => u.uid === transaction.userId);
-        if (user && transaction.type === 'Withdrawal') {
+        if (user && (transaction.type === 'Withdrawal' || transaction.type === 'Investment')) {
+            // Refund the user if a withdrawal or investment fails.
             user.balance -= transaction.amount; // amount is negative, so this adds it back
         }
     }
@@ -186,11 +182,17 @@ export const deleteUser = (userId: string) => {
     return mockUsers.length < initialLength;
 }
 
+// Helper to get a user by their ID
+export function getUserById(userId: string): User | null {
+    const user = mockUsers.find(u => u.uid === userId);
+    return user ? { ...user } : null;
+}
+
+
 // Helper to get a user, creating them if they don't exist
 export function getOrCreateUser(firebaseUser: FirebaseUser): User {
     let user = mockUsers.find(u => u.uid === firebaseUser.uid);
     if (user) {
-        // Return a copy to avoid direct mutation of the mock data from client components
         return { ...user };
     }
 
@@ -206,7 +208,7 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         displayName: firebaseUser.displayName,
         role: role,
         shortUid: firebaseUser.uid.substring(0, 8),
-        balance: 10000, // Default starting values in USD
+        balance: 0, // Default starting balance is 0
         currency: 'USD',
         vipLevel: 1,
         vipProgress: 0,
@@ -216,6 +218,7 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
     };
 
     addUser(newUser);
-    // Return a copy
     return { ...newUser };
 }
+
+    

@@ -51,6 +51,11 @@ export default function WithdrawPage() {
             type: 'Withdrawal',
             amount: -withdrawalAmount, // Withdrawals are negative amounts
             status: 'Pending',
+            withdrawalDetails: {
+                accountName,
+                accountNumber,
+                method,
+            }
         });
         
         // Refetch user to update balance in UI immediately

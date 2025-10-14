@@ -1,6 +1,8 @@
 
 "use client"
 
+import { Suspense } from "react"
+import { useSearchParams } from 'next/navigation'
 import {
   Card,
   CardContent,
@@ -38,9 +40,13 @@ function Announcement() {
     )
 }
 
-export default function Dashboard() {
+function DashboardContent() {
   const { t } = useTranslation()
-  const { user, loading } = useUser();
+  const searchParams = useSearchParams()
+  // This allows an admin to view a specific user's dashboard
+  const viewAsUserId = searchParams.get('userId'); 
+
+  const { user, loading } = useUser({ viewAsUserId });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -123,6 +129,14 @@ export default function Dashboard() {
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+       {viewAsUserId && (
+        <Alert variant="destructive">
+          <AlertTitle>Admin View</AlertTitle>
+          <AlertDescription>
+            You are viewing the dashboard as **{user.displayName}** (UID: {user.uid}). <a href="/admin/users" className="underline font-bold">Return to Admin Panel.</a>
+          </AlertDescription>
+        </Alert>
+      )}
       <Announcement />
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
         <Card className="sm:col-span-2">
@@ -205,3 +219,13 @@ export default function Dashboard() {
     </div>
   )
 }
+
+export default function Dashboard() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
+  )
+}
+
+    

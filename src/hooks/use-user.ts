@@ -5,13 +5,14 @@ import { useEffect, useState, useCallback } from 'react';
 import type { UserProfile } from '@/lib/schema';
 import { useAuth } from '@/firebase/provider';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { getOrCreateUser } from '@/lib/data';
+import { getOrCreateUser, getUserById } from '@/lib/data';
 
 /**
  * This hook provides the currently logged-in user's profile and authentication state.
  * It listens to Firebase's auth state changes and provides the user object.
+ * It can also be used by an admin to view a specific user's profile by passing a `viewAsUserId`.
  */
-export function useUser() {
+export function useUser({ viewAsUserId }: { viewAsUserId?: string | null } = {}) {
   const auth = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -23,6 +24,14 @@ export function useUser() {
   }, []);
 
   useEffect(() => {
+    if (viewAsUserId) {
+        // Admin is viewing a specific user profile
+        const userProfile = getUserById(viewAsUserId);
+        setUser(userProfile);
+        setLoading(false);
+        return;
+    }
+    
     if (!auth) {
         setLoading(false); // If no auth provider, stop loading.
         return;
@@ -46,7 +55,7 @@ export function useUser() {
 
     // Cleanup subscription on unmount
     return () => unsubscribe();
-  }, [auth, key]); // Rerun effect when auth or key changes
+  }, [auth, key, viewAsUserId]); // Rerun effect when auth, key, or viewAsUserId changes
 
   return { user, loading, error, refetchUser };
 }

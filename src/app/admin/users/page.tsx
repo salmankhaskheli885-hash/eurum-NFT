@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -42,7 +43,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal, Search } from "lucide-react"
+import { MoreHorizontal, Search, Eye } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { Input } from "@/components/ui/input"
 import { mockUsers, updateUser, deleteUser, type User } from "@/lib/data"
@@ -137,7 +138,7 @@ export default function AdminUsersPage() {
                   <TableCell className="font-medium">{user.displayName || "N/A"}</TableCell>
                   <TableCell>{user.email}</TableCell>
                    <TableCell>
-                     <Badge variant={user.role === 'Partner' ? 'secondary' : (user.role === 'admin' ? 'outline' : 'default') }>
+                     <Badge variant={user.role === 'partner' ? 'secondary' : (user.role === 'admin' ? 'outline' : 'default') }>
                         {user.role}
                      </Badge>
                    </TableCell>
@@ -157,6 +158,12 @@ export default function AdminUsersPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                         <DropdownMenuItem asChild>
+                           <Link href={`/dashboard?userId=${user.uid}`} target="_blank" className="flex items-center">
+                             <Eye className="mr-2 h-4 w-4"/>
+                             View as User
+                           </Link>
+                         </DropdownMenuItem>
                         <DropdownMenuSub>
                            <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
                            <DropdownMenuSubContent>
@@ -205,3 +212,5 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
+    

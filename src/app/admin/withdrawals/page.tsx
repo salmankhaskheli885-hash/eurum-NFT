@@ -44,7 +44,8 @@ export default function AdminWithdrawalsPage() {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
         item.userName.toLowerCase().includes(lowercasedFilter) ||
-        item.status.toLowerCase().includes(lowercasedFilter)
+        item.status.toLowerCase().includes(lowercasedFilter) ||
+        item.userId.toLowerCase().includes(lowercasedFilter)
       );
     });
     setFilteredWithdrawals(filteredData);
@@ -84,7 +85,7 @@ export default function AdminWithdrawalsPage() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by transaction ID or user..."
+              placeholder="Search by transaction ID, user name or UID..."
               className="w-full pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -96,8 +97,8 @@ export default function AdminWithdrawalsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Transaction ID</TableHead>
-                <TableHead>User</TableHead>
-                 <TableHead>Date</TableHead>
+                <TableHead>Account & User Details</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount (USD)</TableHead>
                 <TableHead className="text-center">Status</TableHead>
                 <TableHead className="text-center">Actions</TableHead>
@@ -107,7 +108,19 @@ export default function AdminWithdrawalsPage() {
               {filteredWithdrawals.map((withdrawal) => (
                 <TableRow key={withdrawal.id}>
                   <TableCell className="font-medium">{withdrawal.id}</TableCell>
-                  <TableCell>{withdrawal.userName}</TableCell>
+                  <TableCell>
+                     <div className="font-medium">{withdrawal.userName}</div>
+                     <div className="text-sm text-muted-foreground">
+                        <span className="font-semibold">UID:</span> {withdrawal.userId}
+                     </div>
+                      {withdrawal.withdrawalDetails && (
+                        <div className="text-xs space-y-1 mt-2">
+                           <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
+                           <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
+                           <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+                        </div>
+                      )}
+                  </TableCell>
                   <TableCell>{withdrawal.date}</TableCell>
                   <TableCell className="text-right text-destructive">
                     {Math.abs(withdrawal.amount).toLocaleString()}
@@ -147,3 +160,5 @@ export default function AdminWithdrawalsPage() {
     </div>
   )
 }
+
+    
