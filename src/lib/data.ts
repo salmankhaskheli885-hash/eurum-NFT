@@ -78,11 +78,18 @@ export const addTransaction = (transactionData: Omit<Transaction, 'id' | 'date'>
     
     // Update user balance for withdrawals and investments immediately
     const user = mockUsers.find(u => u.uid === newTransaction.userId);
-    if (user && newTransaction.amount < 0) {
-        user.balance += newTransaction.amount; // amount is negative
+    if (user && newTransaction.amount < 0) { // For withdrawals and investments
+        if (user.balance >= Math.abs(newTransaction.amount)) {
+            user.balance += newTransaction.amount; // amount is negative, so it deducts
+        } else {
+            // This case should be handled in the UI, but as a safeguard:
+            console.error("Transaction failed: Insufficient balance.");
+            return null; // Indicate failure
+        }
     }
 
     mockTransactions.unshift(newTransaction);
+    return newTransaction; // Indicate success
 };
 
 export const updateTransactionStatus = (transactionId: string, newStatus: 'Completed' | 'Pending' | 'Failed') => {
@@ -102,9 +109,10 @@ export const updateTransactionStatus = (transactionId: string, newStatus: 'Compl
             }
         }
     } else if (oldStatus === 'Pending' && newStatus === 'Failed') {
-        // If a withdrawal or investment fails, refund the user
+        // If a withdrawal fails, refund the user.
+        // Investments are considered final and don't fail this way in this mock logic.
         const user = mockUsers.find(u => u.uid === transaction.userId);
-        if (user && transaction.amount < 0) {
+        if (user && transaction.type === 'Withdrawal') {
             user.balance -= transaction.amount; // amount is negative, so this adds it back
         }
     }
@@ -158,7 +166,9 @@ export const addAnnouncement = (message: string) => {
 // --- New User Management Functions for Admin ---
 
 export const addUser = (user: User) => {
-    mockUsers.push(user);
+    if (!mockUsers.some(u => u.uid === user.uid)) {
+      mockUsers.push(user);
+    }
 };
 
 export const updateUser = (userId: string, updates: Partial<User>) => {
@@ -209,5 +219,3 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
     // Return a copy
     return { ...newUser };
 }
-
-    
