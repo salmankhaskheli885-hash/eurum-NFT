@@ -15,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
 import { AuthForm, handleGoogleSignIn } from "@/components/auth/auth-form";
-import { useAuth, useFirestore } from "@/firebase";
+import { useAuth, useFirestore } from "@/firebase/provider";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
 import { getRedirectResult, GoogleAuthProvider } from "firebase/auth";

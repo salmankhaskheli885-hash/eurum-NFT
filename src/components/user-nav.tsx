@@ -1,3 +1,4 @@
+
 "use client"
 
 import Link from "next/link"
@@ -31,6 +32,7 @@ export function UserNav() {
   const { user, loading } = useUser()
 
   const handleLogout = async () => {
+    if (!auth) return;
     await signOut(auth)
     router.push('/login')
   }
