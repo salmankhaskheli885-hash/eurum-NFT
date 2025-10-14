@@ -3,10 +3,10 @@
     "appName": "فائنکس پرو",
     "nav": {
         "dashboard": "ڈیش بورڈ",
+        "investments": "سرمایہ کاری",
         "deposit": "جمع کروائیں",
         "withdraw": "نکالیں",
         "transactions": "ٹرانزیکشنز",
-        "investments": "سرمایہ کاری",
         "referrals": "ریفرلز",
         "profile": "پروفائل",
         "settings": "سیٹنگز",
@@ -23,8 +23,9 @@
         "viewInvestments": "سرمایہ کاری دیکھیں",
         "balance": "کل بیلنس",
         "totalReturns": "کل منافع",
-        "assets": "پورٹ فولیو کا جائزہ",
-        "assetsDescription": "آپ کی موجودہ سرمایہ کاری کا ایک جائزہ۔"
+        "vipLevel": "VIP لیول",
+        "vipLevelValue": "لیول {level}",
+        "vipProgress": "اگلے لیول تک"
     },
     "deposit": {
         "title": "فنڈز جمع کروائیں",
@@ -92,8 +93,7 @@
         "copied": "ریفرل لنک کلپ بورڈ پر کاپی ہو گیا ہے!"
     },
     "profile": {
-        "title": "پروفائل اور سیٹنگز",
-        "description": "اپنے اکاؤنٹ کی تفصیلات اور ترجیحات کا نظم کریں۔",
+        "title": "پروفائل",
         "name": "پورا نام",
         "email": "ای میل ایڈریس",
         "uid": "صارف ID",
@@ -102,10 +102,7 @@
         "transactionType": "قسم",
         "transactionDate": "تاریخ",
         "transactionAmount": "رقم",
-        "transactionStatus": "حیثیت",
-        "settingsTitle": "سیٹنگز",
-        "password": "پاس ورڈ",
-        "changePassword": "پاس ورڈ تبدیل کریں"
+        "transactionStatus": "حیثیت"
     },
     "settings": {
         "title": "سیٹنگز",

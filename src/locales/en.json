@@ -3,10 +3,10 @@
     "appName": "Fynix Pro",
     "nav": {
         "dashboard": "Dashboard",
+        "investments": "Investments",
         "deposit": "Deposit",
         "withdraw": "Withdraw",
         "transactions": "Transactions",
-        "investments": "Investments",
         "referrals": "Referrals",
         "profile": "Profile",
         "settings": "Settings",
@@ -23,8 +23,9 @@
         "viewInvestments": "View Investments",
         "balance": "Total Balance",
         "totalReturns": "Total Returns",
-        "assets": "Portfolio Overview",
-        "assetsDescription": "A breakdown of your current investments."
+        "vipLevel": "VIP Level",
+        "vipLevelValue": "Level {level}",
+        "vipProgress": "to next level"
     },
     "deposit": {
         "title": "Deposit Funds",
@@ -92,8 +93,7 @@
         "copied": "Referral link copied to clipboard!"
     },
     "profile": {
-        "title": "Profile & Settings",
-        "description": "Manage your account details and preferences.",
+        "title": "Profile",
         "name": "Full Name",
         "email": "Email Address",
         "uid": "User ID",
@@ -102,10 +102,7 @@
         "transactionType": "Type",
         "transactionDate": "Date",
         "transactionAmount": "Amount",
-        "transactionStatus": "Status",
-        "settingsTitle": "Settings",
-        "password": "Password",
-        "changePassword": "Change Password"
+        "transactionStatus": "Status"
     },
     "settings": {
         "title": "Settings",
