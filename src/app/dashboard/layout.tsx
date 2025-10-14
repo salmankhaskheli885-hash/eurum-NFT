@@ -56,7 +56,12 @@ export default function DashboardLayout({
 
   const partnerMenuItems = [
     { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
-    { href: "/partner/users", label: t('nav.partner.users'), icon: Users },
+    { href: "/partner/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
+    { href: "/partner/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
+    { href: "/partner/transactions", label: t('nav.transactions'), icon: History },
+    { href: "/partner/referrals", label: t('nav.referrals'), icon: Share2 },
+    { href: "/partner/profile", label: t('nav.profile'), icon: User },
+    { href: "/partner/settings", label: t('nav.settings'), icon: Settings },
   ]
 
   const menuItems = isPartner ? partnerMenuItems : userMenuItems;

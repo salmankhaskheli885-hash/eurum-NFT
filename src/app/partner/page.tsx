@@ -1,16 +1,16 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Shield, Users } from "lucide-react"
+import { DollarSign, Users, TrendingUp } from "lucide-react"
 
 export default function PartnerDashboardPage() {
   const { t } = useTranslation()
 
   const stats = [
     { title: t('partner.dashboard.totalUsers'), value: '1,250', icon: Users },
-    { title: t('partner.dashboard.totalInvested'), value: '$1.5M', icon: DollarSign },
-    { title: t('partner.dashboard.pendingKyc'), value: '15', icon: Shield },
+    { title: t('partner.dashboard.totalInvested'), value: 'PKR 1.5M', icon: DollarSign },
+    { title: t('partner.dashboard.totalCommission'), value: 'PKR 150K', icon: TrendingUp },
   ]
 
   return (

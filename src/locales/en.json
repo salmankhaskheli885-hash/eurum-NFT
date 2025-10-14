@@ -205,17 +205,37 @@
             "description": "Overview of your network and earnings.",
             "totalUsers": "Total Users in Network",
             "totalInvested": "Total Network Investment",
-            "pendingKyc": "Pending KYC Submissions"
+            "totalCommission": "Total Commission Earned"
         },
-        "users": {
-            "title": "User Management",
-            "description": "View and manage all users in your network.",
-            "table": {
-                "name": "Name",
-                "email": "Email",
-                "balance": "Balance",
-                "kycStatus": "KYC Status",
-                "actions": "Actions"
+        "referrals": {
+            "commissionRate": "Commission Rate (10%)"
+        },
+        "faq": {
+            "q1": {
+                "question": "How does the 10% commission work?",
+                "answer": "As a partner, you earn a 10% commission on the first deposit of every user who signs up using your unique referral link."
+            },
+            "q2": {
+                "question": "How do I withdraw my commission?",
+                "answer": "Your commission earnings are added to your main balance. You can withdraw them using the standard withdrawal process on the 'Withdraw' page."
+            },
+            "q3": {
+                "question": "Where can I see my referred users?",
+                "answer": "You can track all your referred users, their total deposits, and their status on the 'Referrals' page in your partner dashboard."
+            }
+        },
+        "settings": {
+            "tabs": {
+                "contact": "Contact Us"
+            },
+            "contact": {
+                "title": "Contact Support",
+                "description": "Have a question or need help? Send us a message.",
+                "subject": "Subject",
+                "message": "Message",
+                "submitButton": "Send Message",
+                "successTitle": "Message Sent",
+                "successDescription": "Thank you for contacting us. We will get back to you shortly."
             }
         }
     },
