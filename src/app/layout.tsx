@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/context/language-context';
-import { FirebaseProvider } from '@/firebase/provider';
+import { FirebaseProvider } from '@/firebase';
 
 export const metadata: Metadata = {
   title: 'Fynix Pro',
@@ -25,8 +25,8 @@ export default function RootLayout({
         <LanguageProvider>
           <FirebaseProvider>
             {children}
+            <Toaster />
           </FirebaseProvider>
-          <Toaster />
         </LanguageProvider>
       </body>
     </html>

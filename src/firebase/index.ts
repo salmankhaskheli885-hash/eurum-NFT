@@ -1,7 +1,6 @@
 export {
-  FirebaseClientProvider,
+  FirebaseProvider,
   useAuth,
   useFirestore,
   useFirebaseApp,
-} from './client-provider';
-export { FirebaseProvider } from './provider';
+} from './provider';
