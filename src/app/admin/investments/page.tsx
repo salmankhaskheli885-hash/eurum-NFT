@@ -42,7 +42,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
@@ -248,8 +247,8 @@ export default function AdminInvestmentsPage() {
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
             <PlanForm onSave={() => { /* Listener will update UI */ }}>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
+                <Button size="lg">
+                    <PlusCircle className="mr-2 h-5 w-5" />
                     Add New Plan
                 </Button>
             </PlanForm>
@@ -273,7 +272,8 @@ export default function AdminInvestmentsPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Plan</TableHead>
+                <TableHead className="w-[80px]">Image</TableHead>
+                <TableHead>Name</TableHead>
                 <TableHead>Daily Return</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>Min Investment</TableHead>
@@ -287,10 +287,10 @@ export default function AdminInvestmentsPage() {
               {loading ? (
                 [...Array(3)].map((_, i) => (
                     <TableRow key={i}>
-                        <TableCell className="flex items-center gap-3">
+                        <TableCell>
                             <Skeleton className="h-10 w-10 rounded-md" />
-                            <Skeleton className="h-5 w-24" />
                         </TableCell>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -301,17 +301,17 @@ export default function AdminInvestmentsPage() {
               ) : filteredPlans.length > 0 ? (
                 filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
-                  <TableCell className="font-medium flex items-center gap-3">
-                     <Image 
-                        src={plan.imageUrl} 
-                        alt={plan.name} 
-                        width={40} 
-                        height={40} 
-                        className="rounded-md object-cover"
-                        data-ai-hint="investment product"
-                     />
-                    {plan.name}
-                  </TableCell>
+                    <TableCell>
+                        <Image 
+                            src={plan.imageUrl} 
+                            alt={plan.name} 
+                            width={40} 
+                            height={40} 
+                            className="rounded-md object-cover"
+                            data-ai-hint="investment product"
+                        />
+                    </TableCell>
+                  <TableCell className="font-medium">{plan.name}</TableCell>
                   <TableCell>{plan.dailyReturn}</TableCell>
                   <TableCell>{plan.durationDays}</TableCell>
                   <TableCell>{plan.minInvestment.toLocaleString()}</TableCell>
@@ -353,7 +353,7 @@ export default function AdminInvestmentsPage() {
               ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
+                    <TableCell colSpan={7} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
                 </TableRow>
               )}
             </TableBody>
