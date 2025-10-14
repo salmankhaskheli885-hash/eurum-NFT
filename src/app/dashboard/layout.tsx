@@ -8,6 +8,7 @@ import {
   Share2,
   TrendingUp,
   User,
+  Users,
 } from "lucide-react"
 
 import {
@@ -38,6 +39,7 @@ export default function DashboardLayout({
   const menuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
+    { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
     { href: "/dashboard/kyc", label: t('nav.kyc'), icon: FileCheck },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },

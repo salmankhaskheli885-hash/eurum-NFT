@@ -6,7 +6,8 @@
         "kyc": "KYC Verification",
         "referrals": "Referrals",
         "profile": "Profile",
-        "logout": "Logout"
+        "logout": "Logout",
+        "partners": "Partners"
     },
     "dashboard": {
         "title": "Dashboard",
@@ -75,6 +76,27 @@
         "name": "Full Name",
         "email": "Email Address",
         "uid": "User ID"
+    },
+    "partners": {
+        "title": "Partner Network",
+        "description": "Manage your partners and view your commission earnings.",
+        "totalPartners": "Total Partners",
+        "totalCommission": "Total Commission Earned",
+        "commissionRate": "Commission Rate",
+        "basedOnLevel": "Based on partner level",
+        "partnerList": "Your Partners",
+        "partnerListDescription": "A list of all partners in your network.",
+        "table": {
+            "name": "Name",
+            "level": "Level",
+            "commission": "Commission Earned",
+            "status": "Status",
+            "levelValue": "Level {level}",
+            "statusValue": {
+                "active": "Active",
+                "inactive": "Inactive"
+            }
+        }
     },
     "login": {
         "title": "Welcome Back",
