@@ -1,10 +1,122 @@
 
 'use client';
 
-// This component is intentionally left blank.
-// The authentication logic has been moved to a mock implementation in use-user.ts
-// to bypass the persistent 'auth/unauthorized-domain' error.
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { useAuth } from '@/firebase/provider';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Github } from 'lucide-react'; // Using Github as a placeholder for Google icon
+import Link from 'next/link';
 
-export function AuthForm() {
-  return null;
+interface AuthFormProps {
+    mode: 'login' | 'register';
+}
+
+function GoogleIcon(props: any) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 48 48"
+            width="24px"
+            height="24px"
+        >
+            <path
+                fill="#FFC107"
+                d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+            />
+            <path
+                fill="#FF3D00"
+                d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+            />
+            <path
+                fill="#4CAF50"
+                d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.222,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+            />
+            <path
+                fill="#1976D2"
+                d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.574l6.19,5.238C39.999,36.661,44,31.1,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+            />
+        </svg>
+    );
+}
+
+
+export function AuthForm({ mode }: AuthFormProps) {
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    if (!auth) return;
+    setLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      toast({
+        title: 'Sign In Successful!',
+        description: 'Redirecting to your dashboard...',
+      });
+      router.push('/dashboard');
+    } catch (error: any) {
+        console.error("Google Sign-In Error:", error);
+        let description = 'An unexpected error occurred during sign-in.';
+        if (error.code === 'auth/popup-closed-by-user') {
+            description = 'Sign-in popup was closed. Please try again.';
+        } else if (error.code === 'auth/cancelled-popup-request') {
+             description = 'Multiple sign-in attempts detected. Please try again.';
+        } else if (error.code === 'auth/unauthorized-domain') {
+            description = "This domain isn't authorized for sign-in. Please contact support.";
+        }
+        
+        toast({
+            variant: 'destructive',
+            title: 'Sign In Failed',
+            description,
+        });
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+        <Button 
+            variant="outline" 
+            className="w-full h-12 text-base"
+            onClick={handleGoogleSignIn}
+            disabled={loading}
+        >
+            <GoogleIcon className="mr-2 h-6 w-6" />
+            {loading ? 'Processing...' : `Sign in with Google`}
+        </Button>
+      
+       <p className="px-8 text-center text-sm text-muted-foreground">
+        {mode === 'login' ? (
+          <>
+            Don't have an account?{' '}
+            <Link
+              href="/register"
+              className="underline underline-offset-4 hover:text-primary"
+            >
+              Sign Up
+            </Link>
+          </>
+        ) : (
+          <>
+            Already have an account?{' '}
+            <Link
+              href="/login"
+              className="underline underline-offset-4 hover:text-primary"
+            >
+              Sign In
+            </Link>
+          </>
+        )}
+      </p>
+    </div>
+  );
 }

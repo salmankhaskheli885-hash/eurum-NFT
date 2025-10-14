@@ -1,7 +1,20 @@
 
-import { redirect } from 'next/navigation';
+"use client"
+
+import { AuthForm } from "@/components/auth/auth-form";
+import { Logo } from "@/components/icons";
 
 export default function RegisterPage() {
-  // WORKAROUND: Redirecting directly to the dashboard as authentication is mocked.
-  redirect('/dashboard');
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+       <div className="w-full max-w-md">
+         <div className="flex flex-col items-center text-center mb-8">
+            <Logo className="w-16 h-16 text-primary mb-4" />
+            <h1 className="text-3xl font-bold tracking-tight">Create an Account</h1>
+            <p className="text-muted-foreground mt-2">Start your journey with Fynix Pro.</p>
+        </div>
+        <AuthForm mode="register" />
+      </div>
+    </div>
+  );
 }
