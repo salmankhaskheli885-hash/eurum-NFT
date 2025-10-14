@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import {
   Table,
   TableBody,
@@ -25,8 +26,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { MoreHorizontal } from "lucide-react"
+import { MoreHorizontal, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
+import { Input } from "@/components/ui/input"
 
 // Sample data - this will be replaced with live Firebase data
 const users = [
@@ -74,6 +76,20 @@ const users = [
 
 export default function AdminUsersPage() {
   const { t } = useTranslation()
+  const [searchTerm, setSearchTerm] = React.useState("")
+  const [filteredUsers, setFilteredUsers] = React.useState(users)
+
+  React.useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filteredData = users.filter(item => {
+      return (
+        item.name.toLowerCase().includes(lowercasedFilter) ||
+        item.email.toLowerCase().includes(lowercasedFilter) ||
+        item.id.toLowerCase().includes(lowercasedFilter)
+      );
+    });
+    setFilteredUsers(filteredData);
+  }, [searchTerm]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -85,6 +101,16 @@ export default function AdminUsersPage() {
         <CardHeader>
           <CardTitle>User List</CardTitle>
           <CardDescription>A list of all users in the system.</CardDescription>
+           <div className="relative pt-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by name, email, or ID..."
+              className="w-full pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -101,7 +127,7 @@ export default function AdminUsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
+              {filteredUsers.map((user) => (
                 <TableRow key={user.id}>
                   <TableCell className="font-medium">{user.name}</TableCell>
                   <TableCell>{user.email}</TableCell>
