@@ -6,9 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
-import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, AuthError } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
-import { AuthError } from 'firebase/auth';
 
 
 function GoogleIcon(props: any) {
@@ -67,7 +66,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         let title = 'An unknown error occurred';
         let description = 'Please try again later.';
 
-        if (error instanceof AuthError) {
+        // Check for Firebase Auth error by checking for the 'code' property
+        if (error && error.code) {
             if (error.code === 'auth/unauthorized-domain') {
                 title = "Domain Not Authorized";
                 description = "This domain is not authorized for sign-in. Please add it to your Firebase project's authorized domains list.";
