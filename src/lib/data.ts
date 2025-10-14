@@ -23,6 +23,7 @@ export type Transaction = {
     accountNumber: string;
     accountName: string;
     method: string;
+    fee?: number; // Fee amount
   };
   investmentDetails?: {
     planId: string;

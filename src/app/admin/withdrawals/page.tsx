@@ -85,6 +85,11 @@ export default function AdminWithdrawalsPage() {
       default: return 'outline'
     }
   }
+  
+  const formatCurrency = (val: number | undefined) => {
+    if (val === undefined) return 'N/A';
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -151,12 +156,15 @@ export default function AdminWithdrawalsPage() {
                             <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
                             <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
                             <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+                             {withdrawal.withdrawalDetails.fee !== undefined && (
+                                <p><span className="font-semibold">Fee:</span> <span className="text-destructive">{formatCurrency(withdrawal.withdrawalDetails.fee)}</span></p>
+                            )}
                             </div>
                         )}
                     </TableCell>
                     <TableCell>{withdrawal.date}</TableCell>
                     <TableCell className="text-right text-destructive">
-                        {Math.abs(withdrawal.amount).toLocaleString()}
+                        {formatCurrency(Math.abs(withdrawal.amount))}
                     </TableCell>
                     <TableCell className="text-center">
                         <Badge variant={getStatusVariant(withdrawal.status)}>

@@ -93,26 +93,44 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
     const user = userSnap.data() as User;
     const batch = writeBatch(firestore);
     
-    const newBalance = user.balance + transactionData.amount;
+    let amountToDeduct = transactionData.amount;
+    let finalTransactionData = { ...transactionData };
 
-    // Check for sufficient balance for withdrawals or investments
-    if (transactionData.amount < 0) {
+    if (transactionData.type === 'Withdrawal') {
+      const settingsRef = doc(firestore, 'app', 'settings');
+      const settingsSnap = await getDoc(settingsRef);
+      const feePercentage = settingsSnap.exists() ? parseFloat(settingsSnap.data().withdrawalFee) : 2;
+      const feeAmount = Math.abs(transactionData.amount) * (feePercentage / 100);
+      amountToDeduct = transactionData.amount - feeAmount;
+
+      if (user.balance < Math.abs(amountToDeduct)) {
+          throw new Error(`Insufficient Balance. You need at least $${Math.abs(amountToDeduct).toFixed(2)} (including fee) to withdraw.`);
+      }
+
+      finalTransactionData.withdrawalDetails = {
+          ...transactionData.withdrawalDetails!,
+          fee: feeAmount
+      };
+    } else if (transactionData.type === 'Investment') {
         if (user.balance < Math.abs(transactionData.amount)) {
             throw new Error("Insufficient Balance");
         }
-        batch.update(userRef, { balance: newBalance });
     }
+    
+    const newBalance = user.balance + amountToDeduct;
+    batch.update(userRef, { balance: newBalance });
 
-    const newTransactionData: Omit<Transaction, 'id'> = {
-        ...transactionData,
+    const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
+        ...finalTransactionData,
+        amount: amountToDeduct, // Store the amount including the fee for withdrawals
         date: new Date().toISOString().split('T')[0]
     };
     
     const transactionsCollection = collection(firestore, 'transactions');
     const newDocRef = doc(transactionsCollection);
-    batch.set(newDocRef, newTransactionData);
+    batch.set(newDocRef, newTransactionDataWithDate);
     
-    const newTransaction = { ...newTransactionData, id: newDocRef.id } as Transaction;
+    const newTransaction = { ...newTransactionDataWithDate, id: newDocRef.id } as Transaction;
 
     // SIMULATE AUTOMATIC PAYOUT FOR INVESTMENTS
     if (newTransaction.type === 'Investment' && newTransaction.investmentDetails) {

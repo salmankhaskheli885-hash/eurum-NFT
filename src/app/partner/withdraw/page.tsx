@@ -45,15 +45,6 @@ export default function WithdrawPage() {
             return;
         }
 
-        if (user.balance < withdrawalAmount) {
-             toast({
-                variant: "destructive",
-                title: "Insufficient Balance",
-                description: `You cannot withdraw more than your current balance of $${user.balance.toFixed(2)}.`,
-            });
-            return;
-        }
-        
         try {
             await addTransaction(firestore, {
                 userId: user.uid,
