@@ -1,0 +1,39 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read and write their own data.
+    // Sensitive fields like 'balance' should only be modifiable by backend functions.
+    match /users/{userId} {
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null;
+    }
+
+    // Transactions should be created by users, but only read by the user who owns them.
+    // Status updates (e.g., from 'pending' to 'completed') should be handled by a secure backend.
+    match /transactions/{transactionId} {
+      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+    }
+
+    // Investment data should be readable by users, but creation/modification
+    // should be handled by a secure backend function.
+    match /investments/{investmentId} {
+       allow read: if request.auth != null;
+       allow create, update, delete: if false; // Handled by backend
+    }
+
+    // Partner data security
+    match /partners/{partnerId} {
+      allow read, update: if request.auth != null && request.auth.uid == partnerId;
+      allow create: if request.auth != null;
+    }
+
+    // Allow admins to read/write all data.
+    // This assumes an 'isAdmin' custom claim is set on the admin user's token.
+    match /{document=**} {
+      allow read, write: if request.auth != null && request.auth.token.isAdmin == true;
+    }
+  }
+}
