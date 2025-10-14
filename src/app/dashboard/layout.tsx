@@ -47,7 +47,6 @@ export default function DashboardLayout({
     { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
-    { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
   ]

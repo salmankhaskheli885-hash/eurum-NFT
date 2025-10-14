@@ -10,7 +10,6 @@
         "referrals": "ریفرلز",
         "profile": "پروفائل",
         "logout": "لاگ آؤٹ",
-        "partners": "میرا نیٹ ورک",
         "partner": {
             "dashboard": "پارٹنر ہب",
             "users": "صارفین کا انتظام"
@@ -88,7 +87,8 @@
                 "active": "فعال",
                 "inactive": "غیر فعال"
             }
-        }
+        },
+        "copied": "ریفرل لنک کلپ بورڈ پر کاپی ہو گیا ہے!"
     },
     "profile": {
         "title": "پروفائل اور سیٹنگز",
@@ -105,27 +105,6 @@
         "settingsTitle": "سیٹنگز",
         "password": "پاس ورڈ",
         "changePassword": "پاس ورڈ تبدیل کریں"
-    },
-    "partners": {
-        "title": "پارٹنر نیٹ ورک",
-        "description": "اپنے پارٹنرز کا نظم کریں اور اپنی کمیشن کی آمدنی دیکھیں۔",
-        "totalPartners": "کل پارٹنرز",
-        "totalCommission": "کل کمیشن حاصل کیا",
-        "commissionRate": "کمیشن کی شرح",
-        "basedOnLevel": "پارٹنر کی سطح کی بنیاد پر",
-        "partnerList": "آپ کے پارٹنرز",
-        "partnerListDescription": "آپ کے نیٹ ورک میں تمام پارٹنرز کی فہرست۔",
-        "table": {
-            "name": "نام",
-            "level": "سطح",
-            "commission": "کمیشن حاصل کیا",
-            "status": "حیثیت",
-            "levelValue": "سطح {level}",
-            "statusValue": {
-                "active": "فعال",
-                "inactive": "غیر فعال"
-            }
-        }
     },
     "login": {
         "title": "خوش آمدید",

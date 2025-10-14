@@ -10,7 +10,6 @@
         "referrals": "Referrals",
         "profile": "Profile",
         "logout": "Logout",
-        "partners": "My Network",
         "partner": {
             "dashboard": "Partner Hub",
             "users": "User Management"
@@ -88,7 +87,8 @@
                 "active": "Active",
                 "inactive": "Inactive"
             }
-        }
+        },
+        "copied": "Referral link copied to clipboard!"
     },
     "profile": {
         "title": "Profile & Settings",
@@ -105,27 +105,6 @@
         "settingsTitle": "Settings",
         "password": "Password",
         "changePassword": "Change Password"
-    },
-    "partners": {
-        "title": "Partner Network",
-        "description": "Manage your partners and view your commission earnings.",
-        "totalPartners": "Total Partners",
-        "totalCommission": "Total Commission Earned",
-        "commissionRate": "Commission Rate",
-        "basedOnLevel": "Based on partner level",
-        "partnerList": "Your Partners",
-        "partnerListDescription": "A list of all partners in your network.",
-        "table": {
-            "name": "Name",
-            "level": "Level",
-            "commission": "Commission Earned",
-            "status": "Status",
-            "levelValue": "Level {level}",
-            "statusValue": {
-                "active": "Active",
-                "inactive": "Inactive"
-            }
-        }
     },
     "login": {
         "title": "Welcome Back",
