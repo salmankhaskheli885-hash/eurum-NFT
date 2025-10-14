@@ -18,7 +18,7 @@ import { AuthForm, handleGoogleSignIn } from "@/components/auth/auth-form";
 import { useAuth, useFirestore } from "@/firebase/provider";
 import { useToast } from "@/hooks/use-toast";
 import { useRouter } from "next/navigation";
-import { getRedirectResult, GoogleAuthProvider } from "firebase/auth";
+import { getRedirectResult } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import type { UserProfile } from "@/lib/schema";
 
