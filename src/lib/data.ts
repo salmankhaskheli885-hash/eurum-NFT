@@ -39,12 +39,20 @@ export type AppSettings = {
     withdrawalFee: string;
 }
 
+export type Announcement = {
+    id: number;
+    message: string;
+    date: string;
+}
+
 export let appSettings: AppSettings = {
     adminWalletNumber: "0300-1234567",
     adminWalletName: "JazzCash",
     adminAccountHolderName: "Fynix Pro Admin",
     withdrawalFee: "2"
 }
+
+export let mockAnnouncements: Announcement[] = [];
 
 export const mockUser: UserProfile = {
   displayName: 'Satoshi Nakamoto',
@@ -127,3 +135,14 @@ export const updateAppSettings = (newSettings: Partial<AppSettings>) => {
     appSettings = { ...appSettings, ...newSettings };
     return appSettings;
 }
+
+// Function to add a new announcement
+export const addAnnouncement = (message: string) => {
+    const newAnnouncement: Announcement = {
+        id: Date.now(),
+        message,
+        date: new Date().toISOString(),
+    };
+    mockAnnouncements.unshift(newAnnouncement); // Add to the beginning of the array
+    return newAnnouncement;
+};

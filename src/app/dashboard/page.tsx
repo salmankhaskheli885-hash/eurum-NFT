@@ -9,7 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { mockTransactions } from "@/lib/data"
+import { mockTransactions, mockAnnouncements } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
@@ -17,6 +17,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Megaphone } from "lucide-react"
+
+function Announcement() {
+    if (mockAnnouncements.length === 0) {
+        return null;
+    }
+
+    const latestAnnouncement = mockAnnouncements[0];
+
+    return (
+        <Alert>
+            <Megaphone className="h-4 w-4" />
+            <AlertTitle>Announcement!</AlertTitle>
+            <AlertDescription>
+                {latestAnnouncement.message}
+            </AlertDescription>
+        </Alert>
+    )
+}
 
 export default function Dashboard() {
   const { t } = useTranslation()
@@ -103,6 +123,7 @@ export default function Dashboard() {
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+      <Announcement />
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
         <Card className="sm:col-span-2">
           <CardHeader className="pb-3">

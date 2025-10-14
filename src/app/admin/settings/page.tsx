@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Textarea } from "@/components/ui/textarea"
-import { appSettings, updateAppSettings } from "@/lib/data"
+import { appSettings, updateAppSettings, addAnnouncement } from "@/lib/data"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
@@ -41,8 +41,15 @@ export default function AdminSettingsPage() {
   }
   
   const handleAnnouncementPost = () => {
-    // In a real app, this would push the announcement to users via FCM
-    console.log("Posting announcement:", announcement)
+    if (!announcement.trim()) {
+        toast({
+            variant: "destructive",
+            title: "Announcement is empty",
+            description: "Please write a message before posting.",
+        });
+        return;
+    }
+    addAnnouncement(announcement);
     toast({
       title: "Announcement Sent",
       description: "The announcement has been broadcast to all users.",
