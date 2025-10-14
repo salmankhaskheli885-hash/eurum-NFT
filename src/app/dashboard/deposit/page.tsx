@@ -1,17 +1,16 @@
 
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Banknote, Copy, Camera } from "lucide-react"
+import { Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { addTransaction } from "@/lib/data"
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
 
 
 // This would typically come from a remote config or database
@@ -26,27 +25,7 @@ export default function DepositPage() {
     const [amount, setAmount] = useState("")
     const [tid, setTid] = useState("")
     const [receipt, setReceipt] = useState<File | null>(null)
-    const [hasCameraPermission, setHasCameraPermission] = useState(false);
-    const videoRef = useRef<HTMLVideoElement>(null);
 
-
-    useEffect(() => {
-        const getCameraPermission = async () => {
-          try {
-            const stream = await navigator.mediaDevices.getUserMedia({video: true});
-            setHasCameraPermission(true);
-    
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-            }
-          } catch (error) {
-            console.error('Error accessing camera:', error);
-            setHasCameraPermission(false);
-          }
-        };
-    
-        getCameraPermission();
-      }, []);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(ADMIN_WALLET_NUMBER)
@@ -105,23 +84,6 @@ export default function DepositPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Receipt Upload</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
-          {!hasCameraPermission && (
-            <Alert variant="destructive" className="mt-4">
-                <AlertTitle>Camera Access Required</AlertTitle>
-                <AlertDescription>
-                    Please allow camera access to upload a receipt. You can still upload a file manually.
-                </AlertDescription>
-            </Alert>
-          )}
-        </CardContent>
-      </Card>
-      
       <Card>
         <CardHeader>
           <CardTitle>{t('deposit.formTitle')}</CardTitle>
