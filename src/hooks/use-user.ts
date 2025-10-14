@@ -13,15 +13,16 @@ import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 export function useUser() {
   const auth = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Ensure consistent initial state for loading to prevent hydration errors.
+  const [loading, setLoading] = useState<boolean>(() => true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!auth) {
-        setLoading(false);
         // This might happen if Firebase hasn't initialized yet.
-        // The provider should handle this, but as a safeguard:
-        console.warn("Firebase Auth is not available yet.");
+        // The provider should handle this, but as a safeguard we immediately
+        // set loading to false if auth is not available.
+        setLoading(false);
         return;
     }
 
