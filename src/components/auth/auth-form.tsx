@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
-import { GoogleAuthProvider, signInWithPopup, AuthError } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { useAuth } from '@/firebase/provider';
 
 
@@ -60,20 +60,24 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
+        const isAdmin = user.email === 'satoshi@fynix.pro';
 
         toast({
             title: t('login.successTitle'),
             description: `Welcome, ${user.displayName}! Redirecting...`,
         });
 
-        // Redirect to dashboard on successful login
-        router.push('/dashboard');
+        // Redirect based on role
+        if (isAdmin) {
+            router.push('/admin');
+        } else {
+            router.push('/dashboard');
+        }
         
     } catch (error: any) {
         let title = 'An unknown error occurred';
         let description = 'Please try again later.';
 
-        // Check for Firebase Auth error by checking for the 'code' property
         if (error && error.code) {
             if (error.code === 'auth/unauthorized-domain') {
                 title = "Domain Not Authorized";

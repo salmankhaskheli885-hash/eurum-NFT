@@ -14,7 +14,7 @@ export function useUser() {
   const auth = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
   // Ensure consistent initial state for loading to prevent hydration errors.
-  const [loading, setLoading] = useState<boolean>(() => true);
+  const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -30,12 +30,15 @@ export function useUser() {
         // from Firestore here based on their UID.
         // For this simulation, we'll construct a profile from the auth object
         // and supplement with mock data.
+        
+        // Check if the user's email is the admin email
+        const isAdmin = firebaseUser.email === 'satoshi@fynix.pro';
+
         const userProfile: UserProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
-          // Default values, would be fetched from Firestore
-          role: 'user', 
+          role: isAdmin ? 'admin' : 'user', 
           shortUid: firebaseUser.uid.substring(0, 8),
           balance: 133742.00,
           currency: 'PKR',
