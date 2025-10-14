@@ -39,9 +39,10 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="user" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
+                    <TabsList className="grid w-full grid-cols-3">
                         <TabsTrigger value="user">{t("login.userTab")}</TabsTrigger>
                         <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
+                        <TabsTrigger value="admin">{t("login.adminTab")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="user">
                         <div className="grid gap-4 pt-4">
@@ -83,6 +84,21 @@ export default function LoginPage() {
                             <Link href="/register" className="underline text-primary">
                             {t("login.signUpLink")}
                             </Link>
+                        </div>
+                    </TabsContent>
+                     <TabsContent value="admin">
+                        <div className="grid gap-4 pt-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="admin-email">{t("login.emailLabel")}</Label>
+                                <Input id="admin-email" type="email" placeholder="admin@fynix.pro" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="admin-password">{t("login.passwordLabel")}</Label>
+                                <Input id="admin-password" type="password" required />
+                            </div>
+                            <Button type="submit" className="w-full">
+                                <Link href="/admin" className="w-full h-full flex items-center justify-center">{t("login.buttonAdmin")}</Link>
+                            </Button>
                         </div>
                     </TabsContent>
                 </Tabs>

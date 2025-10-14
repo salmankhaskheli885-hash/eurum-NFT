@@ -165,13 +165,15 @@
         "passwordLabel": "Password",
         "button": "Sign In",
         "buttonPartner": "Sign In as Partner",
+        "buttonAdmin": "Sign In as Admin",
         "googleButton": "Sign In with Google",
         "separator": "OR",
         "noAccount": "Don't have an account?",
         "noAccountPartner": "Not a partner?",
         "signUpLink": "Sign Up",
         "userTab": "User",
-        "partnerTab": "Partner"
+        "partnerTab": "Partner",
+        "adminTab": "Admin"
     },
     "register": {
         "title": "Create Account",
@@ -239,6 +241,38 @@
                 "successDescription": "Thank you for contacting us. We will get back to you shortly."
             }
         }
+    },
+    "admin": {
+        "title": "Admin Panel",
+        "nav": {
+            "dashboard": "Dashboard",
+            "users": "Users",
+            "deposits": "Deposits",
+            "withdrawals": "Withdrawals",
+            "investments": "Plans",
+            "security": "Security",
+            "settings": "Settings"
+        },
+        "dashboardTitle": "Admin Dashboard",
+        "dashboardDescription": "Manage all aspects of the Fynix Pro application.",
+        "stats": {
+            "totalUsers": "Total Users",
+            "totalDeposits": "Total Deposits",
+            "pendingWithdrawals": "Pending Withdrawals",
+            "totalInvested": "Total Invested",
+            "pendingKyc": "Pending KYC"
+        },
+        "manualActions": "Manual Actions",
+        "manualActionsDescription": "Key tasks requiring admin approval.",
+        "action": {
+            "approveWithdrawals": "Approve / Reject Withdrawals",
+            "manageUsers": "Suspend / Ban / Edit Users",
+            "approveKyc": "Approve / Reject KYC Submissions",
+            "managePlans": "Edit / Delete Investment Plans"
+        },
+        "activityLogs": "Recent Activity Logs",
+        "activityLogsDescription": "Overview of recent important system events.",
+        "activityPlaceholder": "Activity logs will appear here..."
     },
     "kyc": {
         "statusPill": {
