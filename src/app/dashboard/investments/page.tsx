@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Button } from "@/components/ui/button"
@@ -17,6 +18,13 @@ import { Lock } from "lucide-react"
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const userVipLevel = mockUser.vipLevel
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-PK", {
+      style: "currency",
+      currency: "PKR",
+    }).format(amount)
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,7 +58,7 @@ export default function InvestmentsPage() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Investment</span>
                   <span className="font-semibold">
-                    ${plan.minInvestment} - ${plan.maxInvestment}
+                    {formatCurrency(plan.minInvestment)} - {formatCurrency(plan.maxInvestment)}
                   </span>
                 </div>
               </CardContent>

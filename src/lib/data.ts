@@ -1,3 +1,4 @@
+
 export type User = {
   name: string;
   email: string;
@@ -41,7 +42,7 @@ export const mockUser: User = {
   uid: 'abc-123-def-456-ghi-789',
   shortUid: 'a1b2c3d4',
   balance: 1337.42,
-  currency: 'USD',
+  currency: 'PKR',
   vipLevel: 2,
   vipProgress: 65,
   kycStatus: 'approved',

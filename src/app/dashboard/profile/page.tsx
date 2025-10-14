@@ -1,3 +1,4 @@
+
 "use client"
 
 import Image from "next/image"
@@ -61,18 +62,18 @@ export default function ProfilePage() {
 
                 <Card className="md:col-span-2">
                     <CardHeader>
-                        <CardTitle>{t('dashboard.recentTransactions')}</CardTitle>
+                        <CardTitle>{t('profile.recentTransactions')}</CardTitle>
                         <CardDescription>A list of your recent transactions.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
                             <TableHeader>
                             <TableRow>
-                                <TableHead>{t('dashboard.transactionId')}</TableHead>
-                                <TableHead>{t('dashboard.transactionType')}</TableHead>
-                                <TableHead>{t('dashboard.transactionDate')}</TableHead>
-                                <TableHead className="text-right">{t('dashboard.transactionAmount')}</TableHead>
-                                <TableHead className="text-center">{t('dashboard.transactionStatus')}</TableHead>
+                                <TableHead>{t('profile.transactionId')}</TableHead>
+                                <TableHead>{t('profile.transactionType')}</TableHead>
+                                <TableHead>{t('profile.transactionDate')}</TableHead>
+                                <TableHead className="text-right">{t('profile.transactionAmount')}</TableHead>
+                                <TableHead className="text-center">{t('profile.transactionStatus')}</TableHead>
                             </TableRow>
                             </TableHeader>
                             <TableBody>
