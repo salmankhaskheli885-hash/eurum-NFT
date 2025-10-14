@@ -58,7 +58,6 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         const authUser = userCredential.user;
 
         try {
-          // Now, try to create the user profile in Firestore
           const shortUid = authUser.uid.substring(0, 8);
           const newUserProfile: UserProfile = {
             uid: authUser.uid,
@@ -75,20 +74,18 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
           };
 
           await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
-
-          // Only send verification email if both Auth and Firestore succeed
-          await sendEmailVerification(authUser);
-
+          
           toast({
-            title: t('register.successTitle'),
-            description: t('register.successDescription'),
+            title: "Registration Successful!",
+            description: "You can now log in with your credentials.",
           });
 
           router.push('/login');
 
         } catch (firestoreError: any) {
-          // CRITICAL: If Firestore fails, delete the user from Auth to prevent zombie users
-          await deleteUser(authUser);
+          await deleteUser(authUser).catch((deleteErr) => {
+            console.error("Failed to delete orphaned auth user:", deleteErr);
+          });
           toast({
             variant: 'destructive',
             title: 'Registration Failed',
@@ -111,17 +108,6 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
           password
         );
         const authUser = userCredential.user;
-
-        // EMAIL VERIFICATION CHECK REMOVED FOR DEVELOPMENT
-        // if (!authUser.emailVerified) {
-        //   toast({
-        //     variant: 'destructive',
-        //     title: t('login.verification.title'),
-        //     description: t('login.verification.description'),
-        //   });
-        //   setLoading(false);
-        //   return;
-        // }
 
         const userDocRef = doc(firestore, 'users', authUser.uid);
         const userDocSnap = await getDoc(userDocRef);
