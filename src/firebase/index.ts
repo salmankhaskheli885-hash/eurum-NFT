@@ -1,9 +1,7 @@
 
-'use client';
+import { type FirebaseApp } from 'firebase/app';
 
-import { getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-
-const firebaseConfig = {
+export const firebaseConfig = {
     "projectId": "earnify-7f26c",
     "appId": "1:484358708808:web:79c5ccf925865239cb427d",
     "apiKey": "AIzaSyAPAkx06OCDGxuiXaX2D9U0MSWDyGRjkoY",
@@ -12,8 +10,7 @@ const firebaseConfig = {
     "messagingSenderId": "484358708808"
 };
 
-// Initialize Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
+// Note: The app initialization is now handled in FirebaseClientProvider
+// to ensure it only runs on the client side.
 
-export { app };
 export type { FirebaseApp };
