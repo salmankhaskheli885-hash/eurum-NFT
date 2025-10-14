@@ -24,17 +24,13 @@ export default function LoginPage() {
                     <Logo className="w-16 h-16 text-primary" />
                 </Link>
                 <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
-                <CardDescription>{t("login.description")}</CardDescription>
+                <CardDescription>
+                  {t('register.description')}
+                </CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="pt-4 space-y-4">
-                  <AuthForm role="user" />
-                </div>
-                 <div className="mt-4 text-center text-sm">
-                    {t("login.noAccount")}{" "}
-                    <Link href="/register" className="underline text-primary">
-                    {t("login.signUpLink")}
-                    </Link>
+                  <AuthForm />
                 </div>
             </CardContent>
         </Card>

@@ -28,7 +28,7 @@ export default function RegisterPage() {
         </CardHeader>
         <CardContent>
             <div className="pt-4 space-y-4">
-              <AuthForm role="user" isRegister={true} />
+              <AuthForm />
             </div>
              <div className="mt-4 text-center text-sm">
                 {t('register.hasAccount')}{" "}
