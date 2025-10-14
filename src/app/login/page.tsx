@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
 
@@ -28,55 +29,79 @@ export default function LoginPage() {
   const { t } = useTranslation();
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
-      <Card className="mx-auto max-w-sm w-full">
-        <CardHeader className="text-center">
-            <Link href="/" className="inline-block mx-auto mb-4">
-                <Logo className="w-16 h-16 text-primary" />
-            </Link>
-          <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
-          <CardDescription>{t("login.description")}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">{t("login.emailLabel")}</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="m@example.com"
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">{t("login.passwordLabel")}</Label>
-              <Input id="password" type="password" required />
-            </div>
-            <Button type="submit" className="w-full">
-              <Link href="/dashboard" className="w-full h-full flex items-center justify-center">{t("login.button")}</Link>
-            </Button>
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
-                  {t("login.separator")}
-                </span>
-              </div>
-            </div>
-            <Button variant="outline" className="w-full">
-                <GoogleIcon className="mr-2 h-4 w-4"/>
-                {t("login.googleButton")}
-            </Button>
-          </div>
-          <div className="mt-4 text-center text-sm">
-            {t("login.noAccount")}{" "}
-            <Link href="/register" className="underline text-primary">
-              {t("login.signUpLink")}
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
+        <Card className="mx-auto max-w-sm w-full">
+            <CardHeader className="text-center">
+                <Link href="/" className="inline-block mx-auto mb-4">
+                    <Logo className="w-16 h-16 text-primary" />
+                </Link>
+                <CardTitle className="text-2xl">{t("login.title")}</CardTitle>
+                <CardDescription>{t("login.description")}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Tabs defaultValue="user" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="user">{t("login.userTab")}</TabsTrigger>
+                        <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="user">
+                        <div className="grid gap-4 pt-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="email">{t("login.emailLabel")}</Label>
+                                <Input id="email" type="email" placeholder="m@example.com" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="password">{t("login.passwordLabel")}</Label>
+                                <Input id="password" type="password" required />
+                            </div>
+                            <Button type="submit" className="w-full">
+                                <Link href="/dashboard" className="w-full h-full flex items-center justify-center">{t("login.button")}</Link>
+                            </Button>
+                        </div>
+                         <div className="mt-4 text-center text-sm">
+                            {t("login.noAccount")}{" "}
+                            <Link href="/register" className="underline text-primary">
+                            {t("login.signUpLink")}
+                            </Link>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="partner">
+                        <div className="grid gap-4 pt-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="partner-email">{t("login.emailLabel")}</Label>
+                                <Input id="partner-email" type="email" placeholder="partner@example.com" required />
+                            </div>
+                            <div className="grid gap-2">
+                                <Label htmlFor="partner-password">{t("login.passwordLabel")}</Label>
+                                <Input id="partner-password" type="password" required />
+                            </div>
+                            <Button type="submit" className="w-full">
+                                <Link href="/admin" className="w-full h-full flex items-center justify-center">{t("login.buttonPartner")}</Link>
+                            </Button>
+                        </div>
+                         <div className="mt-4 text-center text-sm">
+                            {t("login.noAccountPartner")}{" "}
+                            <Link href="/register" className="underline text-primary">
+                            {t("login.signUpLink")}
+                            </Link>
+                        </div>
+                    </TabsContent>
+                </Tabs>
+                <div className="relative mt-6">
+                    <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-card px-2 text-muted-foreground">
+                        {t("login.separator")}
+                        </span>
+                    </div>
+                </div>
+                <Button variant="outline" className="w-full mt-6">
+                    <GoogleIcon className="mr-2 h-4 w-4"/>
+                    {t("login.googleButton")}
+                </Button>
+            </CardContent>
+        </Card>
     </div>
   );
 }

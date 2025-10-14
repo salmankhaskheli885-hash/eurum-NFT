@@ -9,6 +9,7 @@ import {
   TrendingUp,
   User,
   Users,
+  Shield,
 } from "lucide-react"
 
 import {
@@ -36,7 +37,9 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const { t } = useTranslation()
 
-  const menuItems = [
+  const isAdmin = pathname.startsWith('/admin');
+
+  const userMenuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
@@ -45,11 +48,19 @@ export default function DashboardLayout({
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
   ]
 
+  const adminMenuItems = [
+    { href: "/admin", label: t('nav.admin.dashboard'), icon: LayoutDashboard },
+    { href: "/admin/users", label: t('nav.admin.users'), icon: Users },
+    { href: "/admin/kyc", label: t('nav.admin.kyc'), icon: Shield },
+  ]
+
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link href={isAdmin ? "/admin" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">{t('appName')}</span>
           </Link>

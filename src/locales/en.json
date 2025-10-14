@@ -7,7 +7,12 @@
         "referrals": "Referrals",
         "profile": "Profile",
         "logout": "Logout",
-        "partners": "Partners"
+        "partners": "Partners",
+        "admin": {
+            "dashboard": "Admin",
+            "users": "Users",
+            "kyc": "KYC Management"
+        }
     },
     "dashboard": {
         "title": "Dashboard",
@@ -104,10 +109,14 @@
         "emailLabel": "Email",
         "passwordLabel": "Password",
         "button": "Sign In",
+        "buttonPartner": "Sign In as Partner",
         "googleButton": "Sign In with Google",
         "separator": "OR",
         "noAccount": "Don't have an account?",
-        "signUpLink": "Sign Up"
+        "noAccountPartner": "Not a partner?",
+        "signUpLink": "Sign Up",
+        "userTab": "User",
+        "partnerTab": "Partner"
     },
     "register": {
         "title": "Create Account",
@@ -116,13 +125,49 @@
         "emailLabel": "Email",
         "passwordLabel": "Password",
         "button": "Sign Up",
+        "buttonPartner": "Sign Up as Partner",
         "googleButton": "Sign Up with Google",
         "separator": "OR",
         "hasAccount": "Already have an account?",
-        "signInLink": "Sign In"
+        "hasAccountPartner": "Already a partner?",
+        "signInLink": "Sign In",
+        "userTab": "User",
+        "partnerTab": "Partner"
     },
     "languages": {
         "english": "English",
         "urdu": "Urdu"
+    },
+    "admin": {
+        "dashboard": {
+            "title": "Admin Dashboard",
+            "description": "Overview of the entire platform.",
+            "totalUsers": "Total Users",
+            "totalInvested": "Total Invested",
+            "pendingKyc": "Pending KYC"
+        },
+        "users": {
+            "title": "User Management",
+            "description": "View and manage all users on the platform.",
+            "table": {
+                "name": "Name",
+                "email": "Email",
+                "balance": "Balance",
+                "kycStatus": "KYC Status",
+                "actions": "Actions"
+            }
+        },
+        "kyc": {
+            "title": "KYC Management",
+            "description": "Review and process KYC submissions.",
+            "table": {
+                "user": "User",
+                "submissionDate": "Submission Date",
+                "status": "Status",
+                "actions": "Actions"
+            },
+            "approve": "Approve",
+            "reject": "Reject"
+        }
     }
 }

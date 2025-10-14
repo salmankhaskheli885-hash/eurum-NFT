@@ -7,7 +7,12 @@
         "referrals": "ریفرلز",
         "profile": "پروفائل",
         "logout": "لاگ آؤٹ",
-        "partners": "پارٹنرز"
+        "partners": "پارٹنرز",
+        "admin": {
+            "dashboard": "ایڈمن",
+            "users": "صارفین",
+            "kyc": "KYC مینجمنٹ"
+        }
     },
     "dashboard": {
         "title": "ڈیش بورڈ",
@@ -104,10 +109,14 @@
         "emailLabel": "ای میل",
         "passwordLabel": "پاس ورڈ",
         "button": "سائن ان کریں",
+        "buttonPartner": "پارٹنر کے طور پر سائن ان کریں",
         "googleButton": "گوگل کے ساتھ سائن ان کریں",
         "separator": "یا",
         "noAccount": "اکاؤنٹ نہیں ہے؟",
-        "signUpLink": "سائن اپ کریں"
+        "noAccountPartner": "پارٹنر نہیں ہیں؟",
+        "signUpLink": "سائن اپ کریں",
+        "userTab": "صارف",
+        "partnerTab": "پارٹنر"
     },
     "register": {
         "title": "اکاؤنٹ بنائیں",
@@ -116,13 +125,49 @@
         "emailLabel": "ای میل",
         "passwordLabel": "پاس ورڈ",
         "button": "سائن اپ کریں",
+        "buttonPartner": "پارٹنر کے طور پر سائن اپ کریں",
         "googleButton": "گوگل کے ساتھ سائن اپ کریں",
         "separator": "یا",
         "hasAccount": "پہلے سے اکاؤنٹ ہے؟",
-        "signInLink": "سائن ان کریں"
+        "hasAccountPartner": "پہلے سے پارٹنر ہیں؟",
+        "signInLink": "سائن ان کریں",
+        "userTab": "صارف",
+        "partnerTab": "پارٹنر"
     },
     "languages": {
         "english": "English",
         "urdu": "اردو"
+    },
+    "admin": {
+        "dashboard": {
+            "title": "ایڈمن ڈیش بورڈ",
+            "description": "پورے پلیٹ فارم کا جائزہ۔",
+            "totalUsers": "کل صارفین",
+            "totalInvested": "کل سرمایہ کاری",
+            "pendingKyc": "زیر التواء KYC"
+        },
+        "users": {
+            "title": "صارف مینجمنٹ",
+            "description": "پلیٹ فارم پر تمام صارفین کو دیکھیں اور ان کا نظم کریں۔",
+            "table": {
+                "name": "نام",
+                "email": "ای میل",
+                "balance": "بیلنس",
+                "kycStatus": "KYC حیثیت",
+                "actions": "کارروائیاں"
+            }
+        },
+        "kyc": {
+            "title": "KYC مینجمنٹ",
+            "description": "KYC گذارشات کا جائزہ لیں اور ان پر کارروائی کریں۔",
+            "table": {
+                "user": "صارف",
+                "submissionDate": "جمع کرانے کی تاریخ",
+                "status": "حیثیت",
+                "actions": "کارروائیاں"
+            },
+            "approve": "منظور کریں",
+            "reject": "مسترد کریں"
+        }
     }
 }
