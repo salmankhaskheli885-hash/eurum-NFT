@@ -13,32 +13,32 @@ import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
 export function useUser() {
   const auth = useAuth();
   const [user, setUser] = useState<UserProfile | null>(null);
-  // Ensure consistent initial state for loading to prevent hydration errors.
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!auth) {
-        // If auth is not available yet (e.g., during initial render),
-        // we keep loading true until the auth object is ready.
         return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
-        // In a real application, you would fetch the user's profile
-        // from Firestore here based on their UID.
-        // For this simulation, we'll construct a profile from the auth object
-        // and supplement with mock data.
         
-        // Check if the user's email is the admin email
+        // Determine user role based on email for this simulation
         const isAdmin = firebaseUser.email === 'satoshi@fynix.pro';
+        const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
+        let role: UserProfile['role'] = 'user';
+        if (isAdmin) {
+          role = 'admin';
+        } else if (isPartner) {
+          role = 'partner';
+        }
 
         const userProfile: UserProfile = {
           uid: firebaseUser.uid,
           email: firebaseUser.email,
           displayName: firebaseUser.displayName,
-          role: isAdmin ? 'admin' : 'user', 
+          role: role, 
           shortUid: firebaseUser.uid.substring(0, 8),
           balance: 133742.00,
           currency: 'PKR',

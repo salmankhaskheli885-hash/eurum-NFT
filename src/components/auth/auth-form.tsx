@@ -39,7 +39,7 @@ function GoogleIcon(props: any) {
     );
 }
 
-export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
+export function AuthForm({ mode, role }: { mode: 'login' | 'register', role: 'user' | 'partner' }) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
@@ -60,8 +60,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
+        
+        // This is a simplified role check. In a real app, you'd get the role from Firestore.
         const isAdmin = user.email === 'satoshi@fynix.pro';
-
+        
         toast({
             title: t('login.successTitle'),
             description: `Welcome, ${user.displayName}! Redirecting...`,
@@ -70,6 +72,8 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         // Redirect based on role
         if (isAdmin) {
             router.push('/admin');
+        } else if (role === 'partner') {
+            router.push('/partner');
         } else {
             router.push('/dashboard');
         }
@@ -100,7 +104,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-6">
         <Button 
             variant="outline" 
             className="w-full h-12 text-base"
@@ -108,7 +112,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
             disabled={loading}
         >
             <GoogleIcon className="mr-2 h-6 w-6" />
-            {loading ? t('login.processing') : t('login.googleButton')}
+            {loading ? t('login.processing') : (role === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
         </Button>
       
        <p className="px-8 text-center text-sm text-muted-foreground">
