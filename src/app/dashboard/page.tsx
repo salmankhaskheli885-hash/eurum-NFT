@@ -27,7 +27,16 @@ export default function Dashboard() {
   }
 
   const userFirstName = mockUser.name.split(" ")[0]
-  const recentTransactions = mockTransactions.slice(0, 3)
+  const recentTransactions = mockTransactions.slice(0, 5)
+
+  const getStatusVariant = (status: (typeof mockTransactions)[0]['status']) => {
+    switch (status) {
+      case 'Completed': return 'default'
+      case 'Pending': return 'secondary'
+      case 'Failed': return 'destructive'
+      default: return 'outline'
+    }
+  }
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
@@ -39,11 +48,11 @@ export default function Dashboard() {
               {t('dashboard.welcomeSubtitle')}
             </CardDescription>
           </CardHeader>
-          <CardHeader>
+          <CardContent>
             <Button asChild>
               <Link href="/dashboard/investments">{t('dashboard.viewInvestments')}</Link>
             </Button>
-          </CardHeader>
+          </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
@@ -74,8 +83,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
-        <Card className="col-span-1">
+       <Card>
           <CardHeader>
             <CardTitle>{t('profile.recentTransactions')}</CardTitle>
           </CardHeader>
@@ -83,11 +91,11 @@ export default function Dashboard() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>{t('profile.transactionId')}</TableHead>
-                    <TableHead>{t('profile.transactionType')}</TableHead>
-                    <TableHead>{t('profile.transactionDate')}</TableHead>
-                    <TableHead className="text-right">{t('profile.transactionAmount')}</TableHead>
-                    <TableHead className="text-center">{t('profile.transactionStatus')}</TableHead>
+                    <TableHead>{t('transactions.id')}</TableHead>
+                    <TableHead>{t('transactions.type')}</TableHead>
+                    <TableHead>{t('transactions.date')}</TableHead>
+                    <TableHead className="text-right">{t('transactions.amount')}</TableHead>
+                    <TableHead className="text-center">{t('transactions.status')}</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -96,9 +104,11 @@ export default function Dashboard() {
                     <TableCell className="font-medium">{transaction.id}</TableCell>
                     <TableCell>{transaction.type}</TableCell>
                     <TableCell>{transaction.date}</TableCell>
-                    <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
+                    <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(transaction.amount)}
+                    </TableCell>
                     <TableCell className="text-center">
-                        <Badge variant={transaction.status === 'Completed' ? 'default' : transaction.status === 'Pending' ? 'secondary' : 'destructive'}>
+                        <Badge variant={getStatusVariant(transaction.status)}>
                             {transaction.status}
                         </Badge>
                     </TableCell>
@@ -108,8 +118,6 @@ export default function Dashboard() {
             </Table>
           </CardContent>
         </Card>
-      </div>
     </div>
   )
 }
-
