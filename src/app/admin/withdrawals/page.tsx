@@ -20,19 +20,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockTransactions, type Transaction } from "@/lib/data"
+import { mockTransactions, type Transaction, updateTransactionStatus } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
-
-// Sample data - this will be replaced with live Firebase data
-const withdrawals = mockTransactions.filter(tx => tx.type === 'Withdrawal');
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [key, setKey] = React.useState(Date.now())
+
+  const withdrawals = React.useMemo(() => mockTransactions.filter(tx => tx.type === 'Withdrawal'), [key]);
   const [filteredWithdrawals, setFilteredWithdrawals] = React.useState(withdrawals)
+  
+  React.useEffect(() => {
+    setFilteredWithdrawals(withdrawals);
+  }, [withdrawals]);
 
   React.useEffect(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -43,14 +47,16 @@ export default function AdminWithdrawalsPage() {
       );
     });
     setFilteredWithdrawals(filteredData);
-  }, [searchTerm]);
+  }, [searchTerm, withdrawals]);
 
-  const handleAction = (transactionId: string, action: 'approved' | 'rejected') => {
+  const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
+    updateTransactionStatus(transactionId, status);
+    const action = status === 'Completed' ? 'approved' : 'rejected';
     toast({
       title: `Withdrawal ${action}`,
       description: `Transaction ${transactionId} has been ${action}.`,
     })
-    // In a real app, you would update the transaction status in Firebase and trigger the payout
+    setKey(Date.now());
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -112,11 +118,11 @@ export default function AdminWithdrawalsPage() {
                   <TableCell className="text-center">
                     {withdrawal.status === 'Pending' ? (
                       <div className="flex gap-2 justify-center">
-                        <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal.id, 'approved')}>
+                        <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal.id, 'Completed')}>
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Approve
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal.id, 'rejected')}>
+                        <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal.id, 'Failed')}>
                           <XCircle className="mr-2 h-4 w-4" />
                           Reject
                         </Button>

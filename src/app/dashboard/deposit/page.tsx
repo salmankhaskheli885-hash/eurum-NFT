@@ -10,11 +10,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
 import { Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction } from "@/lib/data"
-
-
-// This would typically come from a remote config or database
-const ADMIN_WALLET_NUMBER = "0300-1234567"
+import { addTransaction, appSettings } from "@/lib/data"
 
 export default function DepositPage() {
     const { t } = useTranslation()
@@ -28,7 +24,7 @@ export default function DepositPage() {
 
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(ADMIN_WALLET_NUMBER)
+        navigator.clipboard.writeText(appSettings.adminWalletNumber)
         setCopied(true)
         toast({
             description: t('referrals.copied'),
@@ -75,7 +71,7 @@ export default function DepositPage() {
            <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
                 <div className="flex-1 space-y-1">
                   <p className="text-sm font-medium leading-none">{t('deposit.adminWallet')}</p>
-                  <p className="text-sm text-muted-foreground">{ADMIN_WALLET_NUMBER}</p>
+                  <p className="text-sm text-muted-foreground">{appSettings.adminWalletNumber}</p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleCopy}>
                     <Copy className="h-5 w-5" />

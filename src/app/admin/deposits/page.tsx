@@ -20,19 +20,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockTransactions, type Transaction } from "@/lib/data"
+import { mockTransactions, type Transaction, updateTransactionStatus } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { CheckCircle, Search, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
-
-// Sample data - this will be replaced with live Firebase data
-const deposits = mockTransactions.filter(tx => tx.type === 'Deposit');
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const [searchTerm, setSearchTerm] = React.useState("")
+  const [key, setKey] = React.useState(Date.now()) // To force re-render
+
+  const deposits = React.useMemo(() => mockTransactions.filter(tx => tx.type === 'Deposit'), [key]);
   const [filteredDeposits, setFilteredDeposits] = React.useState(deposits)
+
+  React.useEffect(() => {
+    setFilteredDeposits(deposits);
+  }, [deposits]);
 
   React.useEffect(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -43,15 +47,17 @@ export default function AdminDepositsPage() {
       );
     });
     setFilteredDeposits(filteredData);
-  }, [searchTerm]);
+  }, [searchTerm, deposits]);
 
 
-  const handleAction = (transactionId: string, action: 'approved' | 'rejected') => {
+  const handleAction = (transactionId: string, status: 'Completed' | 'Failed') => {
+    updateTransactionStatus(transactionId, status);
+    const action = status === 'Completed' ? 'approved' : 'rejected';
     toast({
       title: `Deposit ${action}`,
       description: `Transaction ${transactionId} has been ${action}.`,
     })
-    // In a real app, you would update the transaction status in Firebase here
+    setKey(Date.now()); // Re-render the component to reflect changes
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -111,11 +117,11 @@ export default function AdminDepositsPage() {
                   <TableCell className="text-center">
                     {deposit.status === 'Pending' ? (
                       <div className="flex gap-2 justify-center">
-                        <Button variant="outline" size="sm" onClick={() => handleAction(deposit.id, 'approved')}>
+                        <Button variant="outline" size="sm" onClick={() => handleAction(deposit.id, 'Completed')}>
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Approve
                         </Button>
-                        <Button variant="destructive" size="sm" onClick={() => handleAction(deposit.id, 'rejected')}>
+                        <Button variant="destructive" size="sm" onClick={() => handleAction(deposit.id, 'Failed')}>
                           <XCircle className="mr-2 h-4 w-4" />
                           Reject
                         </Button>

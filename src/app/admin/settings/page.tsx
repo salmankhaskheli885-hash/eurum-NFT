@@ -15,21 +15,18 @@ import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Textarea } from "@/components/ui/textarea"
-
-// This would typically come from a remote config or database
-const INITIAL_ADMIN_WALLET_NUMBER = "0300-1234567"
+import { appSettings, updateAppSettings } from "@/lib/data"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   
-  const [walletNumber, setWalletNumber] = useState(INITIAL_ADMIN_WALLET_NUMBER)
-  const [withdrawalFee, setWithdrawalFee] = useState("2")
+  const [walletNumber, setWalletNumber] = useState(appSettings.adminWalletNumber)
+  const [withdrawalFee, setWithdrawalFee] = useState(appSettings.withdrawalFee)
   const [announcement, setAnnouncement] = useState("")
 
   const handleSettingsSave = () => {
-    // In a real app, this would save the settings to Firebase
-    console.log("Saving settings:", { walletNumber, withdrawalFee })
+    updateAppSettings({ adminWalletNumber: walletNumber, withdrawalFee });
     toast({
       title: "Settings Saved",
       description: "Application settings have been updated successfully.",

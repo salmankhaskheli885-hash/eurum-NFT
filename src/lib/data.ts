@@ -1,4 +1,5 @@
 
+
 export type User = {
   name: string;
   email: string;
@@ -30,6 +31,16 @@ export type InvestmentPlan = {
   requiredVipLevel: number;
 };
 
+export type AppSettings = {
+    adminWalletNumber: string;
+    withdrawalFee: string;
+}
+
+export let appSettings: AppSettings = {
+    adminWalletNumber: "0300-1234567",
+    withdrawalFee: "2"
+}
+
 export const mockUser: User = {
   name: 'Satoshi Nakamoto',
   email: 'satoshi@fynix.pro',
@@ -46,8 +57,8 @@ export const mockUser: User = {
 export let mockTransactions: Transaction[] = [
   { id: 'TXN789012', type: 'Deposit', date: '2023-10-26', amount: 50000, status: 'Completed' },
   { id: 'TXN456789', type: 'Investment', date: '2023-10-25', amount: -25000, status: 'Completed' },
-  { id: 'TXN123456', type: 'Withdrawal', date: '2023-10-24', amount: -10000, status: 'Completed' },
-  { id: 'TXN987654', type: 'Deposit', date: '2023-10-23', amount: 100000, status: 'Completed' },
+  { id: 'TXN123456', type: 'Withdrawal', date: '2023-10-24', amount: -10000, status: 'Pending' },
+  { id: 'TXN987654', type: 'Deposit', date: '2023-10-23', amount: 100000, status: 'Pending' },
   { id: 'TXN654321', type: 'Investment', date: '2023-10-22', amount: -50000, status: 'Failed' },
 ];
 
@@ -74,6 +85,15 @@ export const addTransaction = (transaction: Transaction) => {
   mockTransactions.unshift(transaction);
 };
 
+export const updateTransactionStatus = (transactionId: string, newStatus: 'Completed' | 'Pending' | 'Failed') => {
+    const transaction = mockTransactions.find(tx => tx.id === transactionId);
+    if (transaction) {
+        transaction.status = newStatus;
+        return true;
+    }
+    return false;
+}
+
 // Functions to manage investment plans
 export const addInvestmentPlan = (plan: Omit<InvestmentPlan, 'id'>) => {
     const newPlan = { ...plan, id: Date.now() };
@@ -94,4 +114,10 @@ export const deleteInvestmentPlan = (planId: number) => {
     const initialLength = mockInvestmentPlans.length;
     mockInvestmentPlans = mockInvestmentPlans.filter(p => p.id !== planId);
     return mockInvestmentPlans.length < initialLength;
+}
+
+// Function to update global app settings
+export const updateAppSettings = (newSettings: Partial<AppSettings>) => {
+    appSettings = { ...appSettings, ...newSettings };
+    return appSettings;
 }
