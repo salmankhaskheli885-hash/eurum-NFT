@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
 import { AuthForm } from "@/components/auth/auth-form";
@@ -28,34 +27,15 @@ export default function LoginPage() {
                 <CardDescription>{t("login.description")}</CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="user" className="w-full">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="user">{t("login.userTab")}</TabsTrigger>
-                        <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="user">
-                        <div className="pt-4 space-y-4">
-                          <AuthForm role="user" />
-                        </div>
-                         <div className="mt-4 text-center text-sm">
-                            {t("login.noAccount")}{" "}
-                            <Link href="/register" className="underline text-primary">
-                            {t("login.signUpLink")}
-                            </Link>
-                        </div>
-                    </TabsContent>
-                    <TabsContent value="partner">
-                       <div className="pt-4 space-y-4">
-                           <AuthForm role="partner" />
-                        </div>
-                         <div className="mt-4 text-center text-sm">
-                            {t("login.noAccountPartner")}{" "}
-                            <Link href="/register" className="underline text-primary">
-                            {t("login.signUpLink")}
-                            </Link>
-                        </div>
-                    </TabsContent>
-                </Tabs>
+                <div className="pt-4 space-y-4">
+                  <AuthForm role="user" />
+                </div>
+                 <div className="mt-4 text-center text-sm">
+                    {t("login.noAccount")}{" "}
+                    <Link href="/register" className="underline text-primary">
+                    {t("login.signUpLink")}
+                    </Link>
+                </div>
             </CardContent>
         </Card>
     </div>

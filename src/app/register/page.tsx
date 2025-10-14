@@ -9,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
 import { AuthForm } from "@/components/auth/auth-form";
@@ -28,34 +27,15 @@ export default function RegisterPage() {
           <CardDescription>{t('register.description')}</CardDescription>
         </CardHeader>
         <CardContent>
-            <Tabs defaultValue="user" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="user">{t("register.userTab")}</TabsTrigger>
-                    <TabsTrigger value="partner">{t("register.partnerTab")}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="user">
-                    <div className="pt-4 space-y-4">
-                      <AuthForm role="user" isRegister={true} />
-                    </div>
-                     <div className="mt-4 text-center text-sm">
-                        {t('register.hasAccount')}{" "}
-                        <Link href="/login" className="underline text-primary">
-                        {t('register.signInLink')}
-                        </Link>
-                    </div>
-                </TabsContent>
-                <TabsContent value="partner">
-                    <div className="pt-4 space-y-4">
-                        <AuthForm role="partner" isRegister={true} />
-                    </div>
-                     <div className="mt-4 text-center text-sm">
-                        {t('register.hasAccountPartner')}{" "}
-                        <Link href="/login" className="underline text-primary">
-                        {t('register.signInLink')}
-                        </Link>
-                    </div>
-                </TabsContent>
-            </Tabs>
+            <div className="pt-4 space-y-4">
+              <AuthForm role="user" isRegister={true} />
+            </div>
+             <div className="mt-4 text-center text-sm">
+                {t('register.hasAccount')}{" "}
+                <Link href="/login" className="underline text-primary">
+                {t('register.signInLink')}
+                </Link>
+            </div>
         </CardContent>
       </Card>
     </div>
