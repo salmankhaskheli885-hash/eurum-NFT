@@ -1,4 +1,6 @@
 
+"use client"
+
 import { AuthForm } from '@/components/auth/auth-form';
 import { useTranslation } from '@/hooks/use-translation';
 
