@@ -1,16 +1,18 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Banknote, Copy } from "lucide-react"
+import { Banknote, Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { addTransaction } from "@/lib/data"
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert"
+
 
 // This would typically come from a remote config or database
 const ADMIN_WALLET_NUMBER = "0300-1234567"
@@ -23,6 +25,28 @@ export default function DepositPage() {
     const [yourNumber, setYourNumber] = useState("")
     const [amount, setAmount] = useState("")
     const [tid, setTid] = useState("")
+    const [receipt, setReceipt] = useState<File | null>(null)
+    const [hasCameraPermission, setHasCameraPermission] = useState(false);
+    const videoRef = useRef<HTMLVideoElement>(null);
+
+
+    useEffect(() => {
+        const getCameraPermission = async () => {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            setHasCameraPermission(true);
+    
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+            }
+          } catch (error) {
+            console.error('Error accessing camera:', error);
+            setHasCameraPermission(false);
+          }
+        };
+    
+        getCameraPermission();
+      }, []);
 
     const handleCopy = () => {
         navigator.clipboard.writeText(ADMIN_WALLET_NUMBER)
@@ -80,6 +104,23 @@ export default function DepositPage() {
             </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Receipt Upload</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <video ref={videoRef} className="w-full aspect-video rounded-md bg-muted" autoPlay muted />
+          {!hasCameraPermission && (
+            <Alert variant="destructive" className="mt-4">
+                <AlertTitle>Camera Access Required</AlertTitle>
+                <AlertDescription>
+                    Please allow camera access to upload a receipt. You can still upload a file manually.
+                </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
       
       <Card>
         <CardHeader>
@@ -100,8 +141,12 @@ export default function DepositPage() {
                     <Label htmlFor="tid-number">{t('deposit.tidNumber')}</Label>
                     <Input id="tid-number" type="text" placeholder="A1B2C3D4E5" value={tid} onChange={(e) => setTid(e.target.value)} required />
                 </div>
+                 <div className="grid w-full items-center gap-1.5">
+                    <Label htmlFor="receipt">Payment Receipt</Label>
+                    <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files ? e.target.files[0] : null)} />
+                </div>
                 <Button type="submit" className="w-full">
-                    <Banknote className="mr-2 h-4 w-4" />
+                    <Camera className="mr-2 h-4 w-4" />
                     {t('deposit.submitButton')}
                 </Button>
             </form>
