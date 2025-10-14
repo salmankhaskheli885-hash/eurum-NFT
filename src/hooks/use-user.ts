@@ -26,6 +26,7 @@ export function useUser() {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
       if (firebaseUser) {
         // This function now gets the user from our mock data store or creates them.
+        // It always returns the most up-to-date user profile.
         const userProfile = getOrCreateUser(firebaseUser);
         setUser(userProfile);
       } else {
@@ -44,3 +45,4 @@ export function useUser() {
 
   return { user, loading, error };
 }
+
