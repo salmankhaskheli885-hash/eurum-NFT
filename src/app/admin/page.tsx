@@ -3,7 +3,7 @@
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Users, TrendingUp, ShieldCheck, Landmark, Hourglass } from "lucide-react"
+import { DollarSign, Users, TrendingUp, ShieldCheck, Hourglass } from "lucide-react"
 import { mockUsers, mockTransactions } from "@/lib/data"
 
 export default function AdminDashboardPage() {
@@ -33,9 +33,9 @@ export default function AdminDashboardPage() {
   );
   
    const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
       notation: "compact"
     }).format(amount)
   }

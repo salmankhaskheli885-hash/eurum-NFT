@@ -1,3 +1,4 @@
+
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -9,8 +10,8 @@ export default function PartnerDashboardPage() {
 
   const stats = [
     { title: t('partner.dashboard.totalUsers'), value: '1,250', icon: Users },
-    { title: t('partner.dashboard.totalInvested'), value: 'PKR 1.5M', icon: DollarSign },
-    { title: t('partner.dashboard.totalCommission'), value: 'PKR 150K', icon: TrendingUp },
+    { title: t('partner.dashboard.totalInvested'), value: '$250K', icon: DollarSign },
+    { title: t('partner.dashboard.totalCommission'), value: '$25K', icon: TrendingUp },
     { title: t('partner.dashboard.pendingKyc'), value: '15', icon: ShieldCheck },
   ]
 

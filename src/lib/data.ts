@@ -162,8 +162,8 @@ export function getOrCreateUser(firebaseUser: { uid: string, email: string | nul
         displayName: firebaseUser.displayName,
         role: role,
         shortUid: firebaseUser.uid.substring(0, 8),
-        balance: 133742.00, // Default starting values
-        currency: 'PKR',
+        balance: 1337.42, // Default starting values in USD
+        currency: 'USD',
         vipLevel: 1,
         vipProgress: 0,
         kycStatus: 'unsubmitted',

@@ -19,9 +19,9 @@ export default function TransactionsPage() {
   const { t } = useTranslation()
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
       maximumFractionDigits: 0,
     }).format(amount)
   }

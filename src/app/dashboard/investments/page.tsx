@@ -22,17 +22,19 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
-import { mockUser, mockInvestmentPlans, type InvestmentPlan } from "@/lib/data"
+import { mockInvestmentPlans } from "@/lib/data"
+import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import { Lock, Info } from "lucide-react"
+import { useUser } from "@/hooks/use-user"
 
 function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (planName: string) => void }) {
     const { t } = useTranslation()
 
     const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("en-PK", {
+        return new Intl.NumberFormat("en-US", {
         style: "currency",
-        currency: "PKR",
+        currency: "USD",
         }).format(amount)
     }
 
@@ -86,7 +88,8 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 export default function InvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const userVipLevel = mockUser.vipLevel
+  const { user } = useUser();
+  const userVipLevel = user?.vipLevel ?? 1;
 
   const handleInvest = (planName: string) => {
     toast({
@@ -96,9 +99,9 @@ export default function InvestmentsPage() {
   }
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
     }).format(amount)
   }
 

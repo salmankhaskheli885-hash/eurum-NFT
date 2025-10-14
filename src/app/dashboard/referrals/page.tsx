@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockUser, mockReferredUsers } from "@/lib/data"
+import { mockReferredUsers } from "@/lib/data"
 import { DollarSign, Users, TrendingUp } from "lucide-react"
 
 export default function ReferralsPage() {
@@ -28,9 +28,9 @@ export default function ReferralsPage() {
   const totalDeposits = mockReferredUsers.reduce((acc, user) => acc + user.totalDeposit, 0);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
     }).format(amount)
   }
 

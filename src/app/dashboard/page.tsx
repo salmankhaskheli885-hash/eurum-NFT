@@ -43,9 +43,9 @@ export default function Dashboard() {
   const { user, loading } = useUser();
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
     }).format(amount)
   }
 

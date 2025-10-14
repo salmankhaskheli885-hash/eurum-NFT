@@ -1,3 +1,4 @@
+
 "use client"
 
 import {
@@ -27,9 +28,9 @@ export default function ReferralsPage() {
   const totalDeposits = mockReferredUsers.reduce((acc, user) => acc + user.totalDeposit, 0);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-PK", {
+    return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "PKR",
+      currency: "USD",
     }).format(amount)
   }
 
