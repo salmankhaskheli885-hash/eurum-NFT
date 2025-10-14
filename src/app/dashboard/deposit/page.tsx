@@ -70,7 +70,7 @@ export default function DepositPage() {
         <CardContent>
            <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
                 <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">{t('deposit.adminWallet')}</p>
+                  <p className="text-sm font-medium leading-none">{t('deposit.adminWallet')} ({appSettings.adminWalletName})</p>
                   <p className="text-sm text-muted-foreground">{appSettings.adminWalletNumber}</p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleCopy}>

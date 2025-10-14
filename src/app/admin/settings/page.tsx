@@ -22,11 +22,12 @@ export default function AdminSettingsPage() {
   const { toast } = useToast()
   
   const [walletNumber, setWalletNumber] = useState(appSettings.adminWalletNumber)
+  const [walletName, setWalletName] = useState(appSettings.adminWalletName)
   const [withdrawalFee, setWithdrawalFee] = useState(appSettings.withdrawalFee)
   const [announcement, setAnnouncement] = useState("")
 
   const handleSettingsSave = () => {
-    updateAppSettings({ adminWalletNumber: walletNumber, withdrawalFee });
+    updateAppSettings({ adminWalletNumber: walletNumber, adminWalletName: walletName, withdrawalFee });
     toast({
       title: "Settings Saved",
       description: "Application settings have been updated successfully.",
@@ -60,6 +61,18 @@ export default function AdminSettingsPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
+              <Label htmlFor="wallet-name">Admin Wallet Name</Label>
+              <Input 
+                id="wallet-name" 
+                value={walletName} 
+                onChange={(e) => setWalletName(e.target.value)}
+                placeholder="e.g., JazzCash, Easypaisa"
+              />
+               <p className="text-xs text-muted-foreground">
+                The name of the wallet service.
+              </p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="wallet-number">Admin Deposit Wallet Number</Label>
               <Input 
                 id="wallet-number" 
@@ -67,7 +80,7 @@ export default function AdminSettingsPage() {
                 onChange={(e) => setWalletNumber(e.target.value)}
               />
               <p className="text-xs text-muted-foreground">
-                This is the JazzCash/Easypaisa number users will send deposits to.
+                This is the number users will send deposits to.
               </p>
             </div>
             <div className="space-y-2">
