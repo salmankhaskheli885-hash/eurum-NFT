@@ -2,6 +2,8 @@
     "appName": "فائنکس پرو",
     "nav": {
         "dashboard": "ڈیش بورڈ",
+        "deposit": "جمع کروائیں",
+        "withdraw": "نکالیں",
         "investments": "سرمایہ کاری",
         "kyc": "KYC تصدیق",
         "referrals": "ریفرلز",
@@ -21,15 +23,6 @@
         "viewInvestments": "سرمایہ کاری دیکھیں",
         "balance": "کل بیلنس",
         "totalReturns": "کل منافع",
-        "recentTransactions": "حالیہ ٹرانزیکشنز",
-        "transactionId": "ID",
-        "transactionType": "قسم",
-        "transactionDate": "تاریخ",
-        "transactionAmount": "رقم",
-        "transactionStatus": "حیثیت",
-        "portfolioOverview": "پورٹ فولیو کا جائزہ",
-        "portfolioSubtitle": "آپ کی موجودہ سرمایہ کاری کی تفصیل۔",
-        "assets": "آپ کے اثاثے",
         "quickActions": "فوری کارروائیاں",
         "investments": {
             "title": "سرمایہ کاری کریں",
@@ -47,6 +40,30 @@
             "title": "انعامات کمائیں",
             "description": "دوستوں کو مدعو کریں اور مل کر کمائیں۔"
         }
+    },
+    "deposit": {
+        "title": "فنڈز جمع کروائیں",
+        "description": "سرمایہ کاری شروع کرنے کے لیے اپنے اکاؤنٹ میں فنڈز شامل کریں۔",
+        "instructionsTitle": "جمع کروانے کی ہدایات",
+        "instructionsDescription": "براہ کرم مطلوبہ رقم نیچے دیے گئے ایڈمن والیٹ نمبر پر منتقل کریں اور پھر اپنی جمع کی تصدیق کے لیے فارم پُر کریں۔",
+        "adminWallet": "ایڈمن والیٹ نمبر",
+        "formTitle": "اپنی جمع کی تصدیق کریں",
+        "formDescription": "رقم بھیجنے کے بعد، نیچے دی گئی تفصیلات پُر کریں۔",
+        "yourNumber": "آپ کا نمبر (جس سے آپ نے رقم بھیجی)",
+        "amount": "بھیجی گئی رقم",
+        "tidNumber": "ٹرانزیکشن ID (TID)",
+        "submitButton": "جمع کروانے کی درخواست بھیجیں"
+    },
+    "withdraw": {
+        "title": "فنڈز نکلوائیں",
+        "description": "اپنے اکاؤنٹ سے رقم نکلوانے کی درخواست کریں۔",
+        "formTitle": "رقم نکلوانے کی درخواست",
+        "method": "نکلوانے کا طریقہ",
+        "accountNumber": "اکاؤنٹ نمبر",
+        "accountName": "اکاؤنٹ ہولڈر کا نام",
+        "amount": "نکلوائی جانے والی رقم",
+        "feeNotice": "نکلوائی گئی رقم سے 2% فیس کاٹی جائے گی۔",
+        "submitButton": "رقم نکلوانے کی درخواست بھیجیں"
     },
     "investments": {
         "title": "سرمایہ کاری کے منصوبے",
@@ -80,7 +97,13 @@
         "title": "پروفائل",
         "name": "پورا نام",
         "email": "ای میل ایڈریس",
-        "uid": "صارف ID"
+        "uid": "صارف ID",
+        "recentTransactions": "حالیہ ٹرانزیکشنز",
+        "transactionId": "ID",
+        "transactionType": "قسم",
+        "transactionDate": "تاریخ",
+        "transactionAmount": "رقم",
+        "transactionStatus": "حیثیت"
     },
     "partners": {
         "title": "پارٹنر نیٹ ورک",

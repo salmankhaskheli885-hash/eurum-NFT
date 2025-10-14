@@ -2,6 +2,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
   FileCheck,
   LayoutDashboard,
   LogOut,
@@ -41,6 +43,8 @@ export default function DashboardLayout({
 
   const userMenuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
+    { href: "/dashboard/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
+    { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
     { href: "/dashboard/kyc", label: t('nav.kyc'), icon: FileCheck },

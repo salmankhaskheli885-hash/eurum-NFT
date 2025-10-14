@@ -2,6 +2,8 @@
     "appName": "Fynix Pro",
     "nav": {
         "dashboard": "Dashboard",
+        "deposit": "Deposit",
+        "withdraw": "Withdraw",
         "investments": "Investments",
         "kyc": "KYC Verification",
         "referrals": "Referrals",
@@ -21,15 +23,6 @@
         "viewInvestments": "View Investments",
         "balance": "Total Balance",
         "totalReturns": "Total Returns",
-        "recentTransactions": "Recent Transactions",
-        "transactionId": "ID",
-        "transactionType": "Type",
-        "transactionDate": "Date",
-        "transactionAmount": "Amount",
-        "transactionStatus": "Status",
-        "portfolioOverview": "Portfolio Overview",
-        "portfolioSubtitle": "A breakdown of your current investments.",
-        "assets": "Your Assets",
         "quickActions": "Quick Actions",
         "investments": {
             "title": "Make an Investment",
@@ -47,6 +40,30 @@
             "title": "Earn Rewards",
             "description": "Invite friends and earn together."
         }
+    },
+    "deposit": {
+        "title": "Deposit Funds",
+        "description": "Add funds to your account to start investing.",
+        "instructionsTitle": "Deposit Instructions",
+        "instructionsDescription": "Please transfer the desired amount to the admin wallet number provided below and then fill out the form to confirm your deposit.",
+        "adminWallet": "Admin Wallet Number",
+        "formTitle": "Confirm Your Deposit",
+        "formDescription": "After sending the money, fill in the details below.",
+        "yourNumber": "Your Number (from which you sent money)",
+        "amount": "Amount Sent",
+        "tidNumber": "Transaction ID (TID)",
+        "submitButton": "Submit Deposit Request"
+    },
+    "withdraw": {
+        "title": "Withdraw Funds",
+        "description": "Request a withdrawal from your account.",
+        "formTitle": "Withdrawal Request",
+        "method": "Withdrawal Method",
+        "accountNumber": "Account Number",
+        "accountName": "Account Holder Name",
+        "amount": "Amount to Withdraw",
+        "feeNotice": "A 2% fee will be deducted from the withdrawal amount.",
+        "submitButton": "Submit Withdrawal Request"
     },
     "investments": {
         "title": "Investment Plans",
@@ -80,7 +97,13 @@
         "title": "Profile",
         "name": "Full Name",
         "email": "Email Address",
-        "uid": "User ID"
+        "uid": "User ID",
+        "recentTransactions": "Recent Transactions",
+        "transactionId": "ID",
+        "transactionType": "Type",
+        "transactionDate": "Date",
+        "transactionAmount": "Amount",
+        "transactionStatus": "Status"
     },
     "partners": {
         "title": "Partner Network",
