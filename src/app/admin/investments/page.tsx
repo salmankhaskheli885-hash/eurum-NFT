@@ -67,15 +67,20 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
         ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl } 
-        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/placeholder/600/400' }
+        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'new plan' }
     );
+     const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new plan');
 
     React.useEffect(() => {
         if (open) {
           if (plan) {
               setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl });
+              // A simple way to extract a seed if it follows the picsum pattern
+              const match = plan.imageUrl.match(/picsum\.photos\/seed\/([^/]+)/);
+              setImageSeed(match ? match[1] : 'custom');
           } else {
-              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/newplan/600/400' });
+              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: '' });
+              setImageSeed('new plan');
           }
         }
     }, [open, plan]);
@@ -85,6 +90,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         const { name, value, type } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
+
+    const handleImageSeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setImageSeed(e.target.value);
+    }
 
     const handleSubmit = async () => {
         if (!firestore) return;
@@ -98,15 +107,22 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
+        // Auto-generate URL from seed if it's not a full URL
+        const finalImageUrl = imageSeed.startsWith('http') 
+            ? imageSeed 
+            : `https://picsum.photos/seed/${encodeURIComponent(imageSeed)}/600/400`;
+
+        const dataToSave = { ...formData, imageUrl: finalImageUrl };
+
         try {
             if (plan) {
-                await updateInvestmentPlan(firestore, { ...formData, id: plan.id });
+                await updateInvestmentPlan(firestore, { ...dataToSave, id: plan.id });
                 toast({
                     title: "Plan Updated",
                     description: `The plan "${formData.name}" has been updated.`,
                 });
             } else {
-                await addInvestmentPlan(firestore, formData);
+                await addInvestmentPlan(firestore, dataToSave);
                 toast({
                     title: "New Plan Added",
                     description: `The plan "${formData.name}" has been created.`,
@@ -157,9 +173,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                         <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="imageUrl" className="text-right">Image URL</Label>
-                        <Input id="imageUrl" name="imageUrl" value={formData.imageUrl} onChange={handleChange} className="col-span-3" />
+                        <Label htmlFor="imageSeed" className="text-right">Image Topic</Label>
+                        <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} className="col-span-3" placeholder="e.g., gold coins, crypto" />
                     </div>
+                    <p className="text-xs text-muted-foreground text-center col-span-4 -mt-2">Just type a topic for the image, or paste a full URL.</p>
                 </div>
                 <DialogFooter>
                     <Button type="submit" onClick={handleSubmit}>Save changes</Button>
@@ -178,15 +195,20 @@ export default function AdminInvestmentsPage() {
   const [loading, setLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   
-  React.useEffect(() => {
+  const refreshPlans = React.useCallback(() => {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllInvestmentPlans(firestore, (fetchedPlans) => {
         setPlans(fetchedPlans);
         setLoading(false);
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, [firestore]);
+
+  React.useEffect(() => {
+    const unsubscribe = refreshPlans();
+    return () => unsubscribe && unsubscribe();
+  }, [refreshPlans]);
   
   const filteredPlans = React.useMemo(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -207,6 +229,7 @@ export default function AdminInvestmentsPage() {
             title: `Plan Deleted`,
             description: `The plan "${planName}" has been removed.`,
         });
+        // The listener will auto-update the UI, no need to call refreshPlans() here.
     } catch (error) {
         toast({
             variant: "destructive",
@@ -224,7 +247,7 @@ export default function AdminInvestmentsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.investments')}</h1>
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
-            <PlanForm onSave={() => { /* No-op as listener will update UI */ }}>
+            <PlanForm onSave={() => { /* Listener will update UI */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New Plan
@@ -340,3 +363,5 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
+
+    
