@@ -1,6 +1,7 @@
 
 import { type FirebaseApp } from 'firebase/app';
 
+// This is the one and only source of truth for the Firebase config.
 export const firebaseConfig = {
     "projectId": "fynixpro222",
     "appId": "1:652865910892:web:aa38865298818c399b245a",
@@ -9,8 +10,5 @@ export const firebaseConfig = {
     "storageBucket": "fynixpro222.appspot.com",
     "messagingSenderId": "652865910892"
 };
-
-// Note: The app initialization is now handled in FirebaseClientProvider
-// to ensure it only runs on the client side.
 
 export type { FirebaseApp };
