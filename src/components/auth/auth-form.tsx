@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/firebase/provider';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 function GoogleIcon(props: any) {
     return (
@@ -39,20 +41,42 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const auth = useAuth();
 
-  const handleSimulatedGoogleSignIn = async () => {
+  const handleGoogleSignIn = async () => {
     setLoading(true);
-    
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+      
+      toast({
+        title: 'Sign In Successful!',
+        description: 'Redirecting to your dashboard...',
+      });
+      router.push('/dashboard');
 
-    toast({
-      title: 'Sign In Successful!',
-      description: 'Redirecting to your dashboard...',
-    });
+    } catch (error: any) {
+      console.error("Google Sign-In Error:", error);
+      
+      let title = "An unexpected error occurred";
+      let description = "Please try again later or contact support.";
 
-    // Redirect to dashboard after successful "login"
-    router.push('/dashboard');
+      if (error.code === 'auth/unauthorized-domain') {
+        title = "Domain Not Authorized";
+        description = `This domain is not authorized for sign-in. Please add it to your Firebase project's authorized domains list.`;
+      } else if (error.code === 'auth/popup-closed-by-user') {
+        title = "Sign-In Canceled";
+        description = "The sign-in popup was closed. Please try again.";
+      }
+      
+      toast({
+        variant: "destructive",
+        title: title,
+        description: description,
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -60,7 +84,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Button 
             variant="outline" 
             className="w-full h-12 text-base"
-            onClick={handleSimulatedGoogleSignIn}
+            onClick={handleGoogleSignIn}
             disabled={loading}
         >
             <GoogleIcon className="mr-2 h-6 w-6" />
