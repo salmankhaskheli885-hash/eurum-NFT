@@ -40,10 +40,10 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
+  const handleSimulatedGoogleSignIn = async () => {
     setLoading(true);
     
-    // Simulate API call
+    // Simulate network delay
     await new Promise(resolve => setTimeout(resolve, 2000));
 
     toast({
@@ -51,6 +51,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
       description: 'Redirecting to your dashboard...',
     });
 
+    // Redirect to dashboard after successful "login"
     router.push('/dashboard');
   };
 
@@ -59,7 +60,7 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
         <Button 
             variant="outline" 
             className="w-full h-12 text-base"
-            onClick={handleGoogleSignIn}
+            onClick={handleSimulatedGoogleSignIn}
             disabled={loading}
         >
             <GoogleIcon className="mr-2 h-6 w-6" />

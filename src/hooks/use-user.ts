@@ -10,7 +10,9 @@ export function useUser() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching the user
+    // This hook simulates a logged-in user by always returning the mockUser.
+    // This is a workaround for the Firebase auth domain issue.
+    // In a production environment, this would be replaced with real auth state logic.
     setTimeout(() => {
       setUser(mockUser);
       setLoading(false);
