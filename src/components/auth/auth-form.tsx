@@ -1,84 +1,88 @@
 
 'use client';
 
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+  type User as FirebaseAuthUser,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/schema';
-
-const formSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  displayName: z.string().optional(),
-});
+import { useTranslation } from '@/hooks/use-translation';
 
 type AuthFormProps = {
-  isRegister?: boolean;
   role: 'user' | 'partner';
   redirectPath: string;
 };
 
-export function AuthForm({
-  isRegister = false,
-  role,
-  redirectPath,
-}: AuthFormProps) {
+// A simple SVG for the Google icon
+const GoogleIcon = () => (
+  <svg
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 48 48"
+    className="h-5 w-5"
+  >
+    <path
+      fill="#EA4335"
+      d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+    ></path>
+    <path
+      fill="#4285F4"
+      d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+    ></path>
+    <path
+      fill="#FBBC05"
+      d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+    ></path>
+    <path
+      fill="#34A853"
+      d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+    ></path>
+    <path fill="none" d="M0 0h48v48H0z"></path>
+  </svg>
+);
+
+
+export function AuthForm({ role, redirectPath }: AuthFormProps) {
   const auth = useAuth();
   const firestore = useFirestore();
   const router = useRouter();
   const { toast } = useToast();
+  const { t } = useTranslation();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-      displayName: '',
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
-      toast({ variant: "destructive", title: "Firebase not initialized." });
+      toast({
+        variant: 'destructive',
+        title: 'Firebase not initialized.',
+        description:
+          'The Firebase service is not available. Please try again later.',
+      });
       return;
     }
-    try {
-      if (isRegister) {
-        if (!values.displayName) {
-          toast({ variant: 'destructive', title: 'Full Name is required.' });
-          return;
-        }
-        const userCredential = await createUserWithEmailAndPassword(
-          auth,
-          values.email,
-          values.password
-        );
-        const user = userCredential.user;
-        const shortUid = user.uid.substring(0, 8);
 
-        const userProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email,
-          displayName: values.displayName,
+    const provider = new GoogleAuthProvider();
+
+    try {
+      const result = await signInWithPopup(auth, provider);
+      const authUser = result.user;
+
+      const userDocRef = doc(firestore, 'users', authUser.uid);
+      const userDocSnap = await getDoc(userDocRef);
+
+      if (!userDocSnap.exists()) {
+        // This is a new user, create their profile
+        const shortUid = authUser.uid.substring(0, 8);
+        const newUserProfile: UserProfile = {
+          uid: authUser.uid,
+          email: authUser.email,
+          displayName: authUser.displayName,
           role,
           shortUid,
           balance: 0,
@@ -88,45 +92,26 @@ export function AuthForm({
           kycStatus: 'unsubmitted',
           referralLink: `https://fynix.pro/ref/${shortUid}`,
         };
-
-        await setDoc(doc(firestore, 'users', user.uid), userProfile);
+        await setDoc(userDocRef, newUserProfile);
         toast({ title: 'Registration successful!' });
         router.push(redirectPath);
       } else {
-        // Sign In Logic
-        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
-        const user = userCredential.user;
+        // Existing user is signing in
+        const userProfile = userDocSnap.data() as UserProfile;
+        toast({ title: 'Sign in successful!' });
 
-        // Fetch user profile to check their role
-        const userDocRef = doc(firestore, 'users', user.uid);
-        const userDocSnap = await getDoc(userDocRef);
-
-        if (userDocSnap.exists()) {
-          const userProfile = userDocSnap.data() as UserProfile;
-          toast({ title: 'Sign in successful!' });
-
-          // Redirect based on role
-          switch (userProfile.role) {
-            case 'admin':
-              router.push('/admin');
-              break;
-            case 'partner':
-              router.push('/partner');
-              break;
-            case 'user':
-            default:
-              router.push('/dashboard');
-              break;
-          }
-        } else {
-          // Fallback if profile doesn't exist, though it should
-           toast({
-            variant: 'destructive',
-            title: 'Sign In Error',
-            description: 'User profile not found. Please register first.',
-          });
-          // Log out the user if their firestore doc is missing
-          await auth.signOut();
+        // Redirect based on their existing role
+        switch (userProfile.role) {
+          case 'admin':
+            router.push('/admin');
+            break;
+          case 'partner':
+            router.push('/partner');
+            break;
+          case 'user':
+          default:
+            router.push('/dashboard');
+            break;
         }
       }
     } catch (error: any) {
@@ -136,56 +121,17 @@ export function AuthForm({
         description: error.message,
       });
     }
-  }
+  };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {isRegister && (
-          <FormField
-            control={form.control}
-            name="displayName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Full Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Satoshi Nakamoto" {...field} required />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input placeholder="m@example.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input type="password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" className="w-full">
-          {isRegister ? 'Sign Up' : 'Sign In'}
-        </Button>
-      </form>
-    </Form>
+    <Button
+      variant="outline"
+      type="button"
+      className="w-full"
+      onClick={handleGoogleSignIn}
+    >
+      <GoogleIcon />
+      Sign in with Google
+    </Button>
   );
 }

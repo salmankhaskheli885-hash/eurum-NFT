@@ -13,9 +13,44 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
 import { AuthForm } from "@/components/auth/auth-form";
+import { useEffect } from "react";
+import { getRedirectResult } from "firebase/auth";
+import { useAuth } from "@/firebase/provider";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
+
 
 export default function LoginPage() {
   const { t } = useTranslation();
+  const auth = useAuth();
+  const router = useRouter();
+  const { toast } = useToast();
+
+   useEffect(() => {
+    if (!auth) return;
+
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          toast({ title: "Sign in successful!" });
+          // This will be handled by the useUser hook and protected routes,
+          // but a simple push can be a fallback.
+          const role = sessionStorage.getItem('fynix-pro-role') || 'user';
+          if (role === 'partner') {
+             router.push('/partner');
+          } else {
+             router.push('/dashboard');
+          }
+        }
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Sign in failed",
+          description: error.message,
+        });
+      });
+  }, [auth, router, toast]);
   
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
@@ -34,7 +69,7 @@ export default function LoginPage() {
                         <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="user">
-                        <div className="pt-4">
+                        <div className="pt-4 space-y-4">
                           <AuthForm role="user" redirectPath="/dashboard" />
                         </div>
                          <div className="mt-4 text-center text-sm">
@@ -45,7 +80,7 @@ export default function LoginPage() {
                         </div>
                     </TabsContent>
                     <TabsContent value="partner">
-                       <div className="pt-4">
+                       <div className="pt-4 space-y-4">
                            <AuthForm role="partner" redirectPath="/partner" />
                         </div>
                          <div className="mt-4 text-center text-sm">
