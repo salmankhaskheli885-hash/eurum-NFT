@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -5,7 +6,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
 } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -32,7 +33,7 @@ const formSchema = z.object({
 
 type AuthFormProps = {
   isRegister?: boolean;
-  role: 'user' | 'partner' | 'admin';
+  role: 'user' | 'partner'; // Admin role is not for public registration
   redirectPath: string;
 };
 
@@ -82,11 +83,39 @@ export function AuthForm({
 
         await setDoc(doc(firestore, 'users', user.uid), userProfile);
         toast({ title: 'Registration successful!' });
+        router.push(redirectPath);
       } else {
-        await signInWithEmailAndPassword(auth, values.email, values.password);
-        toast({ title: 'Sign in successful!' });
+        // Sign In Logic
+        const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+        const user = userCredential.user;
+
+        // Fetch user profile to check their role
+        const userDocRef = doc(firestore, 'users', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userProfile = userDocSnap.data() as UserProfile;
+          toast({ title: 'Sign in successful!' });
+
+          // Redirect based on role
+          switch (userProfile.role) {
+            case 'admin':
+              router.push('/admin');
+              break;
+            case 'partner':
+              router.push('/partner');
+              break;
+            case 'user':
+            default:
+              router.push('/dashboard');
+              break;
+          }
+        } else {
+          // Fallback if profile doesn't exist, though it should
+          toast({ title: 'Sign in successful!' });
+          router.push('/dashboard'); 
+        }
       }
-      router.push(redirectPath);
     } catch (error: any) {
       toast({
         variant: 'destructive',
