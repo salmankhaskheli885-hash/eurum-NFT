@@ -6,6 +6,9 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signInWithEmailAndPassword,
+  getRedirectResult,
+  GoogleAuthProvider,
+  signInWithPopup,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -48,16 +51,6 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
 
     if (isRegister) {
       // Handle Registration
-      if (!email.endsWith('@fynix.pro')) {
-          toast({
-              variant: 'destructive',
-              title: 'Invalid Email Domain',
-              description: 'Only @fynix.pro emails are allowed for registration.',
-          });
-          setLoading(false);
-          return;
-      }
-
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
