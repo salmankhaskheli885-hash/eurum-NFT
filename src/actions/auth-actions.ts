@@ -1,10 +1,4 @@
-'use server';
 
-import { signInWithGoogle } from "@/firebase/server-auth";
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+// This file is intentionally left blank.
+// The server-side auth logic has been removed to fix the authentication flow.
 
-export async function googleSignInAction() {
-    const referer = headers().get('referer');
-    await signInWithGoogle(referer || '/');
-}

@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithRedirect,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -23,7 +25,6 @@ import { Input } from '@/components/ui/input';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/schema';
-import { googleSignInAction } from '@/actions/auth-actions';
 
 
 const formSchema = z.object({
@@ -40,9 +41,13 @@ type AuthFormProps = {
 
 
 function GoogleSignInButton({ role }: { role: 'user' | 'partner' }) {
+  const auth = useAuth();
+
   const handleGoogleSignIn = async () => {
+    if (!auth) return;
+    const provider = new GoogleAuthProvider();
     sessionStorage.setItem('fynix-pro-role', role);
-    await googleSignInAction();
+    await signInWithRedirect(auth, provider);
   };
 
   return (
