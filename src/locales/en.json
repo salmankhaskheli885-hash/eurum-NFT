@@ -1,3 +1,4 @@
+
 {
     "appName": "Fynix Pro",
     "nav": {
@@ -21,7 +22,9 @@
         "welcomeSubtitle": "Here's a quick overview of your account and recent activity.",
         "viewInvestments": "View Investments",
         "balance": "Total Balance",
-        "totalReturns": "Total Returns"
+        "totalReturns": "Total Returns",
+        "assets": "Portfolio Overview",
+        "assetsDescription": "A breakdown of your current investments."
     },
     "deposit": {
         "title": "Deposit Funds",
@@ -70,10 +73,22 @@
     },
     "referrals": {
         "title": "Referrals",
-        "description": "Share your referral link to earn rewards.",
-        "yourLink": "Your Referral Link",
-        "copy": "Copy Link",
-        "copied": "Copied!"
+        "description": "Track your referred users and commission earnings.",
+        "totalReferredUsers": "Total Referred Users",
+        "totalDeposits": "Total Referral Deposits",
+        "commissionRate": "Commission Rate",
+        "commissionNotice": "On every referral's deposit",
+        "referredUsersList": "Your Referred Users",
+        "referredUsersListDescription": "A list of all users you have referred.",
+        "table": {
+            "name": "Name",
+            "totalDeposit": "Total Deposit",
+            "status": "Status",
+            "statusValue": {
+                "active": "Active",
+                "inactive": "Inactive"
+            }
+        }
     },
     "profile": {
         "title": "Profile & Settings",
@@ -165,6 +180,14 @@
                 "kycStatus": "KYC Status",
                 "actions": "Actions"
             }
+        }
+    },
+    "kyc": {
+        "statusPill": {
+            "approved": "Approved",
+            "pending": "Pending",
+            "rejected": "Rejected",
+            "unsubmitted": "Unsubmitted"
         }
     }
 }

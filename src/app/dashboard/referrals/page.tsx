@@ -1,53 +1,115 @@
+
 "use client"
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { useToast } from "@/hooks/use-toast"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { Copy, Check } from "lucide-react"
 import { mockUser } from "@/lib/data"
+import { DollarSign, Users, TrendingUp } from "lucide-react"
+
+const mockReferredUsers = [
+  { id: "user-1", name: "Alice", totalDeposit: 150.75, status: "Active" },
+  { id: "user-2", name: "Bob", totalDeposit: 305.50, status: "Active" },
+  { id: "user-3", name: "Charlie", totalDeposit: 95.20, status: "Inactive" },
+  { id: "user-4", name: "David", totalDeposit: 750.00, status: "Active" },
+  { id: "user-5", name: "Eve", totalDeposit: 120.00, status: "Active" },
+];
 
 export default function ReferralsPage() {
-    const { t } = useTranslation()
-    const { toast } = useToast()
-    const [copied, setCopied] = useState(false)
+  const { t } = useTranslation()
 
-    const handleCopy = () => {
-        navigator.clipboard.writeText(mockUser.referralLink)
-        setCopied(true)
-        toast({
-            description: t('referrals.copied'),
-        })
-        setTimeout(() => setCopied(false), 2000)
-    }
+  const totalReferredUsers = mockReferredUsers.length;
+  const totalDeposits = mockReferredUsers.reduce((acc, user) => acc + user.totalDeposit, 0);
 
-    return (
-         <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-             <div>
-                <h1 className="text-3xl font-bold tracking-tight">{t('referrals.title')}</h1>
-                <p className="text-muted-foreground">{t('referrals.description')}</p>
-            </div>
-            <Card>
-                <CardHeader>
-                    <CardTitle>{t('referrals.yourLink')}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="flex w-full items-center space-x-2">
-                        <Input
-                            type="text"
-                            value={mockUser.referralLink}
-                            readOnly
-                            className="flex-grow"
-                        />
-                        <Button variant="outline" size="icon" onClick={handleCopy}>
-                            {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
-                            <span className="sr-only">{t('referrals.copy')}</span>
-                        </Button>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    )
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat("en-PK", {
+      style: "currency",
+      currency: "PKR",
+    }).format(amount)
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">{t('referrals.title')}</h1>
+        <p className="text-muted-foreground">{t('referrals.description')}</p>
+      </div>
+
+       <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('referrals.totalReferredUsers')}</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{totalReferredUsers}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('referrals.totalDeposits')}</CardTitle>
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>
+          </CardContent>
+        </Card>
+         <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{t('referrals.commissionRate')}</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">5%</div>
+             <p className="text-xs text-muted-foreground">{t('referrals.commissionNotice')}</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('referrals.referredUsersList')}</CardTitle>
+          <CardDescription>{t('referrals.referredUsersListDescription')}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('referrals.table.name')}</TableHead>
+                <TableHead className="text-right">{t('referrals.table.totalDeposit')}</TableHead>
+                <TableHead className="text-center">{t('referrals.table.status')}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockReferredUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="text-right">{formatCurrency(user.totalDeposit)}</TableCell>
+                  <TableCell className="text-center">
+                    <Badge variant={user.status === 'Active' ? 'default' : 'secondary'}>
+                      {t(`referrals.table.statusValue.${user.status.toLowerCase()}`)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  )
 }

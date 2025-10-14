@@ -1,3 +1,4 @@
+
 {
     "appName": "فائنکس پرو",
     "nav": {
@@ -21,7 +22,9 @@
         "welcomeSubtitle": "یہاں آپ کے اکاؤنٹ اور حالیہ سرگرمی کا ایک فوری جائزہ ہے۔",
         "viewInvestments": "سرمایہ کاری دیکھیں",
         "balance": "کل بیلنس",
-        "totalReturns": "کل منافع"
+        "totalReturns": "کل منافع",
+        "assets": "پورٹ فولیو کا جائزہ",
+        "assetsDescription": "آپ کی موجودہ سرمایہ کاری کا ایک جائزہ۔"
     },
     "deposit": {
         "title": "فنڈز جمع کروائیں",
@@ -70,10 +73,22 @@
     },
     "referrals": {
         "title": "ریفرلز",
-        "description": "انعامات حاصل کرنے کے لیے اپنا ریفرل لنک شیئر کریں۔",
-        "yourLink": "آپ کا ریفرل لنک",
-        "copy": "لنک کاپی کریں",
-        "copied": "کاپی ہو گیا!"
+        "description": "اپنے ریفر کردہ صارفین اور کمیشن کی آمدنی کو ٹریک کریں۔",
+        "totalReferredUsers": "کل ریفر کردہ صارفین",
+        "totalDeposits": "کل ریفرل ڈیپازٹس",
+        "commissionRate": "کمیشن کی شرح",
+        "commissionNotice": "ہر ریفرل کے ڈیپازٹ پر",
+        "referredUsersList": "آپ کے ریفر کردہ صارفین",
+        "referredUsersListDescription": "ان تمام صارفین کی فہرست جن کو آپ نے ریفر کیا ہے۔",
+        "table": {
+            "name": "نام",
+            "totalDeposit": "کل ڈیپازٹ",
+            "status": "حیثیت",
+            "statusValue": {
+                "active": "فعال",
+                "inactive": "غیر فعال"
+            }
+        }
     },
     "profile": {
         "title": "پروفائل اور سیٹنگز",
@@ -165,6 +180,14 @@
                 "kycStatus": "KYC حیثیت",
                 "actions": "کارروائیاں"
             }
+        }
+    },
+    "kyc": {
+        "statusPill": {
+            "approved": "منظور شدہ",
+            "pending": "زیر التواء",
+            "rejected": "مسترد",
+            "unsubmitted": "جمع نہیں کرایا"
         }
     }
 }
