@@ -183,8 +183,7 @@
         "noAccountPartner": "Not a partner?",
         "signUpLink": "Sign Up",
         "userTab": "User",
-        "partnerTab": "Partner",
-        "adminTab": "Admin"
+        "partnerTab": "Partner"
     },
     "register": {
         "title": "Create Account",

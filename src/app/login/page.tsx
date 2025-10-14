@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -38,10 +39,9 @@ export default function LoginPage() {
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="user" className="w-full">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="user">{t("login.userTab")}</TabsTrigger>
                         <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
-                        <TabsTrigger value="admin">{t("login.adminTab")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="user">
                         <div className="pt-4">
@@ -63,11 +63,6 @@ export default function LoginPage() {
                             <Link href="/register" className="underline text-primary">
                             {t("login.signUpLink")}
                             </Link>
-                        </div>
-                    </TabsContent>
-                     <TabsContent value="admin">
-                        <div className="pt-4">
-                           <AuthForm role="admin" redirectPath="/admin" />
                         </div>
                     </TabsContent>
                 </Tabs>
