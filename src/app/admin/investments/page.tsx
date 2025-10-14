@@ -48,14 +48,15 @@ import {
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, PlusCircle, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockInvestmentPlans, type InvestmentPlan } from "@/lib/data"
+import { mockInvestmentPlans, type InvestmentPlan, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 
 // Component for Add/Edit Plan Dialog
-function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: (plan: InvestmentPlan) => void, children: React.ReactNode }) {
+function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
     const [open, setOpen] = React.useState(false);
+    const { toast } = useToast()
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
         ? { ...plan } 
@@ -63,22 +64,36 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     );
 
     React.useEffect(() => {
-        if (open && plan) {
-            setFormData({ ...plan });
-        } else if (open && !plan) {
-            setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1 });
+        if (open) {
+          if (plan) {
+              setFormData({ ...plan });
+          } else {
+              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1 });
+          }
         }
     }, [open, plan]);
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value, type } = e.target;
-        setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) : value }));
+        setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
 
     const handleSubmit = () => {
-        const newPlan = { ...formData, id: plan?.id ?? Date.now() };
-        onSave(newPlan);
+        if (plan) {
+            updateInvestmentPlan({ ...formData, id: plan.id });
+            toast({
+                title: "Plan Updated",
+                description: `The plan "${formData.name}" has been updated.`,
+            });
+        } else {
+            addInvestmentPlan(formData);
+            toast({
+                title: "New Plan Added",
+                description: `The plan "${formData.name}" has been created.`,
+            });
+        }
+        onSave();
         setOpen(false);
     };
 
@@ -132,8 +147,11 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
 export default function AdminInvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
-  const [plans, setPlans] = React.useState<InvestmentPlan[]>(mockInvestmentPlans)
+  // Force re-render by creating a new key
+  const [key, setKey] = React.useState(Date.now())
   const [searchTerm, setSearchTerm] = React.useState("");
+
+  const plans = React.useMemo(() => mockInvestmentPlans, [key]);
   
   const filteredPlans = React.useMemo(() => {
     const lowercasedFilter = searchTerm.toLowerCase();
@@ -143,32 +161,20 @@ export default function AdminInvestmentsPage() {
     );
   }, [searchTerm, plans]);
 
-  const handleSavePlan = (planToSave: InvestmentPlan) => {
-    const isEditing = plans.some(p => p.id === planToSave.id);
-    if (isEditing) {
-        setPlans(plans.map(p => p.id === planToSave.id ? planToSave : p));
-        toast({
-            title: "Plan Updated",
-            description: `The plan "${planToSave.name}" has been updated.`,
-        });
-    } else {
-        const newPlan = { ...planToSave, id: Date.now() }; // Ensure unique ID for new plans
-        setPlans([...plans, newPlan]);
-         toast({
-            title: "New Plan Added",
-            description: `The plan "${newPlan.name}" has been created.`,
-        });
-    }
+  const forceUpdate = () => {
+    setKey(Date.now());
   }
 
   const handleDeletePlan = (planId: number) => {
     const planName = plans.find(p => p.id === planId)?.name || '';
-    setPlans(plans.filter(p => p.id !== planId));
-    toast({
-        variant: "destructive",
-        title: `Plan Deleted`,
-        description: `The plan "${planName}" has been removed.`,
-    });
+    if (deleteInvestmentPlan(planId)) {
+        toast({
+            variant: "destructive",
+            title: `Plan Deleted`,
+            description: `The plan "${planName}" has been removed.`,
+        });
+        forceUpdate();
+    }
   }
 
 
@@ -179,7 +185,7 @@ export default function AdminInvestmentsPage() {
                 <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.investments')}</h1>
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
-            <PlanForm onSave={handleSavePlan}>
+            <PlanForm onSave={forceUpdate}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Add New Plan
@@ -235,7 +241,7 @@ export default function AdminInvestmentsPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                        <PlanForm plan={plan} onSave={handleSavePlan}>
+                        <PlanForm plan={plan} onSave={forceUpdate}>
                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left">Edit</button>
                         </PlanForm>
                         <AlertDialog>

@@ -51,13 +51,7 @@ export let mockTransactions: Transaction[] = [
   { id: 'TXN654321', type: 'Investment', date: '2023-10-22', amount: -50000, status: 'Failed' },
 ];
 
-// Function to add a new transaction to the mock data
-export const addTransaction = (transaction: Transaction) => {
-  mockTransactions.unshift(transaction);
-};
-
-
-export const mockInvestmentPlans: InvestmentPlan[] = [
+export let mockInvestmentPlans: InvestmentPlan[] = [
   { id: 1, name: 'Starter Pack', dailyReturn: 0.5, durationDays: 30, minInvestment: 5000, maxInvestment: 50000, requiredVipLevel: 1 },
   { id: 2, name: 'Growth Engine', dailyReturn: 0.75, durationDays: 45, minInvestment: 50001, maxInvestment: 250000, requiredVipLevel: 1 },
   { id: 3, name: 'Momentum Builder', dailyReturn: 1.0, durationDays: 60, minInvestment: 250001, maxInvestment: 1000000, requiredVipLevel: 2 },
@@ -73,3 +67,31 @@ export const mockReferredUsers = [
   { id: "user-4", name: "David", totalDeposit: 75000, status: "Active" },
   { id: "user-5", name: "Eve", totalDeposit: 12000, status: "Active" },
 ];
+
+
+// Function to add a new transaction to the mock data
+export const addTransaction = (transaction: Transaction) => {
+  mockTransactions.unshift(transaction);
+};
+
+// Functions to manage investment plans
+export const addInvestmentPlan = (plan: Omit<InvestmentPlan, 'id'>) => {
+    const newPlan = { ...plan, id: Date.now() };
+    mockInvestmentPlans.push(newPlan);
+    return newPlan;
+}
+
+export const updateInvestmentPlan = (planToUpdate: InvestmentPlan) => {
+    const index = mockInvestmentPlans.findIndex(p => p.id === planToUpdate.id);
+    if (index !== -1) {
+        mockInvestmentPlans[index] = planToUpdate;
+        return true;
+    }
+    return false;
+}
+
+export const deleteInvestmentPlan = (planId: number) => {
+    const initialLength = mockInvestmentPlans.length;
+    mockInvestmentPlans = mockInvestmentPlans.filter(p => p.id !== planId);
+    return mockInvestmentPlans.length < initialLength;
+}
