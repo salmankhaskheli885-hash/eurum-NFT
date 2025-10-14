@@ -46,7 +46,7 @@ import {
 } from "@/components/ui/alert-dialog"
 
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, PlusCircle } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { mockInvestmentPlans, type InvestmentPlan } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
@@ -133,6 +133,15 @@ export default function AdminInvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const [plans, setPlans] = React.useState<InvestmentPlan[]>(mockInvestmentPlans)
+  const [searchTerm, setSearchTerm] = React.useState("");
+  
+  const filteredPlans = React.useMemo(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    if (!lowercasedFilter) return plans;
+    return plans.filter(plan => 
+      plan.name.toLowerCase().includes(lowercasedFilter)
+    );
+  }, [searchTerm, plans]);
 
   const handleSavePlan = (planToSave: InvestmentPlan) => {
     const isEditing = plans.some(p => p.id === planToSave.id);
@@ -143,10 +152,11 @@ export default function AdminInvestmentsPage() {
             description: `The plan "${planToSave.name}" has been updated.`,
         });
     } else {
-        setPlans([...plans, planToSave]);
+        const newPlan = { ...planToSave, id: Date.now() }; // Ensure unique ID for new plans
+        setPlans([...plans, newPlan]);
          toast({
             title: "New Plan Added",
-            description: `The plan "${planToSave.name}" has been created.`,
+            description: `The plan "${newPlan.name}" has been created.`,
         });
     }
   }
@@ -180,6 +190,16 @@ export default function AdminInvestmentsPage() {
         <CardHeader>
           <CardTitle>Investment Plans</CardTitle>
           <CardDescription>A list of all investment plans in the system.</CardDescription>
+           <div className="relative pt-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by plan name..."
+              className="w-full pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -197,7 +217,7 @@ export default function AdminInvestmentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {plans.map((plan) => (
+              {filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
                   <TableCell className="font-medium">{plan.name}</TableCell>
                   <TableCell>{plan.dailyReturn}</TableCell>
@@ -216,11 +236,11 @@ export default function AdminInvestmentsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <PlanForm plan={plan} onSave={handleSavePlan}>
-                           <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full">Edit</button>
+                           <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left">Edit</button>
                         </PlanForm>
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
-                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full">Delete</button>
+                                <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                                 <AlertDialogHeader>

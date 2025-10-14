@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import {
   Table,
   TableBody,
@@ -20,6 +21,9 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { ShieldAlert, UserCog } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 // Sample data for demonstration
 const securityLogs = [
@@ -30,6 +34,34 @@ const securityLogs = [
 
 export default function AdminSecurityPage() {
   const { t } = useTranslation()
+  const { toast } = useToast()
+
+  const [is2faEnabled, setIs2faEnabled] = React.useState(false)
+
+  const handleToggle2fa = (enabled: boolean) => {
+    setIs2faEnabled(enabled)
+    // In a real app, this would trigger a backend call to enforce/disable 2FA
+    toast({
+      title: "Security Setting Updated",
+      description: `Two-Factor Authentication has been ${enabled ? 'Enabled' : 'Disabled'} for all admin accounts.`,
+    })
+  }
+
+  const handleConfigureIpWhitelist = () => {
+     // In a real app, this would open a dialog to manage IP addresses
+    toast({
+      title: "Action Required",
+      description: "IP Whitelisting configuration is not yet implemented.",
+    })
+  }
+  
+  const handleManageRoles = () => {
+    // In a real app, this would navigate to a role management page
+    toast({
+      title: "Action Required",
+      description: "Role management is not yet implemented.",
+    })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -50,14 +82,21 @@ export default function AdminSecurityPage() {
                     <h4 className="font-medium">Two-Factor Authentication (2FA)</h4>
                     <p className="text-sm text-muted-foreground">Enforce 2FA for all admin accounts.</p>
                 </div>
-                <Button variant="outline">Enable</Button>
+                <div className="flex items-center space-x-2">
+                    <Switch
+                        id="2fa-switch"
+                        checked={is2faEnabled}
+                        onCheckedChange={handleToggle2fa}
+                    />
+                    <Label htmlFor="2fa-switch" className="text-sm">{is2faEnabled ? 'Enabled' : 'Disabled'}</Label>
+                </div>
             </div>
              <div className="flex items-center justify-between p-4 border rounded-lg">
                 <div>
                     <h4 className="font-medium">IP Whitelisting</h4>
                     <p className="text-sm text-muted-foreground">Restrict admin access to specific IP addresses.</p>
                 </div>
-                <Button variant="outline">Configure</Button>
+                <Button variant="outline" onClick={handleConfigureIpWhitelist}>Configure</Button>
             </div>
           </CardContent>
         </Card>
@@ -79,7 +118,7 @@ export default function AdminSecurityPage() {
                     <h4 className="font-medium">Support Staff</h4>
                     <p className="text-sm text-muted-foreground">Limited access for user support.</p>
                 </div>
-                 <Button variant="outline" size="sm">Manage</Button>
+                 <Button variant="outline" size="sm" onClick={handleManageRoles}>Manage</Button>
             </div>
           </CardContent>
         </Card>
@@ -102,8 +141,11 @@ export default function AdminSecurityPage() {
             </TableHeader>
             <TableBody>
               {securityLogs.map((log) => (
-                <TableRow key={log.id} className={log.event.includes('Suspicious') ? 'bg-destructive/10' : ''}>
-                  <TableCell className="font-medium flex items-center gap-2"><ShieldAlert className="w-4 h-4 text-destructive"/>{log.event}</TableCell>
+                <TableRow key={log.id} className={log.event.includes('Suspicious') ? 'bg-destructive/10 text-destructive' : ''}>
+                  <TableCell className="font-medium flex items-center gap-2">
+                    {log.event.includes('Suspicious') && <ShieldAlert className="w-4 h-4"/>}
+                    {log.event}
+                  </TableCell>
                   <TableCell>{log.user}</TableCell>
                   <TableCell>{log.ip}</TableCell>
                   <TableCell>{log.timestamp}</TableCell>
