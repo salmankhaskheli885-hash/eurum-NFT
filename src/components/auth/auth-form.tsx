@@ -31,7 +31,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
   const { toast } = useToast();
   const { t } = useTranslation();
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState('yourname@fynix.com');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
@@ -112,15 +112,16 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         );
         const authUser = userCredential.user;
 
-        if (!authUser.emailVerified) {
-          toast({
-            variant: 'destructive',
-            title: t('login.verification.title'),
-            description: t('login.verification.description'),
-          });
-          setLoading(false);
-          return;
-        }
+        // EMAIL VERIFICATION CHECK REMOVED FOR DEVELOPMENT
+        // if (!authUser.emailVerified) {
+        //   toast({
+        //     variant: 'destructive',
+        //     title: t('login.verification.title'),
+        //     description: t('login.verification.description'),
+        //   });
+        //   setLoading(false);
+        //   return;
+        // }
 
         const userDocRef = doc(firestore, 'users', authUser.uid);
         const userDocSnap = await getDoc(userDocRef);
