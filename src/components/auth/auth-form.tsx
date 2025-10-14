@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signInWithPopup,
+  signInWithRedirect,
   GoogleAuthProvider,
   type Auth,
 } from 'firebase/auth';
@@ -24,7 +24,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useAuth, useFirestore } from '@/firebase/provider';
+import { useAuth, useFirestore } from '@/firebase';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/schema';
 
@@ -40,64 +40,17 @@ type AuthFormProps = {
   redirectPath: string;
 };
 
-export async function handleGoogleSignIn(auth: Auth | null, firestore: Firestore | null, role: 'user' | 'partner', toast: any, router: any) {
-  if (!auth || !firestore) {
-    toast({ variant: 'destructive', title: 'Firebase not initialized' });
+export async function handleGoogleSignIn(auth: Auth | null, role: 'user' | 'partner') {
+  if (!auth) {
+    console.error("Firebase Auth not initialized");
     return;
   }
   const provider = new GoogleAuthProvider();
-  try {
-    const result = await signInWithPopup(auth, provider);
-    const user = result.user;
-    const userDocRef = doc(firestore, 'users', user.uid);
-    const userDocSnap = await getDoc(userDocRef);
+  
+  // Store the selected role in session storage before redirecting
+  sessionStorage.setItem('fynix-pro-role', role);
 
-    let finalRedirectPath = '/dashboard';
-
-    if (!userDocSnap.exists()) {
-      // New user, create profile
-      const shortUid = user.uid.substring(0, 8);
-      const userProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email,
-        displayName: user.displayName,
-        role,
-        shortUid,
-        balance: 0,
-        currency: 'PKR',
-        vipLevel: 1,
-        vipProgress: 0,
-        kycStatus: 'unsubmitted',
-        referralLink: `https://fynix.pro/ref/${shortUid}`,
-      };
-      await setDoc(userDocRef, userProfile);
-      toast({ title: 'Registration successful!' });
-      finalRedirectPath = role === 'partner' ? '/partner' : '/dashboard';
-    } else {
-      // Existing user
-      const userProfile = userDocSnap.data() as UserProfile;
-       toast({ title: 'Sign in successful!' });
-       switch (userProfile.role) {
-         case 'admin':
-           finalRedirectPath = '/admin';
-           break;
-         case 'partner':
-           finalRedirectPath = '/partner';
-           break;
-         case 'user':
-         default:
-           finalRedirectPath = '/dashboard';
-           break;
-       }
-    }
-    router.push(finalRedirectPath);
-  } catch (error: any) {
-    toast({
-      variant: 'destructive',
-      title: 'Google Sign-In Error',
-      description: error.message,
-    });
-  }
+  await signInWithRedirect(auth, provider);
 }
 
 export function AuthForm({
