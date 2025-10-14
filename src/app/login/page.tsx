@@ -2,6 +2,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -13,7 +14,11 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
-import { AuthForm } from "@/components/auth/auth-form";
+import { AuthForm, handleGoogleSignIn } from "@/components/auth/auth-form";
+import { useAuth, useFirestore } from "@/firebase/provider";
+import { useToast } from "@/hooks/use-toast";
+import { useRouter } from "next/navigation";
+
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="1em" height="1em" {...props}>
@@ -27,6 +32,16 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginPage() {
   const { t } = useTranslation();
+  const [activeTab, setActiveTab] = useState<'user' | 'partner'>('user');
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  const onGoogleSignIn = () => {
+    handleGoogleSignIn(auth, firestore, activeTab, toast, router);
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen bg-background p-4">
         <Card className="mx-auto max-w-sm w-full">
@@ -38,7 +53,7 @@ export default function LoginPage() {
                 <CardDescription>{t("login.description")}</CardDescription>
             </CardHeader>
             <CardContent>
-                <Tabs defaultValue="user" className="w-full">
+                <Tabs defaultValue="user" className="w-full" onValueChange={(value) => setActiveTab(value as 'user' | 'partner')}>
                     <TabsList className="grid w-full grid-cols-2">
                         <TabsTrigger value="user">{t("login.userTab")}</TabsTrigger>
                         <TabsTrigger value="partner">{t("login.partnerTab")}</TabsTrigger>
@@ -76,7 +91,7 @@ export default function LoginPage() {
                         </span>
                     </div>
                 </div>
-                <Button variant="outline" className="w-full mt-6">
+                <Button variant="outline" className="w-full mt-6" onClick={onGoogleSignIn}>
                     <GoogleIcon className="mr-2 h-4 w-4"/>
                     {t("login.googleButton")}
                 </Button>

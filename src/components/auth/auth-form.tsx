@@ -5,6 +5,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  GoogleAuthProvider,
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -36,6 +38,62 @@ type AuthFormProps = {
   role: 'user' | 'partner'; // Admin role is not for public registration
   redirectPath: string;
 };
+
+export async function handleGoogleSignIn(auth: any, firestore: any, role: 'user' | 'partner', toast: any, router: any) {
+  const provider = new GoogleAuthProvider();
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+    const userDocRef = doc(firestore, 'users', user.uid);
+    const userDocSnap = await getDoc(userDocRef);
+
+    let finalRedirectPath = '/dashboard';
+
+    if (!userDocSnap.exists()) {
+      // New user, create profile
+      const shortUid = user.uid.substring(0, 8);
+      const userProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        role,
+        shortUid,
+        balance: 0,
+        currency: 'PKR',
+        vipLevel: 1,
+        vipProgress: 0,
+        kycStatus: 'unsubmitted',
+        referralLink: `https://fynix.pro/ref/${shortUid}`,
+      };
+      await setDoc(userDocRef, userProfile);
+      toast({ title: 'Registration successful!' });
+      finalRedirectPath = role === 'partner' ? '/partner' : '/dashboard';
+    } else {
+      // Existing user
+      const userProfile = userDocSnap.data() as UserProfile;
+       toast({ title: 'Sign in successful!' });
+       switch (userProfile.role) {
+         case 'admin':
+           finalRedirectPath = '/admin';
+           break;
+         case 'partner':
+           finalRedirectPath = '/partner';
+           break;
+         case 'user':
+         default:
+           finalRedirect_path = '/dashboard';
+           break;
+       }
+    }
+    router.push(finalRedirectPath);
+  } catch (error: any) {
+    toast({
+      variant: 'destructive',
+      title: 'Google Sign-In Error',
+      description: error.message,
+    });
+  }
+}
 
 export function AuthForm({
   isRegister = false,
