@@ -5,10 +5,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { useAuth, useFirestore } from '@/firebase/provider';
-import type { UserProfile } from '@/lib/schema';
 
 function GoogleIcon(props: any) {
     return (
@@ -42,76 +38,20 @@ function GoogleIcon(props: any) {
 export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const router = useRouter();
   const { toast } = useToast();
-  const auth = useAuth();
-  const firestore = useFirestore();
   const [loading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setLoading(true);
-    const provider = new GoogleAuthProvider();
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      const userRef = doc(firestore, 'users', user.uid);
-      const userDoc = await getDoc(userRef);
+    
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
-      let userRole: UserProfile['role'] = 'user';
+    toast({
+      title: 'Sign In Successful!',
+      description: 'Redirecting to your dashboard...',
+    });
 
-      if (!userDoc.exists()) {
-        const newUserProfile: UserProfile = {
-          uid: user.uid,
-          email: user.email,
-          displayName: user.displayName,
-          role: 'user', // Default role
-          balance: 0,
-          currency: 'PKR',
-          shortUid: user.uid.substring(0, 8),
-          vipLevel: 1,
-          vipProgress: 0,
-          kycStatus: 'unsubmitted',
-          referralLink: `https://fynix.pro/ref/${user.uid.substring(0, 8)}`,
-        };
-        await setDoc(userRef, newUserProfile);
-        userRole = 'user';
-      } else {
-        userRole = userDoc.data()?.role || 'user';
-      }
-
-      toast({
-        title: 'Sign In Successful!',
-        description: 'Redirecting to your dashboard...',
-      });
-
-      if (userRole === 'admin') {
-        router.push('/admin');
-      } else if (userRole === 'partner') {
-        router.push('/partner');
-      } else {
-        router.push('/dashboard');
-      }
-
-    } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
-      let title = "An unexpected error occurred";
-      let description = "Please try again later.";
-
-      if (error.code === 'auth/popup-closed-by-user') {
-          title = "Sign-In Cancelled";
-          description = "The sign-in popup was closed. Please try again.";
-      } else if (error.code === 'auth/unauthorized-domain') {
-          title = "Domain Not Authorized";
-          description = "This domain is not authorized for sign-in. Please contact support.";
-      }
-      
-      toast({
-        variant: 'destructive',
-        title: title,
-        description: description,
-      });
-    } finally {
-      setLoading(false);
-    }
+    router.push('/dashboard');
   };
 
   return (
