@@ -19,10 +19,8 @@ export function useUser() {
 
   useEffect(() => {
     if (!auth) {
-        // This might happen if Firebase hasn't initialized yet.
-        // The provider should handle this, but as a safeguard we immediately
-        // set loading to false if auth is not available.
-        setLoading(false);
+        // If auth is not available yet (e.g., during initial render),
+        // we keep loading true until the auth object is ready.
         return;
     }
 

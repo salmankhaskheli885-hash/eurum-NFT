@@ -27,26 +27,17 @@ export function FirebaseProvider({ children, app }: { children: ReactNode, app: 
     );
 }
 
-export function useAuth(): Auth {
+export function useAuth(): Auth | null {
   const context = useContext(FirebaseContext);
-  if (!context) {
-    throw new Error('useAuth must be used within a FirebaseProvider');
-  }
-  return context.auth;
+  return context?.auth ?? null;
 }
 
-export function useFirestore(): Firestore {
+export function useFirestore(): Firestore | null {
   const context = useContext(FirebaseContext);
-  if (!context) {
-    throw new Error('useFirestore must be used within a FirebaseProvider');
-  }
-  return context.firestore;
+  return context?.firestore ?? null;
 }
 
-export function useFirebaseApp(): FirebaseApp {
+export function useFirebaseApp(): FirebaseApp | null {
     const context = useContext(FirebaseContext);
-    if (!context) {
-        throw new Error('useFirebaseApp must be used within a FirebaseProvider');
-    }
-    return context.app;
+    return context?.app ?? null;
 }

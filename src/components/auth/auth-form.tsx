@@ -47,7 +47,14 @@ export function AuthForm({ mode }: { mode: 'login' | 'register' }) {
   const auth = useAuth();
   
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth) {
+        toast({
+            variant: "destructive",
+            title: "Authentication service not ready",
+            description: "Please wait a moment and try again.",
+        });
+        return;
+    }
     setLoading(true);
     const provider = new GoogleAuthProvider();
     try {
