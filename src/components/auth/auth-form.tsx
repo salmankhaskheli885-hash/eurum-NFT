@@ -64,7 +64,7 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
         const user = result.user;
         
         // This is a simulated role fetching. In a real app, you'd get this from Firestore.
-        const isAdmin = user.email === 'satoshi@fynix.pro';
+        const isAdmin = user.email === 'salmankhaskheli885@gmail.com';
         const isPartner = user.email === 'vitalik@fynix.pro';
         
         let userRole: UserProfile['role'] = 'user';

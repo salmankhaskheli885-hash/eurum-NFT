@@ -18,6 +18,7 @@ export function useUser() {
 
   useEffect(() => {
     if (!auth) {
+        setLoading(false); // If no auth provider, stop loading.
         return;
     }
 
@@ -25,7 +26,7 @@ export function useUser() {
       if (firebaseUser) {
         
         // Determine user role based on email for this simulation
-        const isAdmin = firebaseUser.email === 'satoshi@fynix.pro';
+        const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
         const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
         let role: UserProfile['role'] = 'user';
         if (isAdmin) {
@@ -64,3 +65,4 @@ export function useUser() {
 
   return { user, loading, error };
 }
+
