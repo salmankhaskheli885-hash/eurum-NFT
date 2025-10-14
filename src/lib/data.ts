@@ -9,6 +9,12 @@ export type User = {
   vipProgress: number; // Percentage
   kycStatus: 'approved' | 'pending' | 'rejected' | 'unsubmitted';
   referralLink: string;
+  portfolio: Array<{
+    name: string;
+    value: number;
+    change: number;
+    color: string;
+  }>;
 };
 
 export type Transaction = {
@@ -40,6 +46,11 @@ export const mockUser: User = {
   vipProgress: 65,
   kycStatus: 'approved',
   referralLink: 'https://fynix.pro/ref/a1b2c3d4',
+  portfolio: [
+      { name: 'stocks', value: 450.50, change: 2.5, color: "hsl(var(--chart-1))" },
+      { name: 'crypto', value: 750.20, change: -1.2, color: "hsl(var(--chart-2))" },
+      { name: 'commodities', value: 136.72, change: 0.8, color: "hsl(var(--chart-3))" },
+    ],
 };
 
 export const mockTransactions: Transaction[] = [

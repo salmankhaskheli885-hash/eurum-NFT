@@ -10,15 +10,37 @@
     },
     "dashboard": {
         "title": "ڈیش بورڈ",
+        "welcome": "خوش آمدید، {name}!",
+        "welcomeSubtitle": "یہاں آپ کے اکاؤنٹ اور حالیہ سرگرمی کا ایک فوری جائزہ ہے۔",
+        "viewInvestments": "سرمایہ کاری دیکھیں",
         "balance": "کل بیلنس",
-        "vipLevel": "VIP لیول",
-        "vipProgress": "اگلے لیول تک ترقی",
+        "totalReturns": "کل منافع",
         "recentTransactions": "حالیہ ٹرانزیکشنز",
         "transactionId": "ID",
         "transactionType": "قسم",
         "transactionDate": "تاریخ",
         "transactionAmount": "رقم",
-        "transactionStatus": "حیثیت"
+        "transactionStatus": "حیثیت",
+        "portfolioOverview": "پورٹ فولیو کا جائزہ",
+        "portfolioSubtitle": "آپ کی موجودہ سرمایہ کاری کی تفصیل۔",
+        "assets": "آپ کے اثاثے",
+        "quickActions": "فوری کارروائیاں",
+        "investments": {
+            "title": "سرمایہ کاری کریں",
+            "description": "منصوبے دریافت کریں اور اپنا پورٹ فولیو بڑھائیں۔"
+        },
+        "profile": {
+            "title": "پروفائل اپ ڈیٹ کریں",
+            "description": "اپنے اکاؤنٹ کی تفصیلات کو تازہ ترین رکھیں۔"
+        },
+        "kyc": {
+            "title": "اکاؤنٹ کی تصدیق کریں",
+            "description": "مکمل رسائی کے لیے KYC مکمل کریں۔"
+        },
+        "referrals": {
+            "title": "انعامات کمائیں",
+            "description": "دوستوں کو مدعو کریں اور مل کر کمائیں۔"
+        }
     },
     "investments": {
         "title": "سرمایہ کاری کے منصوبے",

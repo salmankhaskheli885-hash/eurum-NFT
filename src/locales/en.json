@@ -10,15 +10,37 @@
     },
     "dashboard": {
         "title": "Dashboard",
+        "welcome": "Welcome back, {name}!",
+        "welcomeSubtitle": "Here's a quick overview of your account and recent activity.",
+        "viewInvestments": "View Investments",
         "balance": "Total Balance",
-        "vipLevel": "VIP Level",
-        "vipProgress": "Progress to next level",
+        "totalReturns": "Total Returns",
         "recentTransactions": "Recent Transactions",
         "transactionId": "ID",
         "transactionType": "Type",
         "transactionDate": "Date",
         "transactionAmount": "Amount",
-        "transactionStatus": "Status"
+        "transactionStatus": "Status",
+        "portfolioOverview": "Portfolio Overview",
+        "portfolioSubtitle": "A breakdown of your current investments.",
+        "assets": "Your Assets",
+        "quickActions": "Quick Actions",
+        "investments": {
+            "title": "Make an Investment",
+            "description": "Explore plans & grow your portfolio."
+        },
+        "profile": {
+            "title": "Update Profile",
+            "description": "Keep your account details current."
+        },
+        "kyc": {
+            "title": "Verify Account",
+            "description": "Complete KYC for full access."
+        },
+        "referrals": {
+            "title": "Earn Rewards",
+            "description": "Invite friends and earn together."
+        }
     },
     "investments": {
         "title": "Investment Plans",

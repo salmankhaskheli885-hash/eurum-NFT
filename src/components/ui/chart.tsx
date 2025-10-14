@@ -355,6 +355,31 @@ function getPayloadConfigFromPayload(
     : config[key as keyof typeof config]
 }
 
+const { Pie, PieChart } = RechartsPrimitive;
+
+export function DonutChart({ data, config }: { data: any[], config: ChartConfig }) {
+  return (
+    <ChartContainer
+      config={config}
+      className="mx-auto aspect-square h-full max-h-[300px]"
+    >
+      <PieChart>
+        <ChartTooltip
+          cursor={false}
+          content={<ChartTooltipContent hideLabel />}
+        />
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="name"
+          innerRadius="60%"
+          strokeWidth={5}
+        />
+      </PieChart>
+    </ChartContainer>
+  )
+}
+
 export {
   ChartContainer,
   ChartTooltip,
