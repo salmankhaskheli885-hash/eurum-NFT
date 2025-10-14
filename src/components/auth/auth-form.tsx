@@ -4,12 +4,12 @@
 import { useState } from 'react';
 import {
   createUserWithEmailAndPassword,
-  sendEmailVerification,
   signInWithEmailAndPassword,
   deleteUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import { FirebaseError } from 'firebase/app';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,54 +49,64 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
 
     if (isRegister) {
       // --- Handle Registration ---
+      let authUser;
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
           password
         );
-        const authUser = userCredential.user;
+        authUser = userCredential.user;
 
-        try {
-          const shortUid = authUser.uid.substring(0, 8);
-          const newUserProfile: UserProfile = {
-            uid: authUser.uid,
-            email: authUser.email,
-            displayName: name,
-            role,
-            shortUid,
-            balance: 0,
-            currency: 'PKR',
-            vipLevel: 1,
-            vipProgress: 0,
-            kycStatus: 'unsubmitted',
-            referralLink: `https://fynix.pro/ref/${shortUid}`,
-          };
+        const shortUid = authUser.uid.substring(0, 8);
+        const newUserProfile: UserProfile = {
+          uid: authUser.uid,
+          email: authUser.email,
+          displayName: name,
+          role,
+          shortUid,
+          balance: 0,
+          currency: 'PKR',
+          vipLevel: 1,
+          vipProgress: 0,
+          kycStatus: 'unsubmitted',
+          referralLink: `https://fynix.pro/ref/${shortUid}`,
+        };
 
-          await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
-          
-          toast({
+        await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
+        
+        toast({
             title: "Registration Successful!",
             description: "You can now log in with your credentials.",
-          });
+        });
 
-          router.push('/login');
+        router.push('/login');
 
-        } catch (firestoreError: any) {
+      } catch (error: any) {
+        // If firestore writing fails, delete the created auth user
+        if (authUser) {
           await deleteUser(authUser).catch((deleteErr) => {
             console.error("Failed to delete orphaned auth user:", deleteErr);
-          });
-          toast({
-            variant: 'destructive',
-            title: 'Registration Failed',
-            description: `Could not save user profile: ${firestoreError.message}`,
+            // This is a critical error, the user exists in Auth but not in Firestore
+             toast({
+                variant: 'destructive',
+                title: 'Critical Registration Failed',
+                description: `User created in Auth but profile failed to save. Please contact support. Error: ${error.message}`,
+             });
           });
         }
-      } catch (authError: any) {
+        
+        let errorMessage = error.message;
+        if (error instanceof FirebaseError) {
+            if (error.code === 'auth/email-already-in-use') {
+                errorMessage = 'This email is already registered. Please log in.';
+            }
+        }
+
         toast({
           variant: 'destructive',
           title: 'Registration Failed',
-          description: authError.message,
+          description: errorMessage,
         });
       }
     } else {
@@ -132,10 +142,16 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
           throw new Error('User profile not found. Please contact support.');
         }
       } catch (error: any) {
+         let errorMessage = error.message;
+          if (error instanceof FirebaseError) {
+             if (error.code === 'auth/invalid-credential') {
+                errorMessage = "Invalid email or password. Please try again.";
+             }
+          }
         toast({
           variant: 'destructive',
           title: 'Sign In Failed',
-          description: error.message,
+          description: errorMessage,
         });
       }
     }
