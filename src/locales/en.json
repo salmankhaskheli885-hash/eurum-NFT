@@ -1,0 +1,84 @@
+{
+    "appName": "Fynix Pro",
+    "nav": {
+        "dashboard": "Dashboard",
+        "investments": "Investments",
+        "kyc": "KYC Verification",
+        "referrals": "Referrals",
+        "profile": "Profile",
+        "logout": "Logout"
+    },
+    "dashboard": {
+        "title": "Dashboard",
+        "balance": "Total Balance",
+        "vipLevel": "VIP Level",
+        "vipProgress": "Progress to next level",
+        "recentTransactions": "Recent Transactions",
+        "transactionId": "ID",
+        "transactionType": "Type",
+        "transactionDate": "Date",
+        "transactionAmount": "Amount",
+        "transactionStatus": "Status"
+    },
+    "investments": {
+        "title": "Investment Plans",
+        "description": "Explore investment plans unlocked for your VIP level.",
+        "invest": "Invest Now",
+        "locked": "Locked",
+        "requiredVip": "Requires VIP Level {level}"
+    },
+    "kyc": {
+        "title": "KYC Verification",
+        "description": "Submit your documents to get your account verified.",
+        "uploadCnic": "Upload CNIC",
+        "uploadPhoto": "Upload Photo",
+        "submit": "Submit for Verification",
+        "status": "Your KYC Status:",
+        "statusPill": {
+            "pending": "Pending",
+            "approved": "Approved",
+            "rejected": "Rejected",
+            "unsubmitted": "Not Submitted"
+        }
+    },
+    "referrals": {
+        "title": "Referrals",
+        "description": "Share your referral link to earn rewards.",
+        "yourLink": "Your Referral Link",
+        "copy": "Copy Link",
+        "copied": "Copied!"
+    },
+    "profile": {
+        "title": "Profile",
+        "name": "Full Name",
+        "email": "Email Address",
+        "uid": "User ID"
+    },
+    "login": {
+        "title": "Welcome Back",
+        "description": "Sign in to access your account",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "button": "Sign In",
+        "googleButton": "Sign In with Google",
+        "separator": "OR",
+        "noAccount": "Don't have an account?",
+        "signUpLink": "Sign Up"
+    },
+    "register": {
+        "title": "Create Account",
+        "description": "Start your journey with Fynix Pro today",
+        "nameLabel": "Full Name",
+        "emailLabel": "Email",
+        "passwordLabel": "Password",
+        "button": "Sign Up",
+        "googleButton": "Sign Up with Google",
+        "separator": "OR",
+        "hasAccount": "Already have an account?",
+        "signInLink": "Sign In"
+    },
+    "languages": {
+        "english": "English",
+        "urdu": "Urdu"
+    }
+}

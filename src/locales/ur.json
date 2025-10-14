@@ -1,0 +1,84 @@
+{
+    "appName": "فائنکس پرو",
+    "nav": {
+        "dashboard": "ڈیش بورڈ",
+        "investments": "سرمایہ کاری",
+        "kyc": "KYC تصدیق",
+        "referrals": "ریفرلز",
+        "profile": "پروفائل",
+        "logout": "لاگ آؤٹ"
+    },
+    "dashboard": {
+        "title": "ڈیش بورڈ",
+        "balance": "کل بیلنس",
+        "vipLevel": "VIP لیول",
+        "vipProgress": "اگلے لیول تک ترقی",
+        "recentTransactions": "حالیہ ٹرانزیکشنز",
+        "transactionId": "ID",
+        "transactionType": "قسم",
+        "transactionDate": "تاریخ",
+        "transactionAmount": "رقم",
+        "transactionStatus": "حیثیت"
+    },
+    "investments": {
+        "title": "سرمایہ کاری کے منصوبے",
+        "description": "اپنے VIP لیول کے لیے غیر مقفل شدہ سرمایہ کاری کے منصوبے دریافت کریں۔",
+        "invest": "ابھی سرمایہ کاری کریں",
+        "locked": "مقفل",
+        "requiredVip": "VIP لیول {level} درکار ہے"
+    },
+    "kyc": {
+        "title": "KYC تصدیق",
+        "description": "اپنے اکاؤنٹ کی تصدیق کے لیے اپنی دستاویزات جمع کرائیں۔",
+        "uploadCnic": "CNIC اپ لوڈ کریں",
+        "uploadPhoto": "تصویر اپ لوڈ کریں",
+        "submit": "تصدیق کے لیے جمع کرائیں",
+        "status": "آپ کی KYC حیثیت:",
+        "statusPill": {
+            "pending": "زیر التواء",
+            "approved": "منظور شدہ",
+            "rejected": "مسترد",
+            "unsubmitted": "جمع نہیں کرایا"
+        }
+    },
+    "referrals": {
+        "title": "ریفرلز",
+        "description": "انعامات حاصل کرنے کے لیے اپنا ریفرل لنک شیئر کریں۔",
+        "yourLink": "آپ کا ریفرل لنک",
+        "copy": "لنک کاپی کریں",
+        "copied": "کاپی ہو گیا!"
+    },
+    "profile": {
+        "title": "پروفائل",
+        "name": "پورا نام",
+        "email": "ای میل ایڈریس",
+        "uid": "صارف ID"
+    },
+    "login": {
+        "title": "خوش آمدید",
+        "description": "اپنے اکاؤنٹ تک رسائی کے لیے سائن ان کریں۔",
+        "emailLabel": "ای میل",
+        "passwordLabel": "پاس ورڈ",
+        "button": "سائن ان کریں",
+        "googleButton": "گوگل کے ساتھ سائن ان کریں",
+        "separator": "یا",
+        "noAccount": "اکاؤنٹ نہیں ہے؟",
+        "signUpLink": "سائن اپ کریں"
+    },
+    "register": {
+        "title": "اکاؤنٹ بنائیں",
+        "description": "آج ہی فائنکس پرو کے ساتھ اپنا سفر شروع کریں۔",
+        "nameLabel": "پورا نام",
+        "emailLabel": "ای میل",
+        "passwordLabel": "پاس ورڈ",
+        "button": "سائن اپ کریں",
+        "googleButton": "گوگل کے ساتھ سائن اپ کریں",
+        "separator": "یا",
+        "hasAccount": "پہلے سے اکاؤنٹ ہے؟",
+        "signInLink": "سائن ان کریں"
+    },
+    "languages": {
+        "english": "English",
+        "urdu": "اردو"
+    }
+}
