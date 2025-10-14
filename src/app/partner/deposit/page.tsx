@@ -10,10 +10,7 @@ import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
 import { Copy, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction } from "@/lib/data"
-
-// This would typically come from a remote config or database
-const ADMIN_WALLET_NUMBER = "0300-1234567"
+import { addTransaction, appSettings } from "@/lib/data"
 
 export default function DepositPage() {
     const { t } = useTranslation()
@@ -26,7 +23,12 @@ export default function DepositPage() {
     const [receipt, setReceipt] = useState<File | null>(null)
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(ADMIN_WALLET_NUMBER)
+        const textToCopy = `
+        Account Name: ${appSettings.adminAccountHolderName}
+        Account Number: ${appSettings.adminWalletNumber}
+        Wallet: ${appSettings.adminWalletName}
+        `;
+        navigator.clipboard.writeText(textToCopy.trim())
         setCopied(true)
         toast({
             description: t('referrals.copied'),
@@ -71,9 +73,16 @@ export default function DepositPage() {
         </CardHeader>
         <CardContent>
            <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">{t('deposit.adminWallet')}</p>
-                  <p className="text-sm text-muted-foreground">{ADMIN_WALLET_NUMBER}</p>
+                <div className="flex-1 space-y-2">
+                   <p className="text-sm font-medium leading-none">
+                    Account Name: <span className="text-muted-foreground">{appSettings.adminAccountHolderName}</span>
+                  </p>
+                  <p className="text-sm font-medium leading-none">
+                    Account Number: <span className="text-muted-foreground">{appSettings.adminWalletNumber}</span>
+                  </p>
+                  <p className="text-sm font-medium leading-none">
+                    Wallet: <span className="text-muted-foreground">{appSettings.adminWalletName}</span>
+                  </p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleCopy}>
                     <Copy className="h-5 w-5" />

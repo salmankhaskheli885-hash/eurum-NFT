@@ -23,11 +23,17 @@ export default function AdminSettingsPage() {
   
   const [walletNumber, setWalletNumber] = useState(appSettings.adminWalletNumber)
   const [walletName, setWalletName] = useState(appSettings.adminWalletName)
+  const [accountHolderName, setAccountHolderName] = useState(appSettings.adminAccountHolderName)
   const [withdrawalFee, setWithdrawalFee] = useState(appSettings.withdrawalFee)
   const [announcement, setAnnouncement] = useState("")
 
   const handleSettingsSave = () => {
-    updateAppSettings({ adminWalletNumber: walletNumber, adminWalletName: walletName, withdrawalFee });
+    updateAppSettings({ 
+        adminWalletNumber: walletNumber, 
+        adminWalletName: walletName,
+        adminAccountHolderName: accountHolderName, 
+        withdrawalFee 
+    });
     toast({
       title: "Settings Saved",
       description: "Application settings have been updated successfully.",
@@ -70,6 +76,18 @@ export default function AdminSettingsPage() {
               />
                <p className="text-xs text-muted-foreground">
                 The name of the wallet service.
+              </p>
+            </div>
+             <div className="space-y-2">
+              <Label htmlFor="account-holder-name">Account Holder Name</Label>
+              <Input 
+                id="account-holder-name" 
+                value={accountHolderName} 
+                onChange={(e) => setAccountHolderName(e.target.value)}
+                placeholder="e.g., John Doe"
+              />
+               <p className="text-xs text-muted-foreground">
+                The name of the account holder.
               </p>
             </div>
             <div className="space-y-2">

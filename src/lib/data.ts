@@ -34,12 +34,14 @@ export type InvestmentPlan = {
 export type AppSettings = {
     adminWalletNumber: string;
     adminWalletName: string;
+    adminAccountHolderName: string;
     withdrawalFee: string;
 }
 
 export let appSettings: AppSettings = {
     adminWalletNumber: "0300-1234567",
     adminWalletName: "JazzCash",
+    adminAccountHolderName: "Fynix Pro Admin",
     withdrawalFee: "2"
 }
 

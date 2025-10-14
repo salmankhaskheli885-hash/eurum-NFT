@@ -24,7 +24,12 @@ export default function DepositPage() {
 
 
     const handleCopy = () => {
-        navigator.clipboard.writeText(appSettings.adminWalletNumber)
+        const textToCopy = `
+        Account Name: ${appSettings.adminAccountHolderName}
+        Account Number: ${appSettings.adminWalletNumber}
+        Wallet: ${appSettings.adminWalletName}
+        `;
+        navigator.clipboard.writeText(textToCopy.trim())
         setCopied(true)
         toast({
             description: t('referrals.copied'),
@@ -69,9 +74,16 @@ export default function DepositPage() {
         </CardHeader>
         <CardContent>
            <div className="flex items-center space-x-2 rounded-md border border-dashed p-4">
-                <div className="flex-1 space-y-1">
-                  <p className="text-sm font-medium leading-none">{t('deposit.adminWallet')} ({appSettings.adminWalletName})</p>
-                  <p className="text-sm text-muted-foreground">{appSettings.adminWalletNumber}</p>
+                <div className="flex-1 space-y-2">
+                  <p className="text-sm font-medium leading-none">
+                    Account Name: <span className="text-muted-foreground">{appSettings.adminAccountHolderName}</span>
+                  </p>
+                  <p className="text-sm font-medium leading-none">
+                    Account Number: <span className="text-muted-foreground">{appSettings.adminWalletNumber}</span>
+                  </p>
+                  <p className="text-sm font-medium leading-none">
+                    Wallet: <span className="text-muted-foreground">{appSettings.adminWalletName}</span>
+                  </p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={handleCopy}>
                     <Copy className="h-5 w-5" />
