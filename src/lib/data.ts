@@ -1,3 +1,4 @@
+import { UserProfile } from "./schema";
 
 
 export type User = {
@@ -45,17 +46,18 @@ export let appSettings: AppSettings = {
     withdrawalFee: "2"
 }
 
-export const mockUser: User = {
-  name: 'Satoshi Nakamoto',
+export const mockUser: UserProfile = {
+  displayName: 'Satoshi Nakamoto',
   email: 'satoshi@fynix.pro',
   uid: 'abc-123-def-456-ghi-789',
   shortUid: 'a1b2c3d4',
   balance: 133742.00,
   currency: 'PKR',
   vipLevel: 2,
-  vipProgress: 65,
+  vipProgress: 65, // Percentage
   kycStatus: 'approved',
   referralLink: 'https://fynix.pro/ref/a1b2c3d4',
+  role: 'user',
 };
 
 export let mockTransactions: Transaction[] = [

@@ -9,15 +9,18 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { mockUser, mockTransactions } from "@/lib/data"
+import { mockTransactions } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { useUser } from "@/hooks/use-user"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function Dashboard() {
   const { t } = useTranslation()
+  const { user, loading } = useUser();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-PK", {
@@ -26,7 +29,6 @@ export default function Dashboard() {
     }).format(amount)
   }
 
-  const userFirstName = mockUser.name.split(" ")[0]
   const recentTransactions = mockTransactions.slice(0, 5)
 
   const getStatusVariant = (status: (typeof mockTransactions)[0]['status']) => {
@@ -37,6 +39,67 @@ export default function Dashboard() {
       default: return 'outline'
     }
   }
+
+  if (loading) {
+      return (
+        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
+                <Card className="sm:col-span-2">
+                    <CardHeader className="pb-3">
+                        <Skeleton className="h-8 w-48" />
+                        <Skeleton className="h-4 w-full mt-2" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-10 w-36" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>{t('dashboard.balance')}</CardDescription>
+                         <Skeleton className="h-10 w-3/4" />
+                    </CardHeader>
+                    <CardContent>
+                       <Skeleton className="h-4 w-1/2" />
+                    </CardContent>
+                </Card>
+                <Card>
+                    <CardHeader className="pb-2">
+                        <CardDescription>{t('dashboard.vipLevel')}</CardDescription>
+                        <Skeleton className="h-10 w-1/2" />
+                    </CardHeader>
+                    <CardContent>
+                        <Skeleton className="h-4 w-full" />
+                         <Skeleton className="h-3 w-1/2 mt-2" />
+                    </CardContent>
+                </Card>
+            </div>
+             <Card>
+                <CardHeader>
+                    <CardTitle>{t('profile.recentTransactions')}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div className="flex justify-between items-center" key={i}>
+                          <div className="flex flex-col gap-2">
+                             <Skeleton className="h-4 w-24" />
+                             <Skeleton className="h-3 w-32" />
+                          </div>
+                          <Skeleton className="h-6 w-20" />
+                        </div>
+                      ))}
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+      )
+  }
+
+  if (!user) {
+    return <div>Please log in to see your dashboard.</div>
+  }
+
+  const userFirstName = user.displayName?.split(" ")[0]
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
@@ -58,7 +121,7 @@ export default function Dashboard() {
           <CardHeader className="pb-2">
             <CardDescription>{t('dashboard.balance')}</CardDescription>
             <CardTitle className="text-4xl text-primary">
-              {formatCurrency(mockUser.balance)}
+              {formatCurrency(user.balance)}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -71,13 +134,13 @@ export default function Dashboard() {
            <CardHeader className="pb-2">
             <CardDescription>{t('dashboard.vipLevel')}</CardDescription>
             <CardTitle className="text-4xl text-primary">
-              {t('dashboard.vipLevelValue', { level: mockUser.vipLevel })}
+              {t('dashboard.vipLevelValue', { level: user.vipLevel })}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Progress value={mockUser.vipProgress} aria-label={`${mockUser.vipProgress}% to next level`} />
+            <Progress value={user.vipProgress} aria-label={`${user.vipProgress}% to next level`} />
             <div className="text-xs text-muted-foreground mt-2">
-              {mockUser.vipProgress}% {t('dashboard.vipProgress')}
+              {user.vipProgress}% {t('dashboard.vipProgress')}
             </div>
           </CardContent>
         </Card>

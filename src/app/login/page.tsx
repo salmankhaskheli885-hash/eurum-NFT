@@ -9,11 +9,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useTranslation } from "@/hooks/use-translation";
 import { Logo } from "@/components/icons";
+import { AuthForm } from "@/components/auth/auth-form";
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="1em" height="1em" {...props}>
@@ -45,18 +44,8 @@ export default function LoginPage() {
                         <TabsTrigger value="admin">{t("login.adminTab")}</TabsTrigger>
                     </TabsList>
                     <TabsContent value="user">
-                        <div className="grid gap-4 pt-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="email">{t("login.emailLabel")}</Label>
-                                <Input id="email" type="email" placeholder="m@example.com" required />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="password">{t("login.passwordLabel")}</Label>
-                                <Input id="password" type="password" required />
-                            </div>
-                            <Button type="submit" className="w-full">
-                                <Link href="/dashboard" className="w-full h-full flex items-center justify-center">{t("login.button")}</Link>
-                            </Button>
+                        <div className="pt-4">
+                          <AuthForm role="user" redirectPath="/dashboard" />
                         </div>
                          <div className="mt-4 text-center text-sm">
                             {t("login.noAccount")}{" "}
@@ -66,18 +55,8 @@ export default function LoginPage() {
                         </div>
                     </TabsContent>
                     <TabsContent value="partner">
-                        <div className="grid gap-4 pt-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="partner-email">{t("login.emailLabel")}</Label>
-                                <Input id="partner-email" type="email" placeholder="partner@example.com" required />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="partner-password">{t("login.passwordLabel")}</Label>
-                                <Input id="partner-password" type="password" required />
-                            </div>
-                            <Button type="submit" className="w-full">
-                                <Link href="/partner" className="w-full h-full flex items-center justify-center">{t("login.buttonPartner")}</Link>
-                            </Button>
+                       <div className="pt-4">
+                           <AuthForm role="partner" redirectPath="/partner" />
                         </div>
                          <div className="mt-4 text-center text-sm">
                             {t("login.noAccountPartner")}{" "}
@@ -87,18 +66,8 @@ export default function LoginPage() {
                         </div>
                     </TabsContent>
                      <TabsContent value="admin">
-                        <div className="grid gap-4 pt-4">
-                            <div className="grid gap-2">
-                                <Label htmlFor="admin-email">{t("login.emailLabel")}</Label>
-                                <Input id="admin-email" type="email" placeholder="admin@fynix.pro" required />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label htmlFor="admin-password">{t("login.passwordLabel")}</Label>
-                                <Input id="admin-password" type="password" required />
-                            </div>
-                            <Button type="submit" className="w-full">
-                                <Link href="/admin" className="w-full h-full flex items-center justify-center">{t("login.buttonAdmin")}</Link>
-                            </Button>
+                        <div className="pt-4">
+                           <AuthForm role="admin" redirectPath="/admin" />
                         </div>
                     </TabsContent>
                 </Tabs>
