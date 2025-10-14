@@ -17,11 +17,10 @@ import {
   updateDoc,
   onSnapshot, // Import onSnapshot
   type Unsubscribe,
+  serverTimestamp
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement } from './data';
-import { useFirestore } from '@/firebase/provider';
-
 
 // USER FUNCTIONS
 export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser): Promise<User> {
@@ -81,6 +80,7 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
 
 
 // TRANSACTION FUNCTIONS
+// This function now handles all types of transactions including simulated auto-payout
 export async function addTransaction(firestore: ReturnType<typeof getFirestore>, transactionData: Omit<Transaction, 'id' | 'date'>): Promise<Transaction | null> {
     const userRef = doc(firestore, 'users', transactionData.userId);
     const userSnap = await getDoc(userRef);
@@ -103,18 +103,64 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
         batch.update(userRef, { balance: newBalance });
     }
 
-    const newTransaction: Omit<Transaction, 'id'> = {
+    const newTransactionData: Omit<Transaction, 'id'> = {
         ...transactionData,
         date: new Date().toISOString().split('T')[0]
     };
     
     const transactionsCollection = collection(firestore, 'transactions');
     const newDocRef = doc(transactionsCollection);
-    batch.set(newDocRef, newTransaction);
+    batch.set(newDocRef, newTransactionData);
+    
+    const newTransaction = { ...newTransactionData, id: newDocRef.id } as Transaction;
+
+    // SIMULATE AUTOMATIC PAYOUT FOR INVESTMENTS
+    if (newTransaction.type === 'Investment' && newTransaction.investmentDetails) {
+      const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = newTransaction.investmentDetails;
+      const profit = investedAmount * (dailyReturn / 100) * durationDays;
+      const payoutAmount = investedAmount + profit;
+
+      const maturityTimestamp = new Date(maturityDate).getTime();
+      const nowTimestamp = new Date().getTime();
+      const delay = maturityTimestamp - nowTimestamp;
+
+      // This timeout simulates a server-side cron job. 
+      // In a real app, you'd use a Cloud Function triggered by a schedule.
+      if (delay > 0) {
+        setTimeout(async () => {
+          try {
+            const payoutTransaction: Omit<Transaction, 'id' | 'date'> = {
+              userId: newTransaction.userId,
+              userName: newTransaction.userName,
+              type: 'Payout',
+              amount: payoutAmount,
+              status: 'Completed',
+              details: `Matured investment from ${planName}`
+            };
+            
+            // Add the payout transaction and update balance
+            const payoutUserRef = doc(firestore, 'users', newTransaction.userId);
+            const payoutUserSnap = await getDoc(payoutUserRef);
+            if (payoutUserSnap.exists()) {
+              const currentBalance = payoutUserSnap.data().balance;
+              const payoutBatch = writeBatch(firestore);
+              
+              const payoutDocRef = doc(collection(firestore, 'transactions'));
+              payoutBatch.set(payoutDocRef, { ...payoutTransaction, date: new Date().toISOString().split('T')[0] });
+              payoutBatch.update(payoutUserRef, { balance: currentBalance + payoutAmount });
+              
+              await payoutBatch.commit();
+            }
+          } catch(e) {
+            console.error("Failed to process automatic payout:", e);
+          }
+        }, delay);
+      }
+    }
     
     await batch.commit();
 
-    return { ...newTransaction, id: newDocRef.id };
+    return newTransaction;
 }
 
 
@@ -161,15 +207,18 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
 
 export function listenToUserTransactions(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (transactions: Transaction[]) => void, count?: number): Unsubscribe {
     const transactionsCollection = collection(firestore, 'transactions');
-    let q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"));
+    let q;
     if (count) {
         q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"), limit(count));
+    } else {
+        q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"));
     }
     return onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
         callback(transactions);
     });
 }
+
 
 // INVESTMENT PLAN FUNCTIONS
 export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, plan: Omit<InvestmentPlan, 'id'>): Promise<InvestmentPlan> {

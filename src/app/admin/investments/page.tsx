@@ -18,13 +18,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -64,16 +57,16 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const { toast } = useToast()
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
-        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, maxInvestment: plan.maxInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl } 
-        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/placeholder/600/400' }
+        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl } 
+        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/placeholder/600/400' }
     );
 
     React.useEffect(() => {
         if (open) {
           if (plan) {
-              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, maxInvestment: plan.maxInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl });
+              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl });
           } else {
-              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, maxInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/newplan/600/400' });
+              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'https://picsum.photos/seed/newplan/600/400' });
           }
         }
     }, [open, plan]);
@@ -139,7 +132,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                         <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
                     </div>
                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="dailyReturn" className="text-right">Daily Return (%)</Label>
+                        <Label htmlFor="dailyReturn" className="text-right">Daily Return</Label>
                         <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} className="col-span-3" />
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
@@ -149,10 +142,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="minInvestment" className="text-right">Min Investment</Label>
                         <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="maxInvestment" className="text-right">Max Investment</Label>
-                        <Input id="maxInvestment" name="maxInvestment" type="number" value={formData.maxInvestment} onChange={handleChange} className="col-span-3" />
                     </div>
                      <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="requiredVipLevel" className="text-right">Required VIP</Label>
@@ -253,10 +242,9 @@ export default function AdminInvestmentsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Plan</TableHead>
-                <TableHead>Daily Return (%)</TableHead>
+                <TableHead>Daily Return</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>Min Investment</TableHead>
-                <TableHead>Max Investment</TableHead>
                 <TableHead>Required VIP</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
@@ -273,7 +261,6 @@ export default function AdminInvestmentsPage() {
                         </TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
@@ -296,7 +283,6 @@ export default function AdminInvestmentsPage() {
                   <TableCell>{plan.dailyReturn}</TableCell>
                   <TableCell>{plan.durationDays}</TableCell>
                   <TableCell>{plan.minInvestment.toLocaleString()}</TableCell>
-                  <TableCell>{plan.maxInvestment.toLocaleString()}</TableCell>
                   <TableCell>{plan.requiredVipLevel}</TableCell>
                   <TableCell>
                     <DropdownMenu>
@@ -335,7 +321,7 @@ export default function AdminInvestmentsPage() {
               ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
+                    <TableCell colSpan={6} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
                 </TableRow>
               )}
             </TableBody>

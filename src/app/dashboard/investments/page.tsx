@@ -50,12 +50,10 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
     const { t } = useTranslation()
     const [amount, setAmount] = React.useState(plan.minInvestment);
 
-    const formatCurrency = (amount: number) => {
-        return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        }).format(amount)
-    }
+    const formatCurrency = (val: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+
+    const totalProfit = amount * (plan.dailyReturn / 100) * plan.durationDays;
+    const totalIncome = amount + totalProfit;
 
     return (
         <Dialog>
@@ -78,17 +76,11 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                     </div>
                      <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('investments.dailyReturn')}</span>
-                        <span className="font-semibold text-primary">{plan.dailyReturn}%</span>
+                        <span className="font-semibold text-primary">{plan.dailyReturn}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('investments.duration')}</span>
                         <span className="font-semibold">{plan.durationDays} {t('investments.days')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('investments.investmentRange')}</span>
-                        <span className="font-semibold">
-                        {formatCurrency(plan.minInvestment)} - {formatCurrency(plan.maxInvestment)}
-                        </span>
                     </div>
                     <div className="grid w-full items-center gap-1.5">
                         <Label htmlFor="amount">{t('investments.investmentAmount')}</Label>
@@ -98,8 +90,17 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                             value={amount} 
                             onChange={(e) => setAmount(Number(e.target.value))}
                             min={plan.minInvestment}
-                            max={plan.maxInvestment}
                         />
+                        <p className="text-xs text-muted-foreground">Min Investment: {formatCurrency(plan.minInvestment)}</p>
+                    </div>
+                    <hr/>
+                    <div className="flex justify-between font-bold">
+                        <span>Total Profit</span>
+                        <span className="text-green-600">{formatCurrency(totalProfit)}</span>
+                    </div>
+                    <div className="flex justify-between font-bold">
+                        <span>Total Income (P+I)</span>
+                        <span className="text-primary">{formatCurrency(totalIncome)}</span>
                     </div>
                 </div>
                 <DialogFooter>
@@ -109,7 +110,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button type="submit">
+                            <Button type="submit" disabled={amount < plan.minInvestment}>
                                 {t('investments.confirmButton')}
                             </Button>
                         </AlertDialogTrigger>
@@ -169,6 +170,17 @@ export default function InvestmentsPage() {
         });
         return;
     }
+    if (amount < plan.minInvestment) {
+        toast({
+            variant: "destructive",
+            title: "Invalid Amount",
+            description: `Minimum investment for this plan is $${plan.minInvestment}.`,
+        });
+        return;
+    }
+
+    const maturityDate = new Date();
+    maturityDate.setDate(maturityDate.getDate() + plan.durationDays);
 
     try {
         await addTransaction(firestore, {
@@ -177,7 +189,16 @@ export default function InvestmentsPage() {
             type: 'Investment',
             amount: -amount,
             status: 'Completed',
-            details: `Investment in ${plan.name}`
+            details: `Investment in ${plan.name}`,
+            investmentDetails: {
+                planId: plan.id,
+                planName: plan.name,
+                investedAmount: amount,
+                dailyReturn: plan.dailyReturn,
+                durationDays: plan.durationDays,
+                maturityDate: maturityDate.toISOString(),
+                isMatured: false,
+            }
         });
 
         toast({
@@ -194,11 +215,13 @@ export default function InvestmentsPage() {
     }
   }
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-    }).format(amount)
+  const formatCurrency = (val: number) => {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+  }
+  
+  const calculateTotalIncome = (plan: InvestmentPlan) => {
+      const profit = plan.minInvestment * (plan.dailyReturn / 100) * plan.durationDays;
+      return plan.minInvestment + profit;
   }
 
   const isLoading = userLoading || plansLoading;
@@ -265,16 +288,16 @@ export default function InvestmentsPage() {
               <CardContent className="flex-grow grid gap-4">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('investments.dailyReturn')}</span>
-                  <span className="font-semibold text-primary">{plan.dailyReturn}%</span>
+                  <span className="font-semibold text-primary">{plan.dailyReturn}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('investments.duration')}</span>
                   <span className="font-semibold">{plan.durationDays} {t('investments.days')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('investments.investmentRange')}</span>
+                  <span className="text-muted-foreground">Total Income (at min)</span>
                   <span className="font-semibold">
-                    {formatCurrency(plan.minInvestment)} - {formatCurrency(plan.maxInvestment)}
+                    {formatCurrency(calculateTotalIncome(plan))}
                   </span>
                 </div>
               </CardContent>

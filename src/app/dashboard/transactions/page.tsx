@@ -58,7 +58,7 @@ export default function TransactionsPage() {
 
   const deposits = transactions.filter(tx => tx.type === 'Deposit');
   const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal');
-  const investments = transactions.filter(tx => tx.type === 'Investment');
+  const investments = transactions.filter(tx => tx.type === 'Investment' || tx.type === 'Payout');
 
   const renderTable = (transactions: Transaction[], isLoading: boolean) => (
      <Table>

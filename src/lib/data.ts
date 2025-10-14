@@ -1,3 +1,4 @@
+
 // This file is now deprecated for storing live data.
 // All data operations have been moved to src/lib/firestore.ts to use Firebase Firestore for persistence.
 // We are keeping the type definitions and some initial mock data for seeding purposes if needed.
@@ -13,7 +14,7 @@ export type Transaction = {
   id: string;
   userId: string;
   userName: string;
-  type: 'Deposit' | 'Withdrawal' | 'Investment';
+  type: 'Deposit' | 'Withdrawal' | 'Investment' | 'Payout';
   date: string;
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
@@ -22,6 +23,15 @@ export type Transaction = {
     accountNumber: string;
     accountName: string;
     method: string;
+  };
+  investmentDetails?: {
+    planId: string;
+    planName: string;
+    investedAmount: number;
+    dailyReturn: number;
+    durationDays: number;
+    maturityDate: string;
+    isMatured: boolean;
   }
 };
 
@@ -31,7 +41,6 @@ export type InvestmentPlan = {
   dailyReturn: number;
   durationDays: number;
   minInvestment: number;
-  maxInvestment: number;
   requiredVipLevel: number;
   imageUrl: string;
 };
