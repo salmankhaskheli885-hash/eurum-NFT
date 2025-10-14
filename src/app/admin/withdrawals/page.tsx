@@ -22,7 +22,8 @@ import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { mockTransactions, type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, XCircle } from "lucide-react"
+import { CheckCircle, Search, XCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 // Sample data - this will be replaced with live Firebase data
 const withdrawals = mockTransactions.filter(tx => tx.type === 'Withdrawal');
@@ -30,6 +31,19 @@ const withdrawals = mockTransactions.filter(tx => tx.type === 'Withdrawal');
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const [searchTerm, setSearchTerm] = React.useState("")
+  const [filteredWithdrawals, setFilteredWithdrawals] = React.useState(withdrawals)
+
+  React.useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filteredData = withdrawals.filter(item => {
+      return (
+        item.id.toLowerCase().includes(lowercasedFilter) ||
+        item.status.toLowerCase().includes(lowercasedFilter)
+      );
+    });
+    setFilteredWithdrawals(filteredData);
+  }, [searchTerm]);
 
   const handleAction = (transactionId: string, action: 'approved' | 'rejected') => {
     toast({
@@ -58,6 +72,16 @@ export default function AdminWithdrawalsPage() {
         <CardHeader>
           <CardTitle>Withdrawal Requests</CardTitle>
           <CardDescription>A list of all withdrawal requests from users.</CardDescription>
+           <div className="relative pt-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by transaction ID..."
+              className="w-full pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -72,7 +96,7 @@ export default function AdminWithdrawalsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {withdrawals.map((withdrawal) => (
+              {filteredWithdrawals.map((withdrawal) => (
                 <TableRow key={withdrawal.id}>
                   <TableCell className="font-medium">{withdrawal.id}</TableCell>
                   <TableCell>Satoshi N.</TableCell> {/* Placeholder */}

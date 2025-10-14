@@ -22,7 +22,8 @@ import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { mockTransactions, type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, XCircle } from "lucide-react"
+import { CheckCircle, Search, XCircle } from "lucide-react"
+import { Input } from "@/components/ui/input"
 
 // Sample data - this will be replaced with live Firebase data
 const deposits = mockTransactions.filter(tx => tx.type === 'Deposit');
@@ -30,6 +31,20 @@ const deposits = mockTransactions.filter(tx => tx.type === 'Deposit');
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
+  const [searchTerm, setSearchTerm] = React.useState("")
+  const [filteredDeposits, setFilteredDeposits] = React.useState(deposits)
+
+  React.useEffect(() => {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    const filteredData = deposits.filter(item => {
+      return (
+        item.id.toLowerCase().includes(lowercasedFilter) ||
+        item.status.toLowerCase().includes(lowercasedFilter)
+      );
+    });
+    setFilteredDeposits(filteredData);
+  }, [searchTerm]);
+
 
   const handleAction = (transactionId: string, action: 'approved' | 'rejected') => {
     toast({
@@ -58,6 +73,16 @@ export default function AdminDepositsPage() {
         <CardHeader>
           <CardTitle>Deposit Requests</CardTitle>
           <CardDescription>A list of all deposits made by users.</CardDescription>
+           <div className="relative pt-2">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search by transaction ID..."
+              className="w-full pl-8"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
         </CardHeader>
         <CardContent>
           <Table>
@@ -72,7 +97,7 @@ export default function AdminDepositsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {deposits.map((deposit) => (
+              {filteredDeposits.map((deposit) => (
                 <TableRow key={deposit.id}>
                   <TableCell className="font-medium">{deposit.id}</TableCell>
                   <TableCell>Satoshi N.</TableCell> {/* Placeholder */}
