@@ -6,9 +6,7 @@ import {
   createUserWithEmailAndPassword,
   sendEmailVerification,
   signInWithEmailAndPassword,
-  getRedirectResult,
-  GoogleAuthProvider,
-  signInWithPopup,
+  deleteUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -50,7 +48,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
     setLoading(true);
 
     if (isRegister) {
-      // Handle Registration
+      // --- Handle Registration ---
       try {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -59,43 +57,53 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         );
         const authUser = userCredential.user;
 
-        // Send verification email
-        await sendEmailVerification(authUser);
+        try {
+          // Now, try to create the user profile in Firestore
+          const shortUid = authUser.uid.substring(0, 8);
+          const newUserProfile: UserProfile = {
+            uid: authUser.uid,
+            email: authUser.email,
+            displayName: name,
+            role,
+            shortUid,
+            balance: 0,
+            currency: 'PKR',
+            vipLevel: 1,
+            vipProgress: 0,
+            kycStatus: 'unsubmitted',
+            referralLink: `https://fynix.pro/ref/${shortUid}`,
+          };
 
-        const shortUid = authUser.uid.substring(0, 8);
-        const newUserProfile: UserProfile = {
-          uid: authUser.uid,
-          email: authUser.email,
-          displayName: name,
-          role,
-          shortUid,
-          balance: 0,
-          currency: 'PKR',
-          vipLevel: 1,
-          vipProgress: 0,
-          kycStatus: 'unsubmitted',
-          referralLink: `https://fynix.pro/ref/${shortUid}`,
-        };
+          await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
 
-        await setDoc(doc(firestore, 'users', authUser.uid), newUserProfile);
-        
-        toast({
-          title: t('register.successTitle'),
-          description: t('register.successDescription'),
-        });
+          // Only send verification email if both Auth and Firestore succeed
+          await sendEmailVerification(authUser);
 
-        // Redirect to login page after registration
-        router.push('/login');
+          toast({
+            title: t('register.successTitle'),
+            description: t('register.successDescription'),
+          });
 
-      } catch (error: any) {
+          router.push('/login');
+
+        } catch (firestoreError: any) {
+          // CRITICAL: If Firestore fails, delete the user from Auth to prevent zombie users
+          await deleteUser(authUser);
+          toast({
+            variant: 'destructive',
+            title: 'Registration Failed',
+            description: `Could not save user profile: ${firestoreError.message}`,
+          });
+        }
+      } catch (authError: any) {
         toast({
           variant: 'destructive',
           title: 'Registration Failed',
-          description: error.message,
+          description: authError.message,
         });
       }
     } else {
-      // Handle Login
+      // --- Handle Login ---
       try {
         const userCredential = await signInWithEmailAndPassword(
           auth,
@@ -105,13 +113,13 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
         const authUser = userCredential.user;
 
         if (!authUser.emailVerified) {
-            toast({
-                variant: 'destructive',
-                title: t('login.verification.title'),
-                description: t('login.verification.description'),
-            });
-            setLoading(false);
-            return;
+          toast({
+            variant: 'destructive',
+            title: t('login.verification.title'),
+            description: t('login.verification.description'),
+          });
+          setLoading(false);
+          return;
         }
 
         const userDocRef = doc(firestore, 'users', authUser.uid);
@@ -134,7 +142,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
               break;
           }
         } else {
-            throw new Error("User profile not found. Please register first.");
+          throw new Error('User profile not found. Please contact support.');
         }
       } catch (error: any) {
         toast({
@@ -184,6 +192,7 @@ export function AuthForm({ role, isRegister = false }: AuthFormProps) {
           onChange={(e) => setPassword(e.target.value)}
           required
           disabled={loading}
+          minLength={6}
         />
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
