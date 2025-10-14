@@ -18,16 +18,8 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockUser } from "@/lib/data"
+import { mockUser, mockReferredUsers } from "@/lib/data"
 import { DollarSign, Users, TrendingUp } from "lucide-react"
-
-const mockReferredUsers = [
-  { id: "user-1", name: "Alice", totalDeposit: 150.75, status: "Active" },
-  { id: "user-2", name: "Bob", totalDeposit: 305.50, status: "Active" },
-  { id: "user-3", name: "Charlie", totalDeposit: 95.20, status: "Inactive" },
-  { id: "user-4", name: "David", totalDeposit: 750.00, status: "Active" },
-  { id: "user-5", name: "Eve", totalDeposit: 120.00, status: "Active" },
-];
 
 export default function ReferralsPage() {
   const { t } = useTranslation()

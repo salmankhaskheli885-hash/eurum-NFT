@@ -208,12 +208,12 @@
             "totalCommission": "Total Commission Earned"
         },
         "referrals": {
-            "commissionRate": "Commission Rate (10%)"
+            "commissionRate": "Commission Rate (5%)"
         },
         "faq": {
             "q1": {
-                "question": "How does the 10% commission work?",
-                "answer": "As a partner, you earn a 10% commission on the first deposit of every user who signs up using your unique referral link."
+                "question": "How does the 5% commission work?",
+                "answer": "As a partner, you earn a 5% commission on the first deposit of every user who signs up using your unique referral link."
             },
             "q2": {
                 "question": "How do I withdraw my commission?",
