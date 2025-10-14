@@ -12,6 +12,7 @@ import {
   User,
   Users,
   Shield,
+  History,
 } from "lucide-react"
 
 import {
@@ -45,6 +46,7 @@ export default function DashboardLayout({
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: "/dashboard/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
     { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
+    { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/partners", label: t('nav.partners'), icon: Users },
     { href: "/dashboard/kyc", label: t('nav.kyc'), icon: FileCheck },

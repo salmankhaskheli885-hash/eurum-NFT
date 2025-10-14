@@ -4,6 +4,7 @@
         "dashboard": "ڈیش بورڈ",
         "deposit": "جمع کروائیں",
         "withdraw": "نکالیں",
+        "transactions": "ٹرانزیکشنز",
         "investments": "سرمایہ کاری",
         "kyc": "KYC تصدیق",
         "referrals": "ریفرلز",
@@ -22,24 +23,7 @@
         "welcomeSubtitle": "یہاں آپ کے اکاؤنٹ اور حالیہ سرگرمی کا ایک فوری جائزہ ہے۔",
         "viewInvestments": "سرمایہ کاری دیکھیں",
         "balance": "کل بیلنس",
-        "totalReturns": "کل منافع",
-        "quickActions": "فوری کارروائیاں",
-        "investments": {
-            "title": "سرمایہ کاری کریں",
-            "description": "منصوبے دریافت کریں اور اپنا پورٹ فولیو بڑھائیں۔"
-        },
-        "profile": {
-            "title": "پروفائل اپ ڈیٹ کریں",
-            "description": "اپنے اکاؤنٹ کی تفصیلات کو تازہ ترین رکھیں۔"
-        },
-        "kyc": {
-            "title": "اکاؤنٹ کی تصدیق کریں",
-            "description": "مکمل رسائی کے لیے KYC مکمل کریں۔"
-        },
-        "referrals": {
-            "title": "انعامات کمائیں",
-            "description": "دوستوں کو مدعو کریں اور مل کر کمائیں۔"
-        }
+        "totalReturns": "کل منافع"
     },
     "deposit": {
         "title": "فنڈز جمع کروائیں",
@@ -63,7 +47,21 @@
         "accountName": "اکاؤنٹ ہولڈر کا نام",
         "amount": "نکلوائی جانے والی رقم",
         "feeNotice": "نکلوائی گئی رقم سے 2% فیس کاٹی جائے گی۔",
-        "submitButton": "رقم نکلوانے کی درخواست بھیجیں"
+        "submitButton": "رقم نکلوانے کی درخواست بھیجیں",
+        "successTitle": "رقم نکلوانے کی درخواست جمع ہوگئی",
+        "successDescription": "آپ کی درخواست موصول ہوگئی ہے اور 12-24 گھنٹوں کے اندر اس پر کارروائی کی جائے گی۔"
+    },
+    "transactions": {
+        "title": "ٹرانزیکشن ہسٹری",
+        "description": "اپنی حالیہ ڈیپازٹس، وِدڈرالز، اور سرمایہ کاری دیکھیں۔",
+        "id": "ID",
+        "type": "قسم",
+        "date": "تاریخ",
+        "amount": "رقم",
+        "status": "حیثیت",
+        "all": "تمام",
+        "deposits": "ڈیپازٹس",
+        "withdrawals": "وِدڈرالز"
     },
     "investments": {
         "title": "سرمایہ کاری کے منصوبے",
@@ -94,7 +92,8 @@
         "copied": "کاپی ہو گیا!"
     },
     "profile": {
-        "title": "پروفائل",
+        "title": "پروفائل اور سیٹنگز",
+        "description": "اپنے اکاؤنٹ کی تفصیلات اور ترجیحات کا نظم کریں۔",
         "name": "پورا نام",
         "email": "ای میل ایڈریس",
         "uid": "صارف ID",
@@ -103,7 +102,10 @@
         "transactionType": "قسم",
         "transactionDate": "تاریخ",
         "transactionAmount": "رقم",
-        "transactionStatus": "حیثیت"
+        "transactionStatus": "حیثیت",
+        "settingsTitle": "سیٹنگز",
+        "password": "پاس ورڈ",
+        "changePassword": "پاس ورڈ تبدیل کریں"
     },
     "partners": {
         "title": "پارٹنر نیٹ ورک",

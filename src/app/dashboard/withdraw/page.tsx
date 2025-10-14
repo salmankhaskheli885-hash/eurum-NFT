@@ -1,6 +1,7 @@
 
 "use client"
 
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -8,9 +9,26 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
+    const router = useRouter()
+    const { toast } = useToast()
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        // Here you would typically handle the form submission,
+        // e.g., send the data to your backend.
+
+        toast({
+            title: t('withdraw.successTitle'),
+            description: t('withdraw.successDescription'),
+        })
+
+        // Redirect to transaction history page
+        router.push('/dashboard/transactions')
+    }
 
   return (
     <div className="flex flex-col gap-4 max-w-2xl mx-auto">
@@ -23,7 +41,8 @@ export default function WithdrawPage() {
         <CardHeader>
           <CardTitle>{t('withdraw.formTitle')}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
                 <Label className="mb-2 block">{t('withdraw.method')}</Label>
                 <RadioGroup defaultValue="jazzcash" className="flex gap-4">
@@ -39,21 +58,22 @@ export default function WithdrawPage() {
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="account-number">{t('withdraw.accountNumber')}</Label>
-                <Input id="account-number" type="tel" placeholder="03xxxxxxxxx" />
+                <Input id="account-number" type="tel" placeholder="03xxxxxxxxx" required />
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="account-name">{t('withdraw.accountName')}</Label>
-                <Input id="account-name" type="text" placeholder="Satoshi Nakamoto" />
+                <Input id="account-name" type="text" placeholder="Satoshi Nakamoto" required />
             </div>
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="amount">{t('withdraw.amount')}</Label>
-                <Input id="amount" type="number" placeholder="1000" />
+                <Input id="amount" type="number" placeholder="1000" required />
                  <p className="text-xs text-muted-foreground pt-1">{t('withdraw.feeNotice')}</p>
             </div>
             <Button type="submit" className="w-full">
                 <Landmark className="mr-2 h-4 w-4" />
                 {t('withdraw.submitButton')}
             </Button>
+          </form>
         </CardContent>
       </Card>
     </div>

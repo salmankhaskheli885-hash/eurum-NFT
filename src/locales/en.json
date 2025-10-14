@@ -4,6 +4,7 @@
         "dashboard": "Dashboard",
         "deposit": "Deposit",
         "withdraw": "Withdraw",
+        "transactions": "Transactions",
         "investments": "Investments",
         "kyc": "KYC Verification",
         "referrals": "Referrals",
@@ -22,24 +23,7 @@
         "welcomeSubtitle": "Here's a quick overview of your account and recent activity.",
         "viewInvestments": "View Investments",
         "balance": "Total Balance",
-        "totalReturns": "Total Returns",
-        "quickActions": "Quick Actions",
-        "investments": {
-            "title": "Make an Investment",
-            "description": "Explore plans & grow your portfolio."
-        },
-        "profile": {
-            "title": "Update Profile",
-            "description": "Keep your account details current."
-        },
-        "kyc": {
-            "title": "Verify Account",
-            "description": "Complete KYC for full access."
-        },
-        "referrals": {
-            "title": "Earn Rewards",
-            "description": "Invite friends and earn together."
-        }
+        "totalReturns": "Total Returns"
     },
     "deposit": {
         "title": "Deposit Funds",
@@ -63,7 +47,21 @@
         "accountName": "Account Holder Name",
         "amount": "Amount to Withdraw",
         "feeNotice": "A 2% fee will be deducted from the withdrawal amount.",
-        "submitButton": "Submit Withdrawal Request"
+        "submitButton": "Submit Withdrawal Request",
+        "successTitle": "Withdrawal Request Submitted",
+        "successDescription": "Your request has been received and will be processed within 12-24 hours."
+    },
+    "transactions": {
+        "title": "Transaction History",
+        "description": "View your recent deposits, withdrawals, and investments.",
+        "id": "ID",
+        "type": "Type",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status",
+        "all": "All",
+        "deposits": "Deposits",
+        "withdrawals": "Withdrawals"
     },
     "investments": {
         "title": "Investment Plans",
@@ -94,7 +92,8 @@
         "copied": "Copied!"
     },
     "profile": {
-        "title": "Profile",
+        "title": "Profile & Settings",
+        "description": "Manage your account details and preferences.",
         "name": "Full Name",
         "email": "Email Address",
         "uid": "User ID",
@@ -103,7 +102,10 @@
         "transactionType": "Type",
         "transactionDate": "Date",
         "transactionAmount": "Amount",
-        "transactionStatus": "Status"
+        "transactionStatus": "Status",
+        "settingsTitle": "Settings",
+        "password": "Password",
+        "changePassword": "Change Password"
     },
     "partners": {
         "title": "Partner Network",
