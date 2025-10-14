@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from '@/lib/schema';
+import { Auth, Firestore } from 'firebase/auth';
 
 const formSchema = z.object({
   email: z.string().email(),
@@ -35,11 +36,15 @@ const formSchema = z.object({
 
 type AuthFormProps = {
   isRegister?: boolean;
-  role: 'user' | 'partner'; // Admin role is not for public registration
+  role: 'user' | 'partner';
   redirectPath: string;
 };
 
-export async function handleGoogleSignIn(auth: any, firestore: any, role: 'user' | 'partner', toast: any, router: any) {
+export async function handleGoogleSignIn(auth: Auth | null, firestore: Firestore | null, role: 'user' | 'partner', toast: any, router: any) {
+  if (!auth || !firestore) {
+    toast({ variant: 'destructive', title: 'Firebase not initialized' });
+    return;
+  }
   const provider = new GoogleAuthProvider();
   try {
     const result = await signInWithPopup(auth, provider);
@@ -81,7 +86,7 @@ export async function handleGoogleSignIn(auth: any, firestore: any, role: 'user'
            break;
          case 'user':
          default:
-           finalRedirect_path = '/dashboard';
+           finalRedirectPath = '/dashboard';
            break;
        }
     }
@@ -115,6 +120,10 @@ export function AuthForm({
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!auth || !firestore) {
+      toast({ variant: "destructive", title: "Firebase not initialized." });
+      return;
+    }
     try {
       if (isRegister) {
         const userCredential = await createUserWithEmailAndPassword(
