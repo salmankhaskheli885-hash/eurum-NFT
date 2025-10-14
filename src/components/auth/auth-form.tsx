@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
-import { GoogleAuthProvider, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
-import { useAuth } from '@/firebase/provider';
+import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
+import { useFirebaseApp } from '@/firebase/provider';
+import type { UserProfile } from '@/lib/schema';
 
 
 function GoogleIcon(props: any) {
@@ -39,15 +40,15 @@ function GoogleIcon(props: any) {
     );
 }
 
-export function AuthForm({ mode, role }: { mode: 'login' | 'register', role: 'user' | 'partner' }) {
+export function AuthForm({ role }: { role: 'user' | 'partner' }) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const auth = useAuth();
+  const app = useFirebaseApp();
   
   const handleGoogleSignIn = async () => {
-    if (!auth) {
+    if (!app) {
         toast({
             variant: "destructive",
             title: "Authentication service not ready",
@@ -56,26 +57,37 @@ export function AuthForm({ mode, role }: { mode: 'login' | 'register', role: 'us
         return;
     }
     setLoading(true);
+    const auth = getAuth(app);
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
-        // This is a simplified role check. In a real app, you'd get the role from Firestore.
+        // This is a simulated role fetching. In a real app, you'd get this from Firestore.
         const isAdmin = user.email === 'satoshi@fynix.pro';
+        const isPartner = user.email === 'vitalik@fynix.pro';
         
+        let userRole: UserProfile['role'] = 'user';
+        if (isAdmin) userRole = 'admin';
+        else if (isPartner) userRole = 'partner';
+
         toast({
             title: t('login.successTitle'),
             description: `Welcome, ${user.displayName}! Redirecting...`,
         });
 
-        // Redirect based on role
-        if (isAdmin) {
-            router.push('/admin');
-        } else if (role === 'partner') {
-            router.push('/partner');
-        } else {
-            router.push('/dashboard');
+        // Redirect based on the determined role
+        switch(userRole) {
+            case 'admin':
+                router.push('/admin');
+                break;
+            case 'partner':
+                router.push('/partner');
+                break;
+            case 'user':
+            default:
+                router.push('/dashboard');
+                break;
         }
         
     } catch (error: any) {
