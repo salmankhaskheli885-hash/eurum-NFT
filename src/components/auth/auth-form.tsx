@@ -107,6 +107,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
           case 'user':
               if (appSettings.isUserPanelEnabled === false) {
                   showMaintenancePage();
+                  setLoading(false); // Stop loading after showing maintenance
                   return;
               }
               router.push('/dashboard');
@@ -114,6 +115,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
           case 'partner':
               if (appSettings.isPartnerPanelEnabled === false) {
                    showMaintenancePage();
+                   setLoading(false); // Stop loading after showing maintenance
                    return;
                 }
               router.push('/partner');
@@ -121,6 +123,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
           case 'agent':
               if (appSettings.isAgentPanelEnabled === false) {
                 showMaintenancePage();
+                setLoading(false); // Stop loading after showing maintenance
                 return;
             }
               router.push('/agent');
@@ -169,6 +172,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         if (isAgent) {
              if (settings.isAgentPanelEnabled === false) {
                 showMaintenancePage();
+                setLoading(false);
                 return;
             }
             router.push('/agent');
@@ -180,6 +184,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
             case 'partner':
                 if (settings.isPartnerPanelEnabled === false) {
                    showMaintenancePage();
+                   setLoading(false);
                    return;
                 }
                 router.push('/partner');
@@ -188,6 +193,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
             default:
                 if (settings.isUserPanelEnabled === false) {
                    showMaintenancePage();
+                   setLoading(false);
                    return;
                 }
                 router.push('/dashboard');
@@ -213,11 +219,10 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
             title: title,
             description: description,
         });
+        setLoading(false);
 
     } finally {
-        if (!showRoleDialog) {
-           setLoading(false);
-        }
+        // This is handled inside the try/catch now
     }
   };
 
