@@ -61,14 +61,7 @@ export default function DepositPage() {
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!user || !firestore || !settings) {
-            toast({
-                variant: "destructive",
-                title: "Not Logged In",
-                description: "You must be logged in to make a deposit.",
-            })
-            return
-        }
+
         if (!receiptFile) {
              toast({
                 variant: "destructive",
@@ -78,6 +71,15 @@ export default function DepositPage() {
             return
         }
 
+        if (!user || !firestore || !settings) {
+            toast({
+                variant: "destructive",
+                title: "Not Logged In",
+                description: "You must be logged in to make a deposit.",
+            })
+            return
+        }
+        
         const depositAmount = parseFloat(amount);
         if (isNaN(depositAmount) || depositAmount <= 0) {
             toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number for the amount.' });

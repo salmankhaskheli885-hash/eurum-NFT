@@ -135,8 +135,6 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
     await updateDoc(userRef, { kycStatus: status });
 }
 
-
-// Refactored Payout Handler
 async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>, finalTransaction: Transaction) {
     if (finalTransaction.type !== 'Investment' || !finalTransaction.investmentDetails) {
         return;
@@ -187,18 +185,19 @@ export async function addTransaction(
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ): Promise<Transaction> {
     
-    // 1. Handle file upload if it exists
+    // 1. Separate the local file object from the data to be saved in Firestore
+    const { receiptFile, ...dataToSave } = transactionData;
     let receiptUrl: string | undefined = undefined;
-    if (transactionData.type === 'Deposit' && transactionData.receiptFile) {
+
+    // 2. Handle file upload if it exists
+    if (dataToSave.type === 'Deposit' && receiptFile) {
         const storage = getStorage();
-        const receiptRef = ref(storage, `receipts/${transactionData.userId}/${Date.now()}_${transactionData.receiptFile.name}`);
-        const snapshot = await uploadBytes(receiptRef, transactionData.receiptFile);
+        const receiptRef = ref(storage, `receipts/${dataToSave.userId}/${Date.now()}_${receiptFile.name}`);
+        const snapshot = await uploadBytes(receiptRef, receiptFile);
         receiptUrl = await getDownloadURL(snapshot.ref);
     }
     
-    // 2. Prepare the data to be saved, excluding the local file object
-    const { receiptFile, ...dataToSave } = transactionData;
-
+    // 3. Prepare the final data to be saved in Firestore
     const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
         ...dataToSave,
         receiptUrl: receiptUrl,
@@ -207,7 +206,7 @@ export async function addTransaction(
     
     const newDocRef = doc(collection(firestore, 'transactions'));
     
-    // 3. Run the database transaction
+    // 4. Run the database transaction
     await runTransaction(firestore, async (transaction) => {
         const userRef = doc(firestore, 'users', dataToSave.userId);
         const userSnap = await transaction.get(userRef);
@@ -218,7 +217,7 @@ export async function addTransaction(
         
         const user = userSnap.data() as User;
         
-        // 4. Handle logic specific to transaction type
+        // 5. Handle logic specific to transaction type
         if (dataToSave.type === 'Withdrawal') {
             const withdrawalAmount = Math.abs(dataToSave.amount);
 
@@ -255,19 +254,19 @@ export async function addTransaction(
             transaction.update(userRef, { balance: newBalance });
         }
         
-        // 5. Save the new transaction document
+        // 6. Save the new transaction document
         transaction.set(newDocRef, newTransactionDataWithDate);
     });
 
-    // 6. Construct the final transaction object to return
+    // 7. Construct the final transaction object to return
     const finalTransaction: Transaction = { ...newTransactionDataWithDate, id: newDocRef.id };
 
-    // 7. Handle post-transaction logic, like scheduling payouts
+    // 8. Handle post-transaction logic, like scheduling payouts
     if (finalTransaction.type === 'Investment') {
         handleInvestmentPayout(firestore, finalTransaction);
     }
 
-    // 8. Return the committed transaction
+    // 9. Return the committed transaction
     return finalTransaction;
 }
 
