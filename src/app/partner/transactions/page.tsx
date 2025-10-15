@@ -48,7 +48,7 @@ export default function TransactionsPage() {
   }
   
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleString();
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -70,7 +70,7 @@ export default function TransactionsPage() {
         <TableRow>
           <TableHead>{t('transactions.id')}</TableHead>
           <TableHead>{t('transactions.type')}</TableHead>
-          <TableHead>{t('transactions.date')}</TableHead>
+          <TableHead>Date & Time</TableHead>
           <TableHead className="text-right">{t('transactions.amount')}</TableHead>
           <TableHead className="text-center">{t('transactions.status')}</TableHead>
         </TableRow>

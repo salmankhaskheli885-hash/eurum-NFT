@@ -87,7 +87,7 @@ export default function AdminDepositsHistoryPage() {
               <TableRow>
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>User</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Date & Time</TableHead>
                 <TableHead className="text-right">Amount (USD)</TableHead>
                 <TableHead className="text-center">Receipt</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
@@ -110,7 +110,7 @@ export default function AdminDepositsHistoryPage() {
                     <TableRow key={deposit.id}>
                     <TableCell className="font-medium">{deposit.id}</TableCell>
                     <TableCell>{deposit.userName}</TableCell>
-                    <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                         {deposit.receiptUrl ? (

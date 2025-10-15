@@ -103,7 +103,7 @@ export default function AdminDepositsPage() {
                 <TableHeader>
                 <TableRow>
                     <TableHead>User</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>Date & Time</TableHead>
                     <TableHead className="text-right">Amount (USD)</TableHead>
                     <TableHead className="text-center">Receipt</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
@@ -127,7 +127,7 @@ export default function AdminDepositsPage() {
                             <div className="font-medium">{deposit.userName}</div>
                             <div className="text-sm text-muted-foreground">{deposit.id}</div>
                         </TableCell>
-                        <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                         <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                         <TableCell className="text-center">
                             {deposit.receiptUrl ? (
@@ -167,5 +167,3 @@ export default function AdminDepositsPage() {
     </div>
   )
 }
-
-    

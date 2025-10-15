@@ -61,7 +61,7 @@ export default function AdminUserDetailsPage() {
     }
     
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleDateString();
+        return new Date(dateString).toLocaleString();
     }
 
     const handleSaveChanges = async () => {
@@ -241,7 +241,7 @@ export default function AdminUserDetailsPage() {
                                         <TableHead>ID</TableHead>
                                         <TableHead>Type</TableHead>
                                         <TableHead>Amount</TableHead>
-                                        <TableHead>Date</TableHead>
+                                        <TableHead>Date & Time</TableHead>
                                         <TableHead>Status</TableHead>
                                     </TableRow>
                                 </TableHeader>

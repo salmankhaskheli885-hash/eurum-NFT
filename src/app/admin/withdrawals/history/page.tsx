@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -88,7 +89,7 @@ export default function AdminWithdrawalsHistoryPage() {
               <TableRow>
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>Account & User Details</TableHead>
-                <TableHead>Date</TableHead>
+                <TableHead>Date & Time</TableHead>
                 <TableHead className="text-right">Amount (USD)</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>
@@ -130,7 +131,7 @@ export default function AdminWithdrawalsHistoryPage() {
                             </div>
                         )}
                     </TableCell>
-                    <TableCell>{new Date(withdrawal.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(withdrawal.date).toLocaleString()}</TableCell>
                     <TableCell className="text-right text-destructive">
                         {formatCurrency(Math.abs(withdrawal.amount))}
                     </TableCell>

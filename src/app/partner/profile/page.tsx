@@ -169,7 +169,7 @@ export default function ProfilePage() {
                                         <TableRow key={transaction.id}>
                                         <TableCell className="font-medium">{transaction.id.substring(0, 8)}...</TableCell>
                                         <TableCell>{transaction.type}</TableCell>
-                                        <TableCell>{transaction.date}</TableCell>
+                                        <TableCell>{new Date(transaction.date).toLocaleString()}</TableCell>
                                         <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
                                         <TableCell className="text-center">
                                             <Badge variant={getStatusVariant(transaction.status)}>
