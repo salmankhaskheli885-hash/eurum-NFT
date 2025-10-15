@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
         unsubscribeTransactions();
         clearTimeout(timer);
     };
-  }, [firestore]);
+  }, [firestore, users.length, transactions.length]);
 
 
   const totalUsers = users.length;
@@ -53,6 +53,7 @@ export default function AdminDashboardPage() {
       .filter(tx => tx.type === 'Deposit' && tx.status === 'Completed')
       .reduce((sum, tx) => sum + tx.amount, 0);
   const pendingWithdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
+  const pendingDeposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending').length;
   const totalInvested = transactions
       .filter(tx => tx.type === 'Investment')
       .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
