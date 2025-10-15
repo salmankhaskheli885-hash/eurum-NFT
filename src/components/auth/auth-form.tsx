@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -8,17 +7,8 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
-import { getOrCreateUser, isUserAChatAgent, getAppSettings } from '@/lib/firestore';
-import { type AppSettings } from '@/lib/data';
+import { getOrCreateUser } from '@/lib/firestore';
 
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogFooter
-} from "@/components/ui/alert-dialog"
 
 function GoogleIcon(props: any) {
     return (
@@ -49,89 +39,13 @@ function GoogleIcon(props: any) {
     );
 }
 
-function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRole: (role: 'admin' | 'user' | 'partner' | 'agent') => void }) {
-    return (
-        <AlertDialog open={open}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Select Your Role</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        You are logged in as an administrator. Please choose which panel you would like to access.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
-                    <Button onClick={() => onSelectRole('admin')} className="w-full">Go to Admin Panel</Button>
-                    <Button onClick={() => onSelectRole('user')} variant="outline" className="w-full">Go to User Panel</Button>
-                    <Button onClick={() => onSelectRole('partner')} variant="secondary" className="w-full">Go to Partner Panel</Button>
-                     <Button onClick={() => onSelectRole('agent')} variant="ghost" className="w-full">Go to Agent Panel</Button>
-                </AlertDialogFooter>
-            </AlertDialogContent>
-        </AlertDialog>
-    );
-}
-
-
 export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
-  const [showRoleDialog, setShowRoleDialog] = useState(false);
-  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const app = useFirebaseApp();
   const firestore = useFirestore();
-
-  const showMaintenancePage = () => {
-    document.body.innerHTML = `
-        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; text-align: center; font-family: sans-serif;">
-            <h1 style="font-size: 1.875rem; font-weight: bold; color: #1e293b;">Panel Temporarily Unavailable</h1>
-            <p style="font-size: 1.125rem; color: #475569; margin-top: 1rem;">This panel is currently under maintenance. Please try again later.</p>
-        </div>
-    `;
-  }
-  
-  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner' | 'agent') => {
-      setShowRoleDialog(false);
-      setLoading(true);
-
-      if (!appSettings) {
-          setLoading(false);
-          toast({ variant: "destructive", title: "Could not read app settings. Please try again." });
-          return;
-      }
-      
-      switch (selectedRole) {
-          case 'admin':
-              router.push('/admin');
-              break;
-          case 'user':
-              if (appSettings.isUserPanelEnabled === false) {
-                  showMaintenancePage();
-                  setLoading(false); // Stop loading after showing maintenance
-                  return;
-              }
-              router.push('/dashboard');
-              break;
-          case 'partner':
-              if (appSettings.isPartnerPanelEnabled === false) {
-                   showMaintenancePage();
-                   setLoading(false); // Stop loading after showing maintenance
-                   return;
-                }
-              router.push('/partner');
-              break;
-          case 'agent':
-              if (appSettings.isAgentPanelEnabled === false) {
-                showMaintenancePage();
-                setLoading(false); // Stop loading after showing maintenance
-                return;
-            }
-              router.push('/agent');
-              break;
-      }
-        toast({ title: "Redirecting..." });
-  };
-
 
   const handleGoogleSignIn = async () => {
     if (!app || !firestore) {
@@ -150,55 +64,16 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         const result = await signInWithPopup(auth, provider);
         const firebaseUser = result.user;
         
-        // Get or create the user profile from Firestore to get their role
-        const userProfile = await getOrCreateUser(firestore, firebaseUser, intendedRole);
-        const settings = await getAppSettings(firestore);
-        setAppSettings(settings); // Save settings for role selection
+        // Ensure user exists in Firestore
+        await getOrCreateUser(firestore, firebaseUser, intendedRole);
         
         toast({
             title: t('login.successTitle'),
-            description: `Welcome, ${userProfile.displayName}!`,
+            description: `Welcome back!`,
         });
 
-        // 1. Check if user is an Admin
-        if (userProfile.role === 'admin') {
-            setShowRoleDialog(true);
-            setLoading(false);
-            return;
-        }
-        
-        // 2. Check if user is a Chat Agent
-        const isAgent = await isUserAChatAgent(firestore, firebaseUser.email!);
-        if (isAgent) {
-             if (settings.isAgentPanelEnabled === false) {
-                showMaintenancePage();
-                setLoading(false);
-                return;
-            }
-            router.push('/agent');
-            return;
-        }
-        
-        // 3. Check role from Firestore and panel status
-        switch(intendedRole) {
-            case 'partner':
-                if (settings.isPartnerPanelEnabled === false) {
-                   showMaintenancePage();
-                   setLoading(false);
-                   return;
-                }
-                router.push('/partner');
-                break;
-            case 'user':
-            default:
-                if (settings.isUserPanelEnabled === false) {
-                   showMaintenancePage();
-                   setLoading(false);
-                   return;
-                }
-                router.push('/dashboard');
-                break;
-        }
+        // Redirect directly to the dashboard, skipping all other checks
+        router.push('/dashboard');
         
     } catch (error: any) {
         let title = 'An unknown error occurred';
@@ -220,15 +95,11 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
             description: description,
         });
         setLoading(false);
-
-    } finally {
-        // This is handled inside the try/catch now
     }
   };
 
   return (
     <>
-        <RoleSelectionDialog open={showRoleDialog} onSelectRole={handleRoleSelection} />
         <div className="space-y-4 pt-6">
             <Button 
                 variant="outline" 
@@ -237,7 +108,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
                 disabled={loading}
             >
                 <GoogleIcon className="mr-2 h-6 w-6" />
-                {loading ? t('login.processing') : (intendedRole === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
+                {loading ? t('login.processing') : t('login.googleButton')}
             </Button>
         
         <p className="px-8 text-center text-sm text-muted-foreground">
