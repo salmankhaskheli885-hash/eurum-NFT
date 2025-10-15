@@ -99,9 +99,25 @@
         "canApproveWithdrawals": {
           "type": "boolean",
           "description": "Whether the agent can handle withdrawal-related chats."
+        },
+        "depositsApproved": {
+          "type": "number",
+          "description": "Count of deposits approved by this agent."
+        },
+        "depositsRejected": {
+          "type": "number",
+          "description": "Count of deposits rejected by this agent."
+        },
+        "withdrawalsApproved": {
+          "type": "number",
+          "description": "Count of withdrawals approved by this agent."
+        },
+        "withdrawalsRejected": {
+          "type": "number",
+          "description": "Count of withdrawals rejected by this agent."
         }
       },
-      "required": ["email", "canApproveDeposits", "canApproveWithdrawals"]
+      "required": ["email", "canApproveDeposits", "canApproveWithdrawals", "depositsApproved", "depositsRejected", "withdrawalsApproved", "withdrawalsRejected"]
     },
      "ChatRoom": {
       "title": "Chat Room",

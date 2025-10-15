@@ -20,7 +20,8 @@ import {
   serverTimestamp,
   runTransaction,
   Timestamp,
-  collectionGroup
+  collectionGroup,
+  increment
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -284,13 +285,30 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
 export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed', txData: Transaction) {
     
     await runTransaction(firestore, async (transaction) => {
-        let currentTxData = txData;
         const txRef = doc(firestore, 'transactions', transactionId);
         transaction.update(txRef, { status: newStatus });
+
+        // Agent Performance Tracking
+        if (txData.assignedAgentId) {
+            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+            const agentDocs = await getDocs(agentQuery); // Use getDocs for queries
+            if (!agentDocs.empty) {
+                const agentRef = agentDocs.docs[0].ref;
+                let fieldToIncrement: string | null = null;
+                if (txData.type === 'Deposit') {
+                    fieldToIncrement = newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected';
+                } else if (txData.type === 'Withdrawal') {
+                    fieldToIncrement = newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected';
+                }
+                if (fieldToIncrement) {
+                    transaction.update(agentRef, { [fieldToIncrement]: increment(1) });
+                }
+            }
+        }
         
         if (newStatus !== 'Completed') {
-            if (currentTxData.type === 'Deposit') {
-                const userRef = doc(firestore, 'users', currentTxData.userId);
+            if (txData.type === 'Deposit') {
+                const userRef = doc(firestore, 'users', txData.userId);
                 const userSnap = await transaction.get(userRef);
                 if (userSnap.exists()) {
                     const user = userSnap.data() as User;
@@ -303,16 +321,16 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             return;
         };
 
-        const userRef = doc(firestore, 'users', currentTxData.userId);
+        const userRef = doc(firestore, 'users', txData.userId);
         const userSnap = await transaction.get(userRef);
         if (!userSnap.exists()) throw new Error("User for transaction not found");
 
         const user = userSnap.data() as User;
         
-        switch (currentTxData.type) {
+        switch (txData.type) {
             case 'Deposit': {
-                const newTotalDeposits = (user.totalDeposits || 0) + currentTxData.amount;
-                const newBalance = user.balance + currentTxData.amount;
+                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
+                const newBalance = user.balance + txData.amount;
                 let newVipLevel = user.vipLevel;
                 let vipProgress = user.vipProgress;
 
@@ -336,7 +354,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     if (referrerSnap.exists()) {
                         const referrer = referrerSnap.data() as User;
                         const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
-                        const commissionAmount = currentTxData.amount * commissionRate;
+                        const commissionAmount = txData.amount * commissionRate;
                         transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
 
                         const commissionTxRef = doc(collection(firestore, 'transactions'));
@@ -354,14 +372,13 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 break;
             }
             case 'Withdrawal': {
-                const withdrawalAmount = Math.abs(currentTxData.amount);
+                const withdrawalAmount = Math.abs(txData.amount);
                 const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
                 const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
                 const feeAmount = withdrawalAmount * (feePercentage / 100);
                 const totalDeduction = withdrawalAmount + feeAmount;
 
                 if (user.balance < totalDeduction) {
-                    // This update needs to be part of the transaction
                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
                     throw new Error(`Insufficient balance for withdrawal. Required ${totalDeduction}, but had only ${user.balance}.`);
                 }
@@ -373,15 +390,14 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                  break;
             }
              case 'Investment': {
-                const investmentAmount = Math.abs(currentTxData.amount);
+                const investmentAmount = Math.abs(txData.amount);
                  if (user.balance < investmentAmount) {
-                     // This update needs to be part of the transaction
                      transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
                      throw new Error(`Insufficient balance for investment. Required ${investmentAmount}, had ${user.balance}.`);
                  }
                 const newBalance = user.balance - investmentAmount;
                 transaction.update(userRef, { balance: newBalance });
-                handleInvestmentPayout(firestore, currentTxData);
+                handleInvestmentPayout(firestore, txData);
                  break;
             }
         }
@@ -517,9 +533,25 @@ export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, a
         agentUid = userSnapshot.docs[0].id;
     }
 
+    const agentData = {
+        ...agent,
+        uid: agentUid,
+        isActive: !!agentUid,
+        depositsApproved: 0,
+        depositsRejected: 0,
+        withdrawalsApproved: 0,
+        withdrawalsRejected: 0,
+    };
+
     const agentsCollection = collection(firestore, 'chat_agents');
-    await addDoc(agentsCollection, { ...agent, uid: agentUid, isActive: !!agentUid });
+    await addDoc(agentsCollection, agentData);
 }
+
+export async function updateChatAgent(firestore: ReturnType<typeof getFirestore>, agentId: string, updates: Partial<ChatAgent>) {
+    const agentRef = doc(firestore, 'chat_agents', agentId);
+    await updateDoc(agentRef, updates);
+}
+
 
 export async function deleteChatAgent(firestore: ReturnType<typeof getFirestore>, agentId: string) {
     const agentRef = doc(firestore, 'chat_agents', agentId);

@@ -84,6 +84,11 @@ export type ChatAgent = {
     canApproveDeposits: boolean;
     canApproveWithdrawals: boolean;
     isActive: boolean; // To mark if agent is available for assignment
+    // Performance Stats
+    depositsApproved: number;
+    depositsRejected: number;
+    withdrawalsApproved: number;
+    withdrawalsRejected: number;
 }
 
 export type ChatRoom = {
