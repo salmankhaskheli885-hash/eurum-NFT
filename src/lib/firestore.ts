@@ -25,7 +25,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
-import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage } from './data';
+import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage, Task, UserTask, PartnerRequest } from './data';
 
 // USER FUNCTIONS
 export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole?: 'user' | 'partner'): Promise<User> {
@@ -669,5 +669,94 @@ export function listenToMessages(firestore: ReturnType<typeof getFirestore>, roo
     return onSnapshot(q, (snapshot) => {
         const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
         callback(messages);
+    });
+}
+
+
+// TASK SYSTEM FUNCTIONS
+export function listenToAllTasks(firestore: ReturnType<typeof getFirestore>, callback: (tasks: Task[]) => void): Unsubscribe {
+  const tasksCollection = collection(firestore, 'tasks');
+  return onSnapshot(tasksCollection, (snapshot) => {
+    const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+    callback(tasks);
+  });
+}
+
+export async function addTask(firestore: ReturnType<typeof getFirestore>, task: Omit<Task, 'id'>): Promise<Task> {
+  const tasksCollection = collection(firestore, 'tasks');
+  const newDocRef = await addDoc(tasksCollection, task);
+  return { ...task, id: newDocRef.id };
+}
+
+export async function updateTask(firestore: ReturnType<typeof getFirestore>, taskToUpdate: Task) {
+  const taskRef = doc(firestore, 'tasks', taskToUpdate.id);
+  const { id, ...taskData } = taskToUpdate;
+  await setDoc(taskRef, taskData, { merge: true });
+}
+
+export async function deleteTask(firestore: ReturnType<typeof getFirestore>, taskId: string) {
+  const taskRef = doc(firestore, 'tasks', taskId);
+  await deleteDoc(taskRef);
+}
+
+// USER TASK PROGRESS FUNCTIONS
+export function listenToUserTasks(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (tasks: UserTask[]) => void): Unsubscribe {
+  const userTasksCollection = collection(firestore, 'users', userId, 'user_tasks');
+  return onSnapshot(userTasksCollection, (snapshot) => {
+    const userTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as UserTask));
+    callback(userTasks);
+  });
+}
+
+export async function claimTaskReward(firestore: ReturnType<typeof getFirestore>, userId: string, userTaskId: string, rewardAmount: number) {
+    return runTransaction(firestore, async (transaction) => {
+        const userTaskRef = doc(firestore, 'users', userId, 'user_tasks', userTaskId);
+        const userRef = doc(firestore, 'users', userId);
+
+        const userTaskSnap = await transaction.get(userTaskRef);
+        const userSnap = await transaction.get(userRef);
+
+        if (!userTaskSnap.exists() || !userSnap.exists()) {
+            throw new Error("User or Task not found!");
+        }
+
+        const userTask = userTaskSnap.data() as UserTask;
+        if (!userTask.isCompleted || userTask.isClaimed) {
+            throw new Error("Task not completed or reward already claimed.");
+        }
+
+        // Mark as claimed
+        transaction.update(userTaskRef, { isClaimed: true });
+
+        // Add reward to user balance
+        const newBalance = userSnap.data().balance + rewardAmount;
+        transaction.update(userRef, { balance: newBalance });
+
+        // Create a transaction log for the reward
+        const rewardTransaction: Omit<Transaction, 'id' | 'date'> = {
+            userId: userId,
+            userName: userSnap.data().displayName || 'Unknown',
+            type: 'Commission', // Or a new 'Task Reward' type
+            amount: rewardAmount,
+            status: 'Completed',
+            details: `Reward for completing task: ${userTaskId}`
+        };
+         const newTransactionRef = doc(collection(firestore, 'transactions'));
+        transaction.set(newTransactionRef, {...rewardTransaction, date: new Date().toISOString() });
+    });
+}
+
+
+// PARTNER REQUEST FUNCTIONS
+export async function sendPartnerRequest(firestore: ReturnType<typeof getFirestore>, user: User) {
+    const request: Omit<PartnerRequest, 'id' | 'requestDate'> = {
+        userId: user.uid,
+        userName: user.displayName || 'Unknown',
+        userEmail: user.email || 'Unknown',
+        status: 'pending'
+    };
+    await addDoc(collection(firestore, 'partner_requests'), {
+        ...request,
+        requestDate: new Date().toISOString()
     });
 }
