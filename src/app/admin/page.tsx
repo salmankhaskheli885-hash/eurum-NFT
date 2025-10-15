@@ -4,33 +4,50 @@ import React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
 import { DollarSign, Users, TrendingUp, ShieldCheck, Hourglass } from "lucide-react"
-import { mockUsers, mockTransactions } from "@/lib/data"
+import { useFirestore } from "@/firebase/provider"
+import { listenToAllUsers, listenToAllTransactions } from "@/lib/firestore"
+import { type User, type Transaction } from "@/lib/data"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation()
+  const firestore = useFirestore()
+  
+  const [users, setUsers] = React.useState<User[]>([])
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
 
-  // Make stats dynamic
-  const totalUsers = React.useMemo(() => mockUsers.length, [mockUsers]);
-  const totalDeposits = React.useMemo(() => 
-    mockTransactions
+  React.useEffect(() => {
+    if (!firestore) return;
+    
+    setLoading(true);
+
+    const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
+        setUsers(allUsers);
+        // We can set loading to false once one of the listeners returns data
+        setLoading(false); 
+    });
+    
+    const unsubscribeTransactions = listenToAllTransactions(firestore, (allTransactions) => {
+        setTransactions(allTransactions);
+    });
+
+    return () => {
+        unsubscribeUsers();
+        unsubscribeTransactions();
+    };
+  }, [firestore]);
+
+
+  const totalUsers = users.length;
+  const totalDeposits = transactions
       .filter(tx => tx.type === 'Deposit' && tx.status === 'Completed')
-      .reduce((sum, tx) => sum + tx.amount, 0), 
-    [mockTransactions]
-  );
-  const pendingWithdrawals = React.useMemo(() => 
-    mockTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length,
-    [mockTransactions]
-  );
-  const totalInvested = React.useMemo(() => 
-    mockTransactions
+      .reduce((sum, tx) => sum + tx.amount, 0);
+  const pendingWithdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
+  const totalInvested = transactions
       .filter(tx => tx.type === 'Investment')
-      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0),
-    [mockTransactions]
-  );
-   const pendingKyc = React.useMemo(() => 
-    mockUsers.filter(user => user.kycStatus === 'pending').length,
-    [mockUsers]
-  );
+      .reduce((sum, tx) => sum + Math.abs(tx.amount), 0);
+  const pendingKyc = users.filter(user => user.kycStatus === 'pending').length;
   
    const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -48,6 +65,18 @@ export default function AdminDashboardPage() {
     { title: t('admin.stats.pendingKyc'), value: pendingKyc.toString(), icon: ShieldCheck },
   ]
 
+  const StatCard = ({ stat, isLoading }: { stat: typeof stats[0], isLoading: boolean }) => (
+     <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+            <stat.icon className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+            {isLoading ? <Skeleton className="h-8 w-3/4"/> : <div className="text-2xl font-bold">{stat.value}</div>}
+        </CardContent>
+    </Card>
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -57,15 +86,7 @@ export default function AdminDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         {stats.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-              <stat.icon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-            </CardContent>
-          </Card>
+          <StatCard key={stat.title} stat={stat} isLoading={loading} />
         ))}
       </div>
 

@@ -1,14 +1,15 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
-import { useFirebaseApp } from '@/firebase/provider';
+import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import type { UserProfile } from '@/lib/schema';
+import { getOrCreateUser } from '@/lib/firestore'; // Import getOrCreateUser
 import {
     AlertDialog,
     AlertDialogContent,
@@ -70,13 +71,14 @@ function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRo
 }
 
 
-export function AuthForm({ role }: { role: 'user' | 'partner' }) {
+export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
   const app = useFirebaseApp();
+  const firestore = useFirestore();
   
   const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner') => {
       setShowRoleDialog(false);
@@ -98,7 +100,7 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
   };
 
   const handleGoogleSignIn = async () => {
-    if (!app) {
+    if (!app || !firestore) {
         toast({
             variant: "destructive",
             title: "Authentication service not ready",
@@ -111,27 +113,24 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
-        const user = result.user;
+        const firebaseUser = result.user;
         
-        const isAdmin = user.email === 'salmankhaskheli885@gmail.com';
-        const isPartner = user.email === 'vitalik@fynix.pro';
+        // Get or create the user profile from Firestore to get their role
+        const userProfile = await getOrCreateUser(firestore, firebaseUser);
         
         toast({
             title: t('login.successTitle'),
-            description: `Welcome, ${user.displayName}!`,
+            description: `Welcome, ${userProfile.displayName}!`,
         });
 
-        if (isAdmin) {
+        if (userProfile.role === 'admin') {
             setShowRoleDialog(true);
             setLoading(false);
             return;
         }
 
-        let userRole: UserProfile['role'] = 'user';
-        if (isPartner) userRole = 'partner';
-
-        // Redirect based on the determined role
-        switch(userRole) {
+        // Redirect based on the role stored in Firestore
+        switch(userProfile.role) {
             case 'partner':
                 router.push('/partner');
                 break;
@@ -179,7 +178,7 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
                 disabled={loading}
             >
                 <GoogleIcon className="mr-2 h-6 w-6" />
-                {loading ? t('login.processing') : (role === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
+                {loading ? t('login.processing') : (intendedRole === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
             </Button>
         
         <p className="px-8 text-center text-sm text-muted-foreground">
