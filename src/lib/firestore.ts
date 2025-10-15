@@ -69,6 +69,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
             status: 'Active',
             referredBy: referredBy,
             totalDeposits: 0,
+            lastWithdrawalDate: undefined
         };
         await setDoc(userRef, newUser);
         return newUser;
@@ -102,7 +103,7 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
 
 export async function submitKyc(firestore: ReturnType<typeof getFirestore>, userId: string, kycData: Transaction['kycDetails']) {
     const userRef = doc(firestore, 'users', userId);
-    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and save URLs.
+    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and save the URLs.
     // For now, we'll just pass placeholder URLs and update the status.
     await updateDoc(userRef, {
         kycStatus: 'pending',
@@ -142,7 +143,7 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
                 const lastWithdrawal = new Date(user.lastWithdrawalDate);
-                if (lastWithdrawal > today) {
+                if (lastWithdrawal >= today) {
                     throw new Error("You can only make one withdrawal request per day.");
                 }
             }
@@ -274,14 +275,35 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const newBalance = user.balance + txData.amount;
 
                 // Automatic VIP Level Up Logic
-                let newVipLevel = user.vipLevel;
-                if (newTotalDeposits >= 500) {
-                    newVipLevel = 3;
-                } else if (newTotalDeposits >= 100) {
-                    newVipLevel = 2;
+                const vipLevels = [
+                    { threshold: 500, level: 3, next: 1000 },
+                    { threshold: 100, level: 2, next: 500 }
+                ];
+
+                let newVipLevel = 1;
+                let vipProgress = 0;
+
+                const matchedLevel = vipLevels.find(l => newTotalDeposits >= l.threshold);
+
+                if (matchedLevel) {
+                    newVipLevel = matchedLevel.level;
+                    const nextLevelInfo = vipLevels.find(l => l.level === newVipLevel + 1) || { threshold: matchedLevel.next };
+                    const prevLevelThreshold = vipLevels.find(l => l.level === newVipLevel)?.threshold || 0;
+                    const range = nextLevelInfo.threshold - prevLevelThreshold;
+                    const progressInRange = newTotalDeposits - prevLevelThreshold;
+                    vipProgress = Math.min(100, (progressInRange / range) * 100);
+                } else {
+                    newVipLevel = 1;
+                    vipProgress = (newTotalDeposits / 100) * 100;
                 }
                 
-                transaction.update(userRef, { balance: newBalance, totalDeposits: newTotalDeposits, vipLevel: newVipLevel });
+
+                transaction.update(userRef, { 
+                    balance: newBalance, 
+                    totalDeposits: newTotalDeposits, 
+                    vipLevel: newVipLevel,
+                    vipProgress: vipProgress
+                });
 
                 if (user.referredBy) {
                     const referrerRef = doc(firestore, 'users', user.referredBy);
