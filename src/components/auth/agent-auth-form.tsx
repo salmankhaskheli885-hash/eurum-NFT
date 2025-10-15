@@ -86,8 +86,7 @@ export function AgentAuthForm() {
             description: `Welcome, ${firebaseUser.displayName}!`,
         });
 
-        // Redirect to the (future) chat agent dashboard
-        // For now, let's redirect to the admin page as a placeholder
+        // Redirect to the agent dashboard (placeholder: /admin)
         router.push('/admin');
         
     } catch (error: any) {
@@ -96,7 +95,6 @@ export function AgentAuthForm() {
             title: "Authentication Error",
             description: error.message || "An unknown error occurred.",
         });
-    } finally {
         setLoading(false);
     }
   };

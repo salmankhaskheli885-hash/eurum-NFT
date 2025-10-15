@@ -50,7 +50,7 @@ function GoogleIcon(props: any) {
     );
 }
 
-function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRole: (role: 'admin' | 'user' | 'partner') => void }) {
+function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRole: (role: 'admin' | 'user' | 'partner' | 'agent') => void }) {
     return (
         <AlertDialog open={open}>
             <AlertDialogContent>
@@ -64,6 +64,7 @@ function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRo
                     <Button onClick={() => onSelectRole('admin')} className="w-full">Go to Admin Panel</Button>
                     <Button onClick={() => onSelectRole('user')} variant="outline" className="w-full">Go to User Panel</Button>
                     <Button onClick={() => onSelectRole('partner')} variant="secondary" className="w-full">Go to Partner Panel</Button>
+                     <Button onClick={() => onSelectRole('agent')} variant="ghost" className="w-full">Go to Agent Panel</Button>
                 </AlertDialogFooter>
             </AlertDialogContent>
         </AlertDialog>
@@ -80,7 +81,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
   const app = useFirebaseApp();
   const firestore = useFirestore();
   
-  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner') => {
+  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner' | 'agent') => {
       setShowRoleDialog(false);
       setLoading(true);
       toast({
@@ -95,6 +96,9 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
               break;
           case 'partner':
               router.push('/partner');
+              break;
+          case 'agent':
+              router.push('/admin'); // Placeholder: agent panel not yet built
               break;
       }
   };

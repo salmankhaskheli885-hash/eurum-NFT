@@ -15,7 +15,8 @@ import {
   User,
   Handshake,
   UserCheck,
-  History
+  History,
+  MessageSquare
 } from "lucide-react"
 
 import {
@@ -105,6 +106,7 @@ export default function AdminLayout({
   const viewMenuItems = [
     { href: "/dashboard", label: "View User Panel", icon: User },
     { href: "/partner", label: "View Partner Panel", icon: Handshake },
+    { href: "/admin", label: "View Agent Panel", icon: MessageSquare }, // Placeholder link
   ]
 
   return (
