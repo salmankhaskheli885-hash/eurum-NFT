@@ -29,17 +29,21 @@ export default function AgentWithdrawalsPage() {
     const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveWithdrawals;
 
     React.useEffect(() => {
-        if (!firestore || !hasPermission) {
+        if (!firestore || !hasPermission || !agentProfile) {
             setLoading(false);
             return;
         };
         setLoading(true);
         const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-            setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
+            setTransactions(allTransactions.filter(tx => 
+                tx.type === 'Withdrawal' && 
+                tx.status === 'Pending' &&
+                tx.assignedAgentId === agentProfile.uid
+            ));
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [firestore, hasPermission]);
+    }, [firestore, hasPermission, agentProfile]);
 
     const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
         if (!firestore) return;
@@ -71,6 +75,10 @@ export default function AgentWithdrawalsPage() {
         );
     }, [searchTerm, transactions]);
 
+    if (!agentProfile) {
+        return <Skeleton className="h-96 w-full"/>
+    }
+
     if (!hasPermission) {
         return (
             <Alert variant="destructive">
@@ -85,12 +93,12 @@ export default function AgentWithdrawalsPage() {
         <div className="flex flex-col gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Manage Withdrawals</h1>
-                <p className="text-muted-foreground">Review and approve pending user withdrawals.</p>
+                <p className="text-muted-foreground">Review and approve pending user withdrawals assigned to you.</p>
             </div>
              <Card>
                 <CardHeader>
-                <CardTitle>Pending Withdrawal Requests</CardTitle>
-                <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
+                <CardTitle>Your Pending Withdrawal Requests</CardTitle>
+                <CardDescription>A list of all withdrawals awaiting your approval.</CardDescription>
                 <div className="relative pt-2">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -159,7 +167,7 @@ export default function AgentWithdrawalsPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">No pending withdrawal requests found.</TableCell>
+                            <TableCell colSpan={4} className="h-24 text-center">No pending withdrawal requests assigned to you.</TableCell>
                         </TableRow>
                     )}
                     </TableBody>

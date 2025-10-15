@@ -22,6 +22,7 @@ export type Transaction = {
   date: string; // ISO 8601 format
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
+  assignedAgentId?: string; // UID of the agent assigned to handle the request
   receiptUrl?: string; // URL of the uploaded deposit receipt
   details?: string;
   withdrawalDetails?: {
@@ -67,6 +68,7 @@ export type AppSettings = {
     maxDeposit?: number;
     minWithdrawal?: number;
     maxWithdrawal?: number;
+    lastAssignedAgentIndex?: number;
 }
 
 export type Announcement = {
@@ -77,9 +79,11 @@ export type Announcement = {
 
 export type ChatAgent = {
     id?: string;
+    uid?: string; // Keep this consistent with the user's main UID
     email: string;
     canApproveDeposits: boolean;
     canApproveWithdrawals: boolean;
+    isActive: boolean; // To mark if agent is available for assignment
 }
 
 export type ChatRoom = {

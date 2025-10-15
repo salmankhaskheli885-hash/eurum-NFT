@@ -31,17 +31,21 @@ export default function AgentDepositsPage() {
     const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveDeposits;
 
     React.useEffect(() => {
-        if (!firestore || !hasPermission) {
+        if (!firestore || !hasPermission || !agentProfile) {
             setLoading(false)
             return;
         }
         setLoading(true);
         const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-            setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
+            setTransactions(allTransactions.filter(tx => 
+                tx.type === 'Deposit' && 
+                tx.status === 'Pending' &&
+                tx.assignedAgentId === agentProfile.uid
+            ));
             setLoading(false);
         });
         return () => unsubscribe();
-    }, [firestore, hasPermission]);
+    }, [firestore, hasPermission, agentProfile]);
 
     const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
         if (!firestore) return;
@@ -68,6 +72,10 @@ export default function AgentDepositsPage() {
         );
     }, [searchTerm, transactions]);
 
+    if (!agentProfile) {
+        return <Skeleton className="h-96 w-full"/>
+    }
+
     if (!hasPermission) {
         return (
             <Alert variant="destructive">
@@ -82,12 +90,12 @@ export default function AgentDepositsPage() {
         <div className="flex flex-col gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Manage Deposits</h1>
-                <p className="text-muted-foreground">Review and approve pending user deposits.</p>
+                <p className="text-muted-foreground">Review and approve pending user deposits assigned to you.</p>
             </div>
              <Card>
                 <CardHeader>
-                <CardTitle>Pending Deposit Requests</CardTitle>
-                <CardDescription>A list of all deposits awaiting approval.</CardDescription>
+                <CardTitle>Your Pending Deposit Requests</CardTitle>
+                <CardDescription>A list of all deposits awaiting your approval.</CardDescription>
                 <div className="relative pt-2">
                     <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -155,7 +163,7 @@ export default function AgentDepositsPage() {
                         ))
                     ) : (
                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">No pending deposit requests found.</TableCell>
+                            <TableCell colSpan={5} className="h-24 text-center">No pending deposit requests assigned to you.</TableCell>
                         </TableRow>
                     )}
                     </TableBody>

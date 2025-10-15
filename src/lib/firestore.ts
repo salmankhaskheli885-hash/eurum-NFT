@@ -19,7 +19,8 @@ import {
   type Unsubscribe,
   serverTimestamp,
   runTransaction,
-  Timestamp
+  Timestamp,
+  collectionGroup
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
@@ -40,7 +41,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         
         if (!agentSnap.empty) {
             const agentData = agentSnap.docs[0].data();
-            return { ...userData, ...agentData, id: agentSnap.docs[0].id };
+            return { ...userData, ...agentData, id: agentSnap.docs[0].id, uid: userData.uid };
         }
 
         const updates: Partial<User> = {};
@@ -95,6 +96,16 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
             failedDepositCount: 0,
         };
         await setDoc(userRef, newUser);
+        
+        // If the email is also in chat_agents, mark them as an agent
+        const agentRef = collection(firestore, 'chat_agents');
+        const agentQuery = query(agentRef, where("email", "==", firebaseUser.email), limit(1));
+        const agentSnap = await getDocs(agentQuery);
+        if (!agentSnap.empty) {
+            await updateDoc(agentSnap.docs[0].ref, { uid: firebaseUser.uid, isActive: true });
+        }
+
+
         return newUser;
     }
 }
@@ -158,34 +169,70 @@ const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof ge
     }
 };
 
+// New Round-Robin Assignment Logic
+const assignAgent = async (firestore: ReturnType<typeof getFirestore>, permission: 'canApproveDeposits' | 'canApproveWithdrawals'): Promise<string | null> => {
+    return await runTransaction(firestore, async (transaction) => {
+        // 1. Get active agents with the required permission
+        const agentsQuery = query(
+            collection(firestore, 'chat_agents'),
+            where(permission, '==', true),
+            where('isActive', '==', true)
+        );
+        const agentsSnap = await getDocs(agentsQuery);
+        const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent)).filter(a => a.uid);
+
+        if (activeAgents.length === 0) {
+            return null; // No agents available
+        }
+
+        // 2. Get the current assignment index from app settings
+        const settingsRef = doc(firestore, 'app', 'settings');
+        const settingsSnap = await transaction.get(settingsRef);
+        const settings = settingsSnap.data() as AppSettings;
+        const lastIndex = settings.lastAssignedAgentIndex ?? -1;
+
+        // 3. Determine the next agent (Round-Robin)
+        const nextIndex = (lastIndex + 1) % activeAgents.length;
+        const assignedAgent = activeAgents[nextIndex];
+
+        // 4. Update the index in app settings for the next assignment
+        transaction.update(settingsRef, { lastAssignedAgentIndex: nextIndex });
+
+        return assignedAgent.uid!;
+    });
+};
+
+
 export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    // Step 1: Create the transaction document to get an ID
-    const newTransactionRef = doc(collection(firestore, 'transactions'));
+    let assignedAgentId: string | null = null;
+    // Assign agent only for pending deposits and withdrawals
+    if (dataToSave.status === 'Pending') {
+        if (dataToSave.type === 'Deposit') {
+            assignedAgentId = await assignAgent(firestore, 'canApproveDeposits');
+        } else if (dataToSave.type === 'Withdrawal') {
+            assignedAgentId = await assignAgent(firestore, 'canApproveWithdrawals');
+        }
+    }
     
     const finalTransactionData: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
-        status: dataToSave.status || 'Pending'
+        status: dataToSave.status || 'Pending',
+        assignedAgentId: assignedAgentId || undefined
     };
-
-    // Step 2: Set the document data
-    await setDoc(newTransactionRef, finalTransactionData);
+    
+    const newTransactionRef = await addDoc(collection(firestore, 'transactions'), finalTransactionData);
     const fullTransaction = { ...finalTransactionData, id: newTransactionRef.id };
 
-
-    // Step 3: Handle all side-effects (balance, etc.) in a separate, reliable transaction
-    // Only auto-process if it's NOT a manual approval flow
     if (finalTransactionData.status === 'Completed') {
          await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', fullTransaction);
     }
-   
 
-    // Step 4: If it was a deposit with a file, start the background upload (does not block UI)
     if (dataToSave.type === 'Deposit' && receiptFile) {
         uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, dataToSave.userId, receiptFile);
     }
@@ -453,8 +500,25 @@ export async function isUserAChatAgent(firestore: ReturnType<typeof getFirestore
 }
 
 export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, agent: Omit<ChatAgent, 'id'>) {
+    // Check if agent with this email already exists
+    const q = query(collection(firestore, "chat_agents"), where("email", "==", agent.email));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        throw new Error("An agent with this email already exists.");
+    }
+    
+    // Find if a user with this email exists to get the UID
+    const userQuery = query(collection(firestore, "users"), where("email", "==", agent.email), limit(1));
+    const userSnapshot = await getDocs(userQuery);
+    
+    let agentUid: string | undefined;
+    if (!userSnapshot.empty) {
+        agentUid = userSnapshot.docs[0].id;
+    }
+
     const agentsCollection = collection(firestore, 'chat_agents');
-    await addDoc(agentsCollection, agent);
+    await addDoc(agentsCollection, { ...agent, uid: agentUid, isActive: !!agentUid });
 }
 
 export async function deleteChatAgent(firestore: ReturnType<typeof getFirestore>, agentId: string) {
@@ -509,10 +573,13 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     
     await addDoc(messagesRef, messageData);
     
+    // If agent sends a message, resolve it. If user sends, unresolve it.
+    const isResolved = senderType === 'agent';
+    
     await updateDoc(roomRef, {
         lastMessage: text,
         lastMessageAt: new Date().toISOString(),
-        isResolved: senderType === 'agent'
+        isResolved: isResolved
     });
 }
 
