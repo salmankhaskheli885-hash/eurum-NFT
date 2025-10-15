@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,15 +26,20 @@ function DepositHistory() {
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [loading, setLoading] = useState(true)
 
-    useEffect(() => {
-        if (!user || !firestore) return;
+    const memoizedListenToUserTransactions = useCallback(() => {
+        if (!user || !firestore) return () => {};
         setLoading(true);
         const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
             setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
             setLoading(false);
         });
-        return () => unsubscribe();
+        return unsubscribe;
     }, [user, firestore]);
+
+    useEffect(() => {
+        const unsubscribe = memoizedListenToUserTransactions();
+        return () => unsubscribe();
+    }, [memoizedListenToUserTransactions]);
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
     const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
@@ -183,7 +188,7 @@ export default function DepositPage() {
                 userName: user.displayName || 'Unknown User',
                 type: 'Deposit',
                 amount: parseFloat(amount),
-                status: 'Pending', 
+                status: 'Completed', 
                 receiptFile: receiptFile,
                 details: `Deposit via ${yourNumber} with TID: ${tid}`
             });
@@ -197,7 +202,7 @@ export default function DepositPage() {
             setYourNumber("");
             setTid("");
             setReceiptFile(null);
-            // Optionally, force a refresh of the history component if it doesn't update automatically
+            // The history component will now update automatically due to the listener
         } catch (error: any) {
             console.error("Deposit submission error:", error);
             toast({
