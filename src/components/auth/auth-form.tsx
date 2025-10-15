@@ -95,7 +95,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
               router.push('/partner');
               break;
           case 'agent':
-              router.push('/admin'); // Redirect agent to admin panel for now
+              router.push('/agent');
               break;
       }
   };
@@ -136,7 +136,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
                 title: "Agent Login Successful",
                 description: `Welcome, ${userProfile.displayName}!`,
             });
-            router.push('/admin'); // Redirect agents to the admin panel
+            router.push('/agent'); // Redirect agents to the agent panel
             return;
         }
 

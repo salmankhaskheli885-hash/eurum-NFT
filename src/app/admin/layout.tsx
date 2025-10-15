@@ -106,7 +106,7 @@ export default function AdminLayout({
   const viewMenuItems = [
     { href: "/dashboard", label: "View User Panel", icon: User },
     { href: "/partner", label: "View Partner Panel", icon: Handshake },
-    { href: "/admin", label: "View Agent Panel", icon: MessageSquare }, // Placeholder link
+    { href: "/agent", label: "View Agent Panel", icon: MessageSquare },
   ]
 
   return (
@@ -154,7 +154,7 @@ export default function AdminLayout({
               <hr className="my-2 border-sidebar-border" />
             </SidebarMenuItem>
             {viewMenuItems.map((item) => (
-               <SidebarMenuItem key={item.href}>
+               <SidebarMenuItem key={item.href} className="group-data-[state=collapsed]:hidden">
                 <Link href={item.href} target="_blank">
                   <SidebarMenuButton
                     tooltip={item.label}
