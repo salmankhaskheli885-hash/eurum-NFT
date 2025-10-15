@@ -6,16 +6,18 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 
-type FirebaseContextValue = {
+export type FirebaseContextValue = {
   app: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
+  loading: boolean;
 };
 
 export const FirebaseContext = createContext<FirebaseContextValue>({
   app: null,
   auth: null,
   firestore: null,
+  loading: true,
 });
 
 type FirebaseProviderProps = {
@@ -31,10 +33,9 @@ export function FirebaseProvider({
   auth,
   firestore,
 }: FirebaseProviderProps) {
+  // This provider is now a simple wrapper. The context value is provided by FirebaseClientProvider.
   return (
-    <FirebaseContext.Provider value={{ app, auth, firestore }}>
-      {children}
-    </FirebaseContext.Provider>
+      <>{children}</>
   );
 }
 
