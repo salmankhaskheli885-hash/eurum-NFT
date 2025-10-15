@@ -82,7 +82,7 @@ function DashboardContent() {
     }).format(amount)
   }
   
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString();
   }
@@ -250,7 +250,7 @@ function DashboardContent() {
                             {transaction.investmentDetails?.planName || transaction.details || "N/A"}
                         </TableCell>
                         <TableCell>{transaction.type}</TableCell>
-                        <TableCell>{formatDate(transaction.investmentDetails?.maturityDate || transaction.date)}</TableCell>
+                        <TableCell>{formatDate(transaction.investmentDetails?.maturityDate)}</TableCell>
                         <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(transaction.amount)}
                         </TableCell>
