@@ -35,14 +35,14 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         const updates: Partial<User> = {};
         if (userData.failedDepositCount === undefined) {
              updates.failedDepositCount = 0;
-             userData.failedDepositCount = 0;
         }
          if (userData.totalDeposits === undefined) {
             updates.totalDeposits = 0;
-            userData.totalDeposits = 0;
         }
         if (Object.keys(updates).length > 0) {
             await updateDoc(userRef, updates);
+            // Return the merged user data
+            return { ...userData, ...updates };
         }
         return userData;
     } else {
@@ -213,23 +213,7 @@ export async function addTransaction(
     // Separate the local file object from the data to be saved in Firestore
     const { receiptFile, ...dataToSave } = transactionData;
     
-    if (dataToSave.type === 'Deposit') {
-        const transactionDocRef = doc(collection(firestore, 'transactions'));
-        const newTransactionData: Omit<Transaction, 'id' | 'receiptUrl'> = {
-            ...dataToSave,
-            date: new Date().toISOString()
-        };
-        await setDoc(transactionDocRef, newTransactionData);
-
-        // Then, we trigger the upload in the background. We don't wait for it.
-        if (receiptFile) {
-            uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
-        }
-        return; // Return immediately for deposits
-    }
-    
-    // For other transaction types, we use the original runTransaction logic.
-    const transactionDocRef = doc(collection(firestore, 'transactions'));
+    // This is the core logic for all transaction types
     await runTransaction(firestore, async (transaction) => {
         const userRef = doc(firestore, 'users', dataToSave.userId);
         const userSnap = await transaction.get(userRef);
@@ -239,8 +223,8 @@ export async function addTransaction(
         }
         
         const user = userSnap.data() as User;
-        
-        const newTransactionDataWithDate: Omit<Transaction, 'id'| 'receiptUrl'> = {
+
+        const newTransactionDataWithDate: Omit<Transaction, 'id' | 'receiptUrl'> = {
             ...dataToSave,
             date: new Date().toISOString(),
         }
@@ -278,13 +262,21 @@ export async function addTransaction(
             transaction.update(userRef, { balance: newBalance });
         }
         
+        // Always create the transaction document
+        const transactionDocRef = doc(collection(firestore, 'transactions'));
         transaction.set(transactionDocRef, newTransactionDataWithDate);
-    });
-    
+
+        // Handle background upload for deposits
+        if (dataToSave.type === 'Deposit' && receiptFile) {
+            uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
+        }
+
+        // Handle investment payout scheduling
         if (dataToSave.type === 'Investment') {
-        const finalTx = await getDoc(transactionDocRef);
-        handleInvestmentPayout(firestore, {id: finalTx.id, ...finalTx.data()} as Transaction);
-    }
+            const finalTx = {id: transactionDocRef.id, ...newTransactionDataWithDate} as Transaction;
+            handleInvestmentPayout(firestore, finalTx);
+        }
+    });
 }
 
 
@@ -329,22 +321,21 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 let vipProgress = user.vipProgress;
 
                 // --- Corrected VIP Level Up Logic ---
-                if (newTotalDeposits >= 500) {
+                if (newTotalDeposits >= 500 && newVipLevel < 3) {
                     newVipLevel = 3;
                     const nextLevelThreshold = 1000; // Example for next level
                     const currentLevelThreshold = 500;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (newTotalDeposits >= 100) {
+                } else if (newTotalDeposits >= 100 && newVipLevel < 2) {
                     newVipLevel = 2;
                     const nextLevelThreshold = 500;
                     const currentLevelThreshold = 100;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else {
-                    newVipLevel = 1;
+                } else if (newVipLevel === 1) {
                     const nextLevelThreshold = 100;
                     vipProgress = (newTotalDeposits / nextLevelThreshold) * 100;
                 }
