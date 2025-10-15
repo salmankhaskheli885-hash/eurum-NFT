@@ -99,6 +99,7 @@ export default function AdminLayout({
         { href: "/admin/kyc/history", label: "History" }
       ]
     },
+    { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
     { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
   ]
