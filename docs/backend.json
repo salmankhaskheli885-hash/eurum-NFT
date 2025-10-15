@@ -49,6 +49,11 @@
         "referredBy": {
             "type": "string",
             "description": "The UID of the user who referred this user."
+        },
+        "lastWithdrawalDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The ISO string of the last withdrawal request date."
         }
       },
       "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus"]

@@ -9,6 +9,7 @@ import { type User as FirebaseUser } from "firebase/auth";
 export type User = UserProfile & {
   status: 'Active' | 'Suspended';
   totalDeposits?: number;
+  lastWithdrawalDate?: string;
 };
 
 export type Transaction = {

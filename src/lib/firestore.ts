@@ -103,7 +103,7 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
 export async function submitKyc(firestore: ReturnType<typeof getFirestore>, userId: string, kycData: Transaction['kycDetails']) {
     const userRef = doc(firestore, 'users', userId);
     // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and save URLs.
-    // For now, we'll just save the placeholder data and update the status.
+    // For now, we'll just pass placeholder URLs and update the status.
     await updateDoc(userRef, {
         kycStatus: 'pending',
         // In a real app, you'd save file URLs from Firebase Storage here
@@ -138,22 +138,15 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
             const withdrawalAmount = Math.abs(transactionData.amount);
 
             // Check daily withdrawal limit
-            const today = new Date();
-            today.setHours(0, 0, 0, 0);
-
-            const allTransactionsQuery = query(
-                collection(firestore, 'transactions'),
-                where('userId', '==', transactionData.userId),
-                orderBy('date', 'desc')
-            );
-            const allTransactionsSnap = await getDocs(allTransactionsQuery);
-            const lastWithdrawal = allTransactionsSnap.docs
-                .map(d => d.data() as Transaction)
-                .find(tx => tx.type === 'Withdrawal' && tx.status !== 'Failed');
-
-            if (lastWithdrawal && new Date(lastWithdrawal.date) > today) {
-                 throw new Error("You can only make one withdrawal request per day.");
+            if (user.lastWithdrawalDate) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const lastWithdrawal = new Date(user.lastWithdrawalDate);
+                if (lastWithdrawal > today) {
+                    throw new Error("You can only make one withdrawal request per day.");
+                }
             }
+
 
             // Fee calculation
             const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
@@ -271,6 +264,11 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         transaction.update(transactionRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
+            // Logic for completed withdrawal: update last withdrawal date
+            if (txData.type === 'Withdrawal') {
+                transaction.update(userRef, { lastWithdrawalDate: new Date().toISOString() });
+            }
+
             if (txData.type === 'Deposit') {
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
