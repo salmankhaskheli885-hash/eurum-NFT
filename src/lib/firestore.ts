@@ -1,4 +1,3 @@
-
 'use client';
 import {
   getFirestore,
@@ -137,25 +136,63 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 }
 
 
+// Refactored Payout Handler
+async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>, finalTransaction: Transaction) {
+    if (finalTransaction.type !== 'Investment' || !finalTransaction.investmentDetails) {
+        return;
+    }
+
+    const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = finalTransaction.investmentDetails;
+    const profit = investedAmount * (dailyReturn / 100) * durationDays;
+    const payoutAmount = investedAmount + profit;
+
+    const maturityTimestamp = new Date(maturityDate).getTime();
+    const nowTimestamp = new Date().getTime();
+    const delay = Math.max(0, maturityTimestamp - nowTimestamp);
+
+    setTimeout(async () => {
+        try {
+            await runTransaction(firestore, async (payoutTx) => {
+                const userForPayoutRef = doc(firestore, 'users', finalTransaction.userId);
+                const userForPayoutSnap = await payoutTx.get(userForPayoutRef);
+
+                if (userForPayoutSnap.exists()) {
+                    const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
+                        userId: finalTransaction.userId,
+                        userName: finalTransaction.userName,
+                        type: 'Payout',
+                        amount: payoutAmount,
+                        status: 'Completed',
+                        details: `Matured investment from ${planName}`
+                    };
+
+                    const newBalance = userForPayoutSnap.data().balance + payoutAmount;
+                    payoutTx.update(userForPayoutRef, { balance: newBalance });
+
+                    const payoutDocRef = doc(collection(firestore, 'transactions'));
+                    payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
+                }
+            });
+        } catch (e) {
+            console.error("Failed to process automatic payout:", e);
+            // In a real app, you'd add this to a retry queue.
+        }
+    }, delay);
+}
+
+
 // TRANSACTION FUNCTIONS
 export async function addTransaction(
     firestore: ReturnType<typeof getFirestore>, 
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ): Promise<Transaction> {
     
-    // Handle receipt upload for deposits first
     let receiptUrl: string | undefined = undefined;
     if (transactionData.type === 'Deposit' && transactionData.receiptFile) {
         const storage = getStorage();
         const receiptRef = ref(storage, `receipts/${transactionData.userId}/${Date.now()}_${transactionData.receiptFile.name}`);
-        
-        try {
-            const snapshot = await uploadBytes(receiptRef, transactionData.receiptFile);
-            receiptUrl = await getDownloadURL(snapshot.ref);
-        } catch (error) {
-            console.error("Error uploading receipt:", error);
-            throw new Error("Could not upload receipt image.");
-        }
+        const snapshot = await uploadBytes(receiptRef, transactionData.receiptFile);
+        receiptUrl = await getDownloadURL(snapshot.ref);
     }
     
     const { receiptFile, ...dataToSave } = transactionData;
@@ -223,43 +260,8 @@ export async function addTransaction(
 
     const finalTransaction: Transaction = { ...newTransactionDataWithDate, id: newDocRef.id };
 
-    // Handle automatic payout simulation after the main transaction is committed
-    if (finalTransaction.type === 'Investment' && finalTransaction.investmentDetails) {
-        const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = finalTransaction.investmentDetails;
-        const profit = investedAmount * (dailyReturn / 100) * durationDays;
-        const payoutAmount = investedAmount + profit;
-        const maturityTimestamp = new Date(maturityDate).getTime();
-        const nowTimestamp = new Date().getTime();
-        const delay = maturityTimestamp - nowTimestamp;
-
-        if (delay > 0) {
-            setTimeout(async () => {
-                try {
-                    const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
-                        userId: finalTransaction.userId,
-                        userName: finalTransaction.userName,
-                        type: 'Payout',
-                        amount: payoutAmount,
-                        status: 'Completed',
-                        details: `Matured investment from ${planName}`
-                    };
-                    await runTransaction(firestore, async (payoutTx) => {
-                        const userForPayoutRef = doc(firestore, 'users', finalTransaction.userId);
-                        const userForPayoutSnap = await payoutTx.get(userForPayoutRef);
-                        if (userForPayoutSnap.exists()) {
-                            const newBalance = userForPayoutSnap.data().balance + payoutAmount;
-                            payoutTx.update(userForPayoutRef, { balance: newBalance });
-
-                            const payoutDocRef = doc(collection(firestore, 'transactions'));
-                            payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
-                        }
-                    });
-                } catch(e) {
-                    console.error("Failed to process automatic payout:", e);
-                }
-            }, delay);
-        }
-    }
+    // Handle payout simulation AFTER the main transaction is committed
+    handleInvestmentPayout(firestore, finalTransaction);
 
     return finalTransaction;
 }
@@ -302,8 +304,8 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
                 
-                let newVipLevel = 1;
-                let vipProgress = 0;
+                let newVipLevel = user.vipLevel;
+                let vipProgress = user.vipProgress;
 
                 // --- Corrected VIP Level Up Logic ---
                 if (newTotalDeposits >= 500) {
@@ -474,5 +476,3 @@ export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFires
         }
     });
 }
-
-    
