@@ -161,13 +161,15 @@ export default function AgentDashboardPage() {
             setRoomsLoading(false);
             
             // If there's no selected room OR the selected room is no longer in the active list, select the first active room.
-            if (!selectedRoomId || !activeRooms.find(r => r.id === selectedRoomId)) {
-                setSelectedRoomId(activeRooms.length > 0 ? activeRooms[0].id : null);
+            if ((!selectedRoomId || !activeRooms.find(r => r.id === selectedRoomId)) && activeRooms.length > 0) {
+                setSelectedRoomId(activeRooms[0].id);
+            } else if (activeRooms.length === 0) {
+                setSelectedRoomId(null);
             }
         });
 
         return () => unsubscribe();
-    }, [firestore, selectedRoomId]); // Re-run if selectedRoomId changes to re-evaluate the selection
+    }, [firestore, selectedRoomId]); 
     
     React.useEffect(() => {
         if (!firestore || !selectedRoomId) {
@@ -216,3 +218,5 @@ export default function AgentDashboardPage() {
     </div>
   )
 }
+
+    

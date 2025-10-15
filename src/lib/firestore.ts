@@ -509,11 +509,13 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     
     await addDoc(messagesRef, messageData);
     
-    // Update the last message on the room
+    // Atomically update the last message and resolved status
+    const isResolved = senderType === 'agent';
+    
     await updateDoc(roomRef, {
         lastMessage: text,
         lastMessageAt: new Date().toISOString(),
-        isResolved: senderType === 'agent', // Resolve on agent reply, un-resolve on user reply
+        isResolved: isResolved
     });
 }
 
@@ -537,3 +539,6 @@ export function listenToMessages(firestore: ReturnType<typeof getFirestore>, roo
         callback(messages);
     });
 }
+
+
+    
