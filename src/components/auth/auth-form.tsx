@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth"
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "firebase/auth"
 import { useForm } from "react-hook-form"
 import * as z from "zod"
 
@@ -55,14 +55,32 @@ export function AuthForm({ className, view = 'login', ...props }: AuthFormProps)
     resolver: zodResolver(registerSchema),
     defaultValues: { displayName: "", email: "", password: "" },
   })
+  
+  const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
+    switch (role) {
+        case 'admin':
+            router.push('/admin');
+            break;
+        case 'agent':
+            router.push('/agent');
+            break;
+        case 'partner':
+            router.push('/partner');
+            break;
+        default:
+            router.push('/dashboard');
+            break;
+    }
+  }
 
   const handleLogin = async (data: LoginFormValues) => {
-    if (!auth) return
+    if (!auth || !firestore) return
     setIsLoading(true)
     try {
-      await signInWithEmailAndPassword(auth, data.email, data.password)
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password)
+      const userProfile = await getOrCreateUser(firestore, userCredential.user);
       toast({ title: t('login.successTitle') })
-      router.push("/dashboard")
+      handleNavigation(userProfile.role);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -81,18 +99,15 @@ export function AuthForm({ className, view = 'login', ...props }: AuthFormProps)
       const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password)
       const firebaseUser = userCredential.user
 
-      // We need to pass the displayName to getOrCreateUser
-      // To do this, we'll augment the FirebaseUser object before passing it
       const augmentedUser = {
           ...firebaseUser,
           displayName: data.displayName
       } as any;
 
-
-      await getOrCreateUser(firestore, augmentedUser)
+      const userProfile = await getOrCreateUser(firestore, augmentedUser, activeTab === 'partner' ? 'partner' : 'user');
       
       toast({ title: t('register.successTitle') })
-      router.push("/dashboard")
+      handleNavigation(userProfile.role);
 
     } catch (error: any) {
       toast({
@@ -104,7 +119,26 @@ export function AuthForm({ className, view = 'login', ...props }: AuthFormProps)
       setIsLoading(false)
     }
   }
-
+  
+  const handleGoogleSignIn = async () => {
+    if (!auth || !firestore) return;
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const userProfile = await getOrCreateUser(firestore, result.user, activeTab === 'partner' ? 'partner' : 'user');
+        toast({ title: t('login.successTitle') });
+        handleNavigation(userProfile.role);
+    } catch (error: any) {
+        toast({
+            variant: "destructive",
+            title: "Google Sign-In Failed",
+            description: error.message,
+        });
+    } finally {
+        setIsLoading(false);
+    }
+  }
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
@@ -114,43 +148,59 @@ export function AuthForm({ className, view = 'login', ...props }: AuthFormProps)
                 <TabsTrigger value="register">{t('login.signUpLink')}</TabsTrigger>
             </TabsList>
             <TabsContent value="login">
-                 <form onSubmit={loginForm.handleSubmit(handleLogin)} className="mt-6">
-                    <div className="grid gap-4">
-                    <div className="grid gap-1">
-                        <Label htmlFor="login-email">
-                        {t('login.emailLabel')}
-                        </Label>
-                        <Input
-                        id="login-email"
-                        placeholder="name@example.com"
-                        type="email"
-                        autoCapitalize="none"
-                        autoComplete="email"
-                        autoCorrect="off"
-                        disabled={isLoading}
-                        {...loginForm.register("email")}
-                        />
-                        {loginForm.formState.errors.email && <p className="px-1 text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
-                    </div>
-                    <div className="grid gap-1">
-                        <Label htmlFor="login-password">
-                        {t('login.passwordLabel')}
-                        </Label>
-                        <Input
-                        id="login-password"
-                        placeholder={t('login.passwordLabel')}
-                        type="password"
-                        disabled={isLoading}
-                        {...loginForm.register("password")}
-                        />
-                        {loginForm.formState.errors.password && <p className="px-1 text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
-                    </div>
-                    <Button disabled={isLoading} className="mt-2">
-                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {t('login.button')}
+                 <div className="grid gap-4 mt-6">
+                    <Button variant="outline" type="button" disabled={isLoading} onClick={handleGoogleSignIn}>
+                        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 21.2 173.4 58.2L354.4 131.1c-15.4-14-34.8-23.2-56.4-23.2-47.2 0-82.8 32.3-97.3 75.8-14.5 43.5-6.9 98.2 25.3 131.2 32.2 33 80.5 33.5 112.5 7.4 9.6-7.8 15.8-19.5 19.5-32.2h-107.5v-62.2h189.4c3.3 18.5 4.6 38.4 4.6 59.8z"></path></svg>}
+                        {t('login.googleButton')}
                     </Button>
+                    <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                            <span className="w-full border-t" />
+                        </div>
+                        <div className="relative flex justify-center text-xs uppercase">
+                            <span className="bg-background px-2 text-muted-foreground">
+                            {t('login.separator')}
+                            </span>
+                        </div>
                     </div>
-                </form>
+                     <form onSubmit={loginForm.handleSubmit(handleLogin)}>
+                        <div className="grid gap-4">
+                        <div className="grid gap-1">
+                            <Label htmlFor="login-email">
+                            {t('login.emailLabel')}
+                            </Label>
+                            <Input
+                            id="login-email"
+                            placeholder="name@example.com"
+                            type="email"
+                            autoCapitalize="none"
+                            autoComplete="email"
+                            autoCorrect="off"
+                            disabled={isLoading}
+                            {...loginForm.register("email")}
+                            />
+                            {loginForm.formState.errors.email && <p className="px-1 text-xs text-destructive">{loginForm.formState.errors.email.message}</p>}
+                        </div>
+                        <div className="grid gap-1">
+                            <Label htmlFor="login-password">
+                            {t('login.passwordLabel')}
+                            </Label>
+                            <Input
+                            id="login-password"
+                            placeholder={t('login.passwordLabel')}
+                            type="password"
+                            disabled={isLoading}
+                            {...loginForm.register("password")}
+                            />
+                            {loginForm.formState.errors.password && <p className="px-1 text-xs text-destructive">{loginForm.formState.errors.password.message}</p>}
+                        </div>
+                        <Button disabled={isLoading} className="mt-2">
+                            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {t('login.button')}
+                        </Button>
+                        </div>
+                    </form>
+                 </div>
             </TabsContent>
             <TabsContent value="register">
                 <form onSubmit={registerForm.handleSubmit(handleRegister)} className="mt-6">
@@ -194,6 +244,7 @@ export function AuthForm({ className, view = 'login', ...props }: AuthFormProps)
                         />
                         {registerForm.formState.errors.password && <p className="px-1 text-xs text-destructive">{registerForm.formState.errors.password.message}</p>}
                     </div>
+                     <p className="px-1 text-xs text-muted-foreground">{t('register.description')}</p>
                     <Button disabled={isLoading} className="mt-2">
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {t('register.button')}

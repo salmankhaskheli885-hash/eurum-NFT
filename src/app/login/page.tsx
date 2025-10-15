@@ -17,7 +17,7 @@ export default function LoginPage() {
              {t('login.description')}
           </p>
         </div>
-        <AuthForm />
+        <AuthForm view='login' />
       </div>
     </div>
   );
