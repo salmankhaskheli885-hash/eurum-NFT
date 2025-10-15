@@ -54,9 +54,13 @@
             "type": "string",
             "format": "date-time",
             "description": "The ISO string of the last withdrawal request date."
+        },
+        "failedDepositCount": {
+            "type": "number",
+            "description": "Tracks the number of failed or rejected deposits for a user."
         }
       },
-      "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus"]
+      "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus", "failedDepositCount"]
     },
     "InvestmentPlan": {
         "title": "Investment Plan",

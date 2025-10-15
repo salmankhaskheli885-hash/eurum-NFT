@@ -12,4 +12,5 @@ export type UserProfile = {
   kycStatus: 'approved' | 'pending' | 'rejected' | 'unsubmitted';
   referralLink: string;
   referredBy?: string; // UID of the user who referred this user
+  failedDepositCount?: number;
 };

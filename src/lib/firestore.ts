@@ -31,7 +31,13 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
-        return userSnap.data() as User;
+        const userData = userSnap.data() as User;
+        // Ensure legacy users have the new fields
+        if (userData.failedDepositCount === undefined) {
+             updateDoc(userRef, { failedDepositCount: 0 });
+             userData.failedDepositCount = 0;
+        }
+        return userData;
     } else {
         const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
         const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
@@ -70,7 +76,8 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
             status: 'Active',
             referredBy: referredBy,
             totalDeposits: 0,
-            lastWithdrawalDate: undefined
+            lastWithdrawalDate: undefined,
+            failedDepositCount: 0,
         };
         await setDoc(userRef, newUser);
         return newUser;
@@ -104,7 +111,7 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
 
 export async function submitKyc(firestore: ReturnType<typeof getFirestore>, userId: string, kycData: Transaction['kycDetails']) {
     const userRef = doc(firestore, 'users', userId);
-    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and save the URLs.
+    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and get the URLs.
     // For now, we'll just pass placeholder URLs and update the status.
     await updateDoc(userRef, {
         kycStatus: 'pending',
@@ -357,6 +364,14 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                  const refundAmount = Math.abs(txData.amount) + feeAmount;
                  const newBalance = user.balance + refundAmount;
                  transaction.update(userRef, { balance: newBalance });
+            } else if (txData.type === 'Deposit') {
+                const newFailedCount = (user.failedDepositCount || 0) + 1;
+                const updates: Partial<User> = { failedDepositCount: newFailedCount };
+
+                if (newFailedCount >= 5) {
+                    updates.status = 'Suspended';
+                }
+                transaction.update(userRef, updates);
             }
         }
         

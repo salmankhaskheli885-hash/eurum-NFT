@@ -11,6 +11,7 @@ export type User = UserProfile & {
   status: 'Active' | 'Suspended';
   totalDeposits?: number;
   lastWithdrawalDate?: string;
+  failedDepositCount?: number;
 };
 
 export type Transaction = {
@@ -164,6 +165,7 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
         status: 'Active',
         referredBy: undefined,
-        totalDeposits: 0
+        totalDeposits: 0,
+        failedDepositCount: 0
     };
 }
