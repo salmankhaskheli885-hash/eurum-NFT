@@ -43,9 +43,7 @@ export default function AgentLayout({
   ]
 
   const managementMenuItems = [
-     // @ts-ignore
     { href: "/agent/deposits", label: 'Manage Deposits', icon: DollarSign, permission: agentProfile?.canApproveDeposits },
-     // @ts-ignore
     { href: "/agent/withdrawals", label: 'Manage Withdrawals', icon: Landmark, permission: agentProfile?.canApproveWithdrawals },
   ]
   
@@ -81,7 +79,7 @@ export default function AgentLayout({
              <SidebarMenuItem>
               <hr className="my-2 border-sidebar-border" />
             </SidebarMenuItem>
-             {managementMenuItems.map((item) => (item.permission || (process.env.NODE_ENV === 'development')) && (
+             {managementMenuItems.map((item) => (item.permission) && (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton

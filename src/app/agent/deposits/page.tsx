@@ -25,7 +25,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
     const [searchTerm, setSearchTerm] = React.useState("");
 
     React.useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !agentId) return;
         setLoading(true);
         const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
             setHistory(
@@ -132,8 +132,7 @@ export default function AgentDepositsPage() {
     const [loading, setLoading] = React.useState(true)
     const [searchTerm, setSearchTerm] = React.useState("")
 
-    // @ts-ignore
-    const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveDeposits;
+    const hasPermission = agentProfile?.canApproveDeposits;
 
     React.useEffect(() => {
         if (!firestore || !hasPermission || !agentProfile) {
@@ -293,5 +292,3 @@ export default function AgentDepositsPage() {
         </div>
     )
 }
-
-    

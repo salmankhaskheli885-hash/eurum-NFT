@@ -24,7 +24,7 @@ function WithdrawalHistory({ agentId }: { agentId: string }) {
     const [searchTerm, setSearchTerm] = React.useState("");
 
     React.useEffect(() => {
-        if (!firestore) return;
+        if (!firestore || !agentId) return;
         setLoading(true);
         const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
             setHistory(
@@ -134,8 +134,7 @@ export default function AgentWithdrawalsPage() {
     const [loading, setLoading] = React.useState(true)
     const [searchTerm, setSearchTerm] = React.useState("")
 
-    // @ts-ignore
-    const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveWithdrawals;
+    const hasPermission = agentProfile?.canApproveWithdrawals;
 
     React.useEffect(() => {
         if (!firestore || !hasPermission || !agentProfile) {
@@ -305,5 +304,3 @@ export default function AgentWithdrawalsPage() {
         </div>
     )
 }
-
-    
