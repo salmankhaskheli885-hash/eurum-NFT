@@ -40,7 +40,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         
         if (!agentSnap.empty) {
             const agentData = agentSnap.docs[0].data();
-            return { ...userData, ...agentData };
+            return { ...userData, ...agentData, id: agentSnap.docs[0].id };
         }
 
         const updates: Partial<User> = {};
@@ -488,7 +488,7 @@ export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirest
             createdAt: new Date().toISOString(),
             lastMessage: "Chat started",
             lastMessageAt: new Date().toISOString(),
-            isResolved: false // A new chat always needs a reply
+            isResolved: false
         };
         const newRoomRef = await addDoc(roomsRef, newRoomData);
         return { id: newRoomRef.id, ...newRoomData };
@@ -509,13 +509,10 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     
     await addDoc(messagesRef, messageData);
     
-    // Atomically update the last message and resolved status
-    const isResolved = senderType === 'agent';
-    
     await updateDoc(roomRef, {
         lastMessage: text,
         lastMessageAt: new Date().toISOString(),
-        isResolved: isResolved
+        isResolved: senderType === 'agent'
     });
 }
 
