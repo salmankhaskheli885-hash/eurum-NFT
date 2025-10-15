@@ -301,13 +301,14 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             if (txData.type === 'Deposit') {
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
-                let newVipLevel = user.vipLevel;
-                let vipProgress = user.vipProgress;
+                
+                let newVipLevel = 1;
+                let vipProgress = 0;
 
                 // --- Corrected VIP Level Up Logic ---
                 if (newTotalDeposits >= 500) {
                     newVipLevel = 3;
-                    const nextLevelThreshold = 1000;
+                    const nextLevelThreshold = 1000; // Example for next level
                     const currentLevelThreshold = 500;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
@@ -473,3 +474,5 @@ export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFires
         }
     });
 }
+
+    
