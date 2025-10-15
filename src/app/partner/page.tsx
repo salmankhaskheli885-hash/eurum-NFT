@@ -2,7 +2,13 @@
 "use client"
 
 import * as React from "react"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription
+} from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
 import { DollarSign, Users, TrendingUp, ShieldCheck } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
@@ -10,6 +16,9 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllUsers, listenToUserTransactions } from "@/lib/firestore"
 import type { User, Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+
 
 export default function PartnerDashboardPage() {
   const { t } = useTranslation()
@@ -17,8 +26,7 @@ export default function PartnerDashboardPage() {
   const firestore = useFirestore()
 
   const [referredUsers, setReferredUsers] = React.useState<User[]>([])
-  const [commissions, setCommissions] = React.useState<Transaction[]>([])
-  const [networkInvestments, setNetworkInvestments] = React.useState<Transaction[]>([])
+  const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
@@ -29,48 +37,54 @@ export default function PartnerDashboardPage() {
     const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         const myReferrals = allUsers.filter(u => u.referredBy === currentUser.uid);
         setReferredUsers(myReferrals);
-        
-        if (myReferrals.length > 0) {
-            const referredIds = myReferrals.map(u => u.uid);
-            // In a real large-scale app, this would be done on a backend
-            // to avoid hitting Firestore client-side query limits (max 10 'in' clauses).
-            // For this app's scale, it's acceptable.
-            const investmentPromises = referredIds.map(id => 
-                new Promise<Transaction[]>((resolve) => {
-                    listenToUserTransactions(firestore, id, txs => resolve(txs.filter(tx => tx.type === 'Investment')));
-                })
-            );
-            // This is not optimal as it creates multiple listeners. A backend function would be better.
-            // For now, we'll simplify this.
-        }
-
-        setLoading(false);
+        setLoading(false); // Set loading false after users are fetched
     });
 
-    const unsubscribeCommissions = listenToUserTransactions(firestore, currentUser.uid, (transactions) => {
-        setCommissions(transactions.filter(tx => tx.type === 'Commission'));
+    const unsubscribeTransactions = listenToUserTransactions(firestore, currentUser.uid, (transactions) => {
+        setTransactions(transactions);
     });
 
     return () => {
         unsubscribeUsers();
-        unsubscribeCommissions();
+        unsubscribeTransactions();
     };
 
   }, [firestore, currentUser])
 
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount: number, compact = true) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
-      notation: "compact"
+      notation: compact ? "compact" : "standard"
     }).format(amount)
+  }
+   const formatDate = (dateString: string) => {
+      if (!dateString) return 'N/A';
+      return new Date(dateString).toLocaleDateString();
+  }
+
+  const getStatusVariant = (status: Transaction['status']) => {
+    switch (status) {
+      case 'Completed': return 'default'
+      case 'Pending': return 'secondary'
+      case 'Failed': return 'destructive'
+      default: return 'outline'
+    }
   }
   
   const totalReferredUsers = referredUsers.length;
-  const totalCommissionEarned = commissions.reduce((sum, tx) => sum + tx.amount, 0);
+  const totalCommissionEarned = transactions
+    .filter(tx => tx.type === 'Commission')
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
   const pendingKyc = referredUsers.filter(u => u.kycStatus === 'pending').length;
   // This is a simplified metric. A true 'total invested' would require more complex queries.
   const totalNetworkDeposits = referredUsers.reduce((sum, user) => sum + (user.totalDeposits || 0), 0);
+  
+  const investmentTransactions = transactions.filter(
+      tx => tx.type === 'Investment' || tx.type === 'Payout' || tx.type === 'Commission'
+  );
+
 
   const isLoading = userLoading || loading;
 
@@ -106,6 +120,61 @@ export default function PartnerDashboardPage() {
           <StatCard key={stat.title} stat={stat} isLoading={isLoading} />
         ))}
       </div>
+
+       <Card>
+          <CardHeader>
+            <CardTitle>Investment & Commission History</CardTitle>
+            <CardDescription>A list of your investments, payouts, and commission earnings.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Table>
+                <TableHeader>
+                <TableRow>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
+                </TableRow>
+                </TableHeader>
+                <TableBody>
+                {isLoading ? (
+                    [...Array(5)].map((_, i) => (
+                        <TableRow key={i}>
+                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                        </TableRow>
+                    ))
+                ) : investmentTransactions.length > 0 ? (
+                    investmentTransactions.map((transaction) => (
+                        <TableRow key={transaction.id}>
+                        <TableCell className="font-medium">
+                            {transaction.investmentDetails?.planName || transaction.details || "N/A"}
+                        </TableCell>
+                        <TableCell>{transaction.type}</TableCell>
+                        <TableCell>{formatDate(transaction.date)}</TableCell>
+                        <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {formatCurrency(transaction.amount, false)}
+                        </TableCell>
+                        <TableCell className="text-center">
+                            <Badge variant={getStatusVariant(transaction.status)}>
+                                {transaction.status}
+                            </Badge>
+                        </TableCell>
+                        </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={5} className="h-24 text-center">No investment or commission transactions found.</TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
     </div>
   )
 }

@@ -70,7 +70,7 @@ function DashboardContent() {
     const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
         setTransactions(newTransactions);
         setTransactionsLoading(false);
-    }, 5);
+    }); // Fetch all transactions
     return () => unsubscribe();
   }, [firestore, user?.uid]);
 
@@ -83,6 +83,7 @@ function DashboardContent() {
   }
   
   const formatDate = (dateString: string) => {
+      if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString();
   }
 
@@ -94,6 +95,11 @@ function DashboardContent() {
       default: return 'outline'
     }
   }
+  
+  const investmentTransactions = transactions.filter(
+      tx => tx.type === 'Investment' || tx.type === 'Payout'
+  );
+
 
   if (userLoading) {
       return (
@@ -130,7 +136,7 @@ function DashboardContent() {
             </div>
              <Card>
                 <CardHeader>
-                    <CardTitle>{t('profile.recentTransactions')}</CardTitle>
+                    <CardTitle>Investment History</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="space-y-4">
@@ -212,17 +218,18 @@ function DashboardContent() {
 
        <Card>
           <CardHeader>
-            <CardTitle>{t('profile.recentTransactions')}</CardTitle>
+            <CardTitle>Investment History</CardTitle>
+            <CardDescription>A list of your investment and payout transactions.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>{t('transactions.id')}</TableHead>
-                    <TableHead>{t('transactions.type')}</TableHead>
-                    <TableHead>{t('transactions.date')}</TableHead>
-                    <TableHead className="text-right">{t('transactions.amount')}</TableHead>
-                    <TableHead className="text-center">{t('transactions.status')}</TableHead>
+                    <TableHead>Plan</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Maturity</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-center">Status</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -236,12 +243,14 @@ function DashboardContent() {
                             <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
                         </TableRow>
                     ))
-                ) : transactions.length > 0 ? (
-                    transactions.map((transaction) => (
+                ) : investmentTransactions.length > 0 ? (
+                    investmentTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
-                        <TableCell className="font-medium">{transaction.id.substring(0,8)}...</TableCell>
+                        <TableCell className="font-medium">
+                            {transaction.investmentDetails?.planName || transaction.details || "N/A"}
+                        </TableCell>
                         <TableCell>{transaction.type}</TableCell>
-                        <TableCell>{formatDate(transaction.date)}</TableCell>
+                        <TableCell>{formatDate(transaction.investmentDetails?.maturityDate || transaction.date)}</TableCell>
                         <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                             {formatCurrency(transaction.amount)}
                         </TableCell>
@@ -254,7 +263,7 @@ function DashboardContent() {
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">No recent transactions.</TableCell>
+                        <TableCell colSpan={5} className="h-24 text-center">No investment transactions found.</TableCell>
                     </TableRow>
                 )}
                 </TableBody>
