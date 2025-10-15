@@ -274,35 +274,41 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
 
-                // Automatic VIP Level Up Logic
-                const vipLevels = [
-                    { threshold: 500, level: 3, next: 1000 },
-                    { threshold: 100, level: 2, next: 500 }
-                ];
-
+                // --- Start of Corrected VIP Level Up Logic ---
                 let newVipLevel = 1;
                 let vipProgress = 0;
 
-                const matchedLevel = vipLevels.find(l => newTotalDeposits >= l.threshold);
-
-                if (matchedLevel) {
-                    newVipLevel = matchedLevel.level;
-                    const nextLevelInfo = vipLevels.find(l => l.level === newVipLevel + 1) || { threshold: matchedLevel.next };
-                    const prevLevelThreshold = vipLevels.find(l => l.level === newVipLevel)?.threshold || 0;
-                    const range = nextLevelInfo.threshold - prevLevelThreshold;
-                    const progressInRange = newTotalDeposits - prevLevelThreshold;
+                // Check from highest level to lowest
+                if (newTotalDeposits >= 500) {
+                    newVipLevel = 3;
+                    // Example: Progress towards a hypothetical Level 4 at $1000
+                    const nextLevelThreshold = 1000;
+                    const currentLevelThreshold = 500;
+                    const progressInRange = newTotalDeposits - currentLevelThreshold;
+                    const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
+
+                } else if (newTotalDeposits >= 100) {
+                    newVipLevel = 2;
+                    // Progress towards Level 3 at $500
+                    const nextLevelThreshold = 500;
+                    const currentLevelThreshold = 100;
+                    const progressInRange = newTotalDeposits - currentLevelThreshold;
+                    const range = nextLevelThreshold - currentLevelThreshold;
+                    vipProgress = Math.min(100, (progressInRange / range) * 100);
+                    
                 } else {
                     newVipLevel = 1;
+                    // Progress towards Level 2 at $100
                     vipProgress = (newTotalDeposits / 100) * 100;
                 }
-                
+                // --- End of Corrected VIP Level Up Logic ---
 
                 transaction.update(userRef, { 
                     balance: newBalance, 
                     totalDeposits: newTotalDeposits, 
                     vipLevel: newVipLevel,
-                    vipProgress: vipProgress
+                    vipProgress: Math.max(0, vipProgress) // Ensure progress is not negative
                 });
 
                 if (user.referredBy) {
