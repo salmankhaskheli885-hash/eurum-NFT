@@ -187,22 +187,24 @@ export async function addTransaction(
     
     // 1. Separate the local file object from the data to be saved in Firestore
     const { receiptFile, ...dataToSave } = transactionData;
-    let receiptUrl: string | undefined = undefined;
-
-    // 2. Handle file upload if it exists
-    if (dataToSave.type === 'Deposit' && receiptFile) {
+    
+    // This will hold the final data to be written to Firestore.
+    let newTransactionDataWithDate: Omit<Transaction, 'id'> = {
+        ...dataToSave,
+        date: new Date().toISOString()
+    };
+    
+    // 2. Handle file upload if it exists (only for deposits)
+    if (dataToSave.type === 'Deposit') {
+        if (!receiptFile) {
+            throw new Error("Receipt is required for deposits.");
+        }
         const storage = getStorage();
         const receiptRef = ref(storage, `receipts/${dataToSave.userId}/${Date.now()}_${receiptFile.name}`);
         const snapshot = await uploadBytes(receiptRef, receiptFile);
-        receiptUrl = await getDownloadURL(snapshot.ref);
+        const receiptUrl = await getDownloadURL(snapshot.ref);
+        newTransactionDataWithDate.receiptUrl = receiptUrl;
     }
-    
-    // 3. Prepare the final data to be saved in Firestore
-    const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
-        ...dataToSave,
-        receiptUrl: receiptUrl,
-        date: new Date().toISOString()
-    };
     
     const newDocRef = doc(collection(firestore, 'transactions'));
     
