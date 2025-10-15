@@ -60,8 +60,8 @@ export default function TransactionsPage() {
     }
   }
 
-  const deposits = transactions.filter(tx => tx.type === 'Deposit');
-  const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal');
+  const deposits = transactions.filter(tx => tx.type === 'Deposit').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   const allTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const renderTable = (transactions: Transaction[], isLoading: boolean) => (

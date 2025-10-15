@@ -98,7 +98,7 @@ function DashboardContent() {
   
   const investmentTransactions = transactions.filter(
       tx => tx.type === 'Investment' || tx.type === 'Payout'
-  );
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 
   if (userLoading) {

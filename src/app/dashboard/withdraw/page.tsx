@@ -29,7 +29,10 @@ function WithdrawalHistory() {
         if (!user || !firestore) return;
         setLoading(true);
         const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
-            setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal'));
+            const withdrawalTxs = allTransactions
+                .filter(tx => tx.type === 'Withdrawal')
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setTransactions(withdrawalTxs);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -159,7 +162,7 @@ export default function WithdrawPage() {
                 userName: user.displayName || 'Unknown User',
                 type: 'Withdrawal',
                 amount: -withdrawalAmount, // Withdrawals are negative amounts
-                status: 'Pending',
+                status: 'Completed',
                 withdrawalDetails: {
                     accountName,
                     accountNumber,

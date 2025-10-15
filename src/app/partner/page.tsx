@@ -83,7 +83,7 @@ export default function PartnerDashboardPage() {
   
   const investmentTransactions = transactions.filter(
       tx => tx.type === 'Investment' || tx.type === 'Payout' || tx.type === 'Commission'
-  );
+  ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 
   const isLoading = userLoading || loading;

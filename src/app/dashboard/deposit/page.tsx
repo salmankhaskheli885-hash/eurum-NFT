@@ -57,7 +57,10 @@ export default function DepositPage() {
         };
         setHistoryLoading(true);
         const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
-            setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
+            const depositTxs = allTransactions
+                .filter(tx => tx.type === 'Deposit')
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setTransactions(depositTxs);
             setHistoryLoading(false);
         });
         return () => unsubscribe();
@@ -291,5 +294,3 @@ export default function DepositPage() {
     </div>
   )
 }
-
-    

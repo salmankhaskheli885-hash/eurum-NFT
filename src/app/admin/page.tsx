@@ -33,7 +33,7 @@ export default function AdminDashboardPage() {
     });
     
     const unsubscribeTransactions = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions);
+        setTransactions(allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
          if (users.length > 0 || allTransactions.length > 0) setLoading(false);
     });
 
