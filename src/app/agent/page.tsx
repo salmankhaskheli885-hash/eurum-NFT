@@ -162,6 +162,10 @@ export default function AgentDashboardPage() {
             if (!selectedRoomId && activeRooms.length > 0) {
                 setSelectedRoomId(activeRooms[0].id);
             }
+             // If the currently selected room is resolved, deselect it
+            if (selectedRoomId && !activeRooms.find(r => r.id === selectedRoomId)) {
+                setSelectedRoomId(activeRooms.length > 0 ? activeRooms[0].id : null);
+            }
         });
 
         return () => unsubscribe();
