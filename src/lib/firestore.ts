@@ -1,4 +1,3 @@
-
 'use client';
 import {
   getFirestore,
@@ -32,7 +31,6 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
 
     if (userSnap.exists()) {
         const userData = userSnap.data() as User;
-        // Ensure legacy users have the new fields
         const updates: Partial<User> = {};
         if (userData.failedDepositCount === undefined) {
              updates.failedDepositCount = 0;
@@ -42,7 +40,6 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         }
         if (Object.keys(updates).length > 0) {
             await updateDoc(userRef, updates);
-            // Return the merged user data
             return { ...userData, ...updates };
         }
         return userData;
@@ -51,7 +48,6 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
         const role = isAdmin ? 'admin' : isPartner ? 'partner' : 'user';
 
-        // Check for referral
         let referredBy: string | undefined = undefined;
         try {
             const urlParams = new URLSearchParams(window.location.search);
@@ -67,7 +63,6 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         } catch (e) {
             console.error("Could not parse URL for referral", e)
         }
-
 
         const newUser: User = {
             uid: firebaseUser.uid,
@@ -119,11 +114,8 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
 
 export async function submitKyc(firestore: ReturnType<typeof getFirestore>, userId: string, kycData: Transaction['kycDetails']) {
     const userRef = doc(firestore, 'users', userId);
-    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and get the URLs.
-    // For now, we'll just pass placeholder URLs and update the status.
     await updateDoc(userRef, {
         kycStatus: 'pending',
-        // In a real app, you'd save file URLs from Firebase Storage here
         cnicFrontUrl: kycData?.cnicFrontUrl,
         cnicBackUrl: kycData?.cnicBackUrl,
         selfieUrl: kycData?.selfieUrl,
@@ -136,119 +128,93 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
     await updateDoc(userRef, { kycStatus: status });
 }
 
-// This new function handles the background upload and update.
-async function uploadReceiptAndUpdateTransaction(
-    firestore: ReturnType<typeof getFirestore>, 
-    transactionId: string, 
-    userId: string, 
-    receiptFile: File
-) {
-    try {
-        const storage = getStorage();
-        const receiptRef = ref(storage, `receipts/${userId}/${Date.now()}_${receiptFile.name}`);
-        const snapshot = await uploadBytes(receiptRef, receiptFile);
-        const receiptUrl = await getDownloadURL(snapshot.ref);
 
-        // Now update the existing transaction document with the URL.
-        const transactionRef = doc(firestore, 'transactions', transactionId);
-        await updateDoc(transactionRef, { receiptUrl: receiptUrl });
-    } catch (error) {
-        console.error("Error uploading receipt or updating transaction:", error);
-        // Optional: Update the transaction to a 'Failed' state if upload fails.
-        const transactionRef = doc(firestore, 'transactions', transactionId);
-        await updateDoc(transactionRef, { status: 'Failed', details: 'Receipt upload failed.' });
-    }
-}
-
-// TRANSACTION FUNCTIONS
+// New, simplified, and robust transaction function
 export async function addTransaction(
-    firestore: ReturnType<typeof getFirestore>,
-    transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
+  firestore: ReturnType<typeof getFirestore>,
+  transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
-    const { receiptFile, ...dataToSave } = transactionData;
-    let newTransactionDocId: string;
+  const { receiptFile, ...dataToSave } = transactionData;
 
+  // Step 1: Create a new transaction document reference with an auto-generated ID.
+  const transactionDocRef = doc(collection(firestore, 'transactions'));
+  
+  let receiptUrl: string | undefined = undefined;
+
+  // Step 2: If it's a deposit with a receipt, upload the file first.
+  if (dataToSave.type === 'Deposit' && receiptFile) {
     try {
-        // Step 1: Run the database transaction to update balances and create the transaction document.
-        newTransactionDocId = await runTransaction(firestore, async (transaction) => {
+      const storage = getStorage();
+      // Use the new transaction ID in the file path for easy association.
+      const receiptPath = `receipts/${dataToSave.userId}/${transactionDocRef.id}_${receiptFile.name}`;
+      const storageRef = ref(storage, receiptPath);
+      const snapshot = await uploadBytes(storageRef, receiptFile);
+      receiptUrl = await getDownloadURL(snapshot.ref);
+    } catch (error) {
+      console.error("Error uploading receipt:", error);
+      // Throw an error to stop the process and inform the user.
+      throw new Error("Receipt upload failed. Please try again.");
+    }
+  }
+
+  // Step 3: Prepare the final transaction object with all details.
+  const finalTransactionData: Omit<Transaction, 'id'> = {
+    ...dataToSave,
+    date: new Date().toISOString(),
+    receiptUrl: receiptUrl, // Add the URL if it exists
+  };
+
+  // Step 4: Save the complete transaction document.
+  await setDoc(transactionDocRef, finalTransactionData);
+
+
+  // Step 5: Handle post-transaction logic like balance updates for investments.
+  // This is now separate from the initial save, making the process more reliable.
+  if (dataToSave.type === 'Investment') {
+    try {
+        await runTransaction(firestore, async (transaction) => {
             const userRef = doc(firestore, 'users', dataToSave.userId);
             const userSnap = await transaction.get(userRef);
-
             if (!userSnap.exists()) {
-                throw new Error("User not found for transaction");
+                throw new Error("User not found to update balance for investment.");
             }
-
             const user = userSnap.data() as User;
-            
-            const newTransactionDataWithDate = {
-                ...dataToSave,
-                date: new Date().toISOString(),
-            };
-            // Remove receiptFile from the object to be saved in Firestore
-            delete (newTransactionDataWithDate as any).receiptFile;
+            const investmentAmount = Math.abs(dataToSave.amount);
+            if (user.balance < investmentAmount) {
+                throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+            }
+            const newBalance = user.balance - investmentAmount;
+            transaction.update(userRef, { balance: newBalance });
+        });
 
-            // --- Handle balance changes within the transaction ---
-            if (dataToSave.type === 'Withdrawal') {
-                 if (user.lastWithdrawalDate) {
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const lastWithdrawal = new Date(user.lastWithdrawalDate);
-                    if (lastWithdrawal >= today) {
-                        throw new Error("You can only make one withdrawal request per day.");
-                    }
-                }
+        // Now schedule the payout
+        const finalTx = { id: transactionDocRef.id, ...finalTransactionData } as Transaction;
+        handleInvestmentPayout(firestore, finalTx);
+    } catch (error) {
+        // If balance check fails, delete the already created transaction document for consistency.
+        await deleteDoc(transactionDocRef);
+        console.error("Investment balance check failed:", error);
+        throw error; // Re-throw to inform the UI
+    }
+  } else if (dataToSave.type === 'Withdrawal') {
+      try {
+           await runTransaction(firestore, async (transaction) => {
+               const userRef = doc(firestore, 'users', dataToSave.userId);
+               const userSnap = await transaction.get(userRef);
+                if (!userSnap.exists()) throw new Error("User not found.");
+
+                const user = userSnap.data() as User;
                 const withdrawalAmount = Math.abs(dataToSave.amount);
-                 const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-                const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-                const feeAmount = withdrawalAmount * (feePercentage / 100);
-                
                 if (user.balance < withdrawalAmount) {
                      throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
                 }
-                const newBalance = user.balance - withdrawalAmount;
-                transaction.update(userRef, { balance: newBalance });
-
-                if (newTransactionDataWithDate.withdrawalDetails){
-                    newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
-                }
-
-            } else if (dataToSave.type === 'Investment') {
-                const investmentAmount = Math.abs(dataToSave.amount);
-                if (user.balance < investmentAmount) {
-                    throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-                }
-                const newBalance = user.balance - investmentAmount;
-                transaction.update(userRef, { balance: newBalance });
-            }
-            // --- End of balance changes ---
-
-            const transactionDocRef = doc(collection(firestore, 'transactions'));
-            transaction.set(transactionDocRef, newTransactionDataWithDate);
-            
-            return transactionDocRef.id; // Return the new document ID
-        });
-
-        // Step 2: If it was a deposit with a receipt, upload the file in the background.
-        // This happens *after* the database transaction is successfully committed.
-        if (dataToSave.type === 'Deposit' && receiptFile) {
-            await uploadReceiptAndUpdateTransaction(firestore, newTransactionDocId, dataToSave.userId, receiptFile);
-        }
-
-        // Step 3: Handle post-transaction logic like scheduling payouts
-        if (dataToSave.type === 'Investment') {
-             const finalTx = {
-                id: newTransactionDocId, 
-                ...dataToSave,
-                date: new Date().toISOString()
-            } as Transaction;
-            handleInvestmentPayout(firestore, finalTx);
-        }
-
-    } catch (error) {
-        console.error("Transaction failed:", error);
-        // Re-throw the error so the calling UI can handle it
-        throw error;
-    }
+           });
+      } catch (error) {
+          await deleteDoc(transactionDocRef);
+          console.error("Withdrawal pre-check failed:", error);
+          throw error;
+      }
+  }
 }
 
 
@@ -290,7 +256,6 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
             });
         } catch (e) {
             console.error("Failed to process automatic payout:", e);
-            // In a real app, you'd add this to a retry queue.
         }
     }, delay);
 }
@@ -301,80 +266,68 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         const transactionRef = doc(firestore, 'transactions', transactionId);
         const transactionSnap = await transaction.get(transactionRef);
 
-        if (!transactionSnap.exists()) {
-            throw new Error("Transaction not found");
-        }
+        if (!transactionSnap.exists()) throw new Error("Transaction not found");
         
         const txData = transactionSnap.data() as Transaction;
-        const oldStatus = txData.status;
-
-        if (oldStatus !== 'Pending') {
-            console.log("Transaction already processed.");
-            return;
-        }
+        if (txData.status !== 'Pending') return;
 
         const userRef = doc(firestore, 'users', txData.userId);
         const userSnap = await transaction.get(userRef);
-        
-        if (!userSnap.exists()) {
-            throw new Error("User for transaction not found");
-        }
+        if (!userSnap.exists()) throw new Error("User for transaction not found");
+
         const user = userSnap.data() as User;
         
         transaction.update(transactionRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
             if (txData.type === 'Withdrawal') {
-                transaction.update(userRef, { lastWithdrawalDate: new Date().toISOString() });
+                 const withdrawalAmount = Math.abs(txData.amount);
+                 const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+                 const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                 const feeAmount = withdrawalAmount * (feePercentage / 100);
+                 const finalAmount = withdrawalAmount + feeAmount;
+
+                 if (user.balance < finalAmount) {
+                     throw new Error(`Insufficient balance for withdrawal and fees. Required: $${finalAmount.toFixed(2)}`);
+                 }
+                
+                transaction.update(userRef, { 
+                    lastWithdrawalDate: new Date().toISOString(),
+                    balance: user.balance - finalAmount
+                });
             }
 
             if (txData.type === 'Deposit') {
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
-                
                 let newVipLevel = user.vipLevel;
                 let vipProgress = user.vipProgress;
 
-                // --- Corrected VIP Level Up Logic ---
-                if (user.vipLevel < 3 && newTotalDeposits >= 500) {
-                    newVipLevel = 3;
-                    const nextLevelThreshold = 1000; // Example for next level
-                    const currentLevelThreshold = 500;
-                    const progressInRange = newTotalDeposits - currentLevelThreshold;
-                    const range = nextLevelThreshold - currentLevelThreshold;
-                    vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (user.vipLevel < 2 && newTotalDeposits >= 100) {
-                    newVipLevel = 2;
-                    const nextLevelThreshold = 500;
-                    const currentLevelThreshold = 100;
-                    const progressInRange = newTotalDeposits - currentLevelThreshold;
-                    const range = nextLevelThreshold - currentLevelThreshold;
-                    vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (user.vipLevel === 1) {
-                    const nextLevelThreshold = 100;
-                    vipProgress = (newTotalDeposits / nextLevelThreshold) * 100;
-                }
-                // --- End of Corrected VIP Level Up Logic ---
+                if (user.vipLevel < 3 && newTotalDeposits >= 500) newVipLevel = 3;
+                else if (user.vipLevel < 2 && newTotalDeposits >= 100) newVipLevel = 2;
+
+                if (newVipLevel === 1) vipProgress = (newTotalDeposits / 100) * 100;
+                else if (newVipLevel === 2) vipProgress = ((newTotalDeposits - 100) / (500 - 100)) * 100;
+                else if (newVipLevel === 3) vipProgress = ((newTotalDeposits - 500) / (1000 - 500)) * 100;
 
                 transaction.update(userRef, { 
                     balance: newBalance, 
                     totalDeposits: newTotalDeposits, 
                     vipLevel: newVipLevel,
-                    vipProgress: Math.max(0, Math.floor(vipProgress))
+                    vipProgress: Math.min(100, Math.max(0, Math.floor(vipProgress)))
                 });
 
                 if (user.referredBy) {
                     const referrerRef = doc(firestore, 'users', user.referredBy);
                     const referrerSnap = await transaction.get(referrerRef);
-
                     if (referrerSnap.exists()) {
                         const referrer = referrerSnap.data() as User;
                         const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
                         const commissionAmount = txData.amount * commissionRate;
-                        const newReferrerBalance = referrer.balance + commissionAmount;
-                        transaction.update(referrerRef, { balance: newReferrerBalance });
+                        transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
 
-                        const commissionTransactionData: Omit<Transaction, 'id'> = {
+                        const commissionTxRef = doc(collection(firestore, 'transactions'));
+                        transaction.set(commissionTxRef, {
                             userId: referrer.uid,
                             userName: referrer.displayName || 'N/A',
                             type: 'Commission',
@@ -382,25 +335,15 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                             status: 'Completed',
                             date: new Date().toISOString(),
                             details: `From ${user.displayName}'s deposit`
-                        };
-                         const commissionDocRef = doc(collection(firestore, 'transactions'));
-                         transaction.set(commissionDocRef, commissionTransactionData);
+                        });
                     }
                 }
             }
         } else if (newStatus === 'Failed') {
-            if (txData.type === 'Withdrawal') {
-                 const feeAmount = txData.withdrawalDetails?.fee || 0;
-                 const refundAmount = Math.abs(txData.amount);
-                 const newBalance = user.balance + refundAmount;
-                 transaction.update(userRef, { balance: newBalance });
-            } else if (txData.type === 'Deposit') {
+            if (txData.type === 'Deposit') {
                 const newFailedCount = (user.failedDepositCount || 0) + 1;
                 const updates: Partial<User> = { failedDepositCount: newFailedCount };
-
-                if (newFailedCount >= 5) {
-                    updates.status = 'Suspended';
-                }
+                if (newFailedCount >= 5) updates.status = 'Suspended';
                 transaction.update(userRef, updates);
             }
         }
@@ -412,7 +355,6 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection, orderBy("date", "desc"));
     return onSnapshot(q, (snapshot) => {
-        // Return the raw data. The UI will be responsible for formatting.
         const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
         callback(transactions);
     });

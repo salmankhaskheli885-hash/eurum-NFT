@@ -102,7 +102,8 @@ export default function DepositPage() {
                 type: 'Deposit',
                 amount: parseFloat(amount),
                 status: 'Pending',
-                receiptFile: receiptFile
+                receiptFile: receiptFile, // Pass the file itself
+                details: `Deposit via ${yourNumber} with TID: ${tid}`
             });
 
             toast({
@@ -112,6 +113,7 @@ export default function DepositPage() {
 
             router.push('/dashboard/transactions')
         } catch (error: any) {
+            console.error("Deposit submission error:", error);
             toast({
                 variant: "destructive",
                 title: "Submission Failed",
