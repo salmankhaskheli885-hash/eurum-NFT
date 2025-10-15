@@ -187,6 +187,7 @@ export async function addTransaction(
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ): Promise<Transaction> {
     
+    // 1. Handle file upload if it exists
     let receiptUrl: string | undefined = undefined;
     if (transactionData.type === 'Deposit' && transactionData.receiptFile) {
         const storage = getStorage();
@@ -195,6 +196,7 @@ export async function addTransaction(
         receiptUrl = await getDownloadURL(snapshot.ref);
     }
     
+    // 2. Prepare the data to be saved, excluding the local file object
     const { receiptFile, ...dataToSave } = transactionData;
 
     const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
@@ -205,6 +207,7 @@ export async function addTransaction(
     
     const newDocRef = doc(collection(firestore, 'transactions'));
     
+    // 3. Run the database transaction
     await runTransaction(firestore, async (transaction) => {
         const userRef = doc(firestore, 'users', dataToSave.userId);
         const userSnap = await transaction.get(userRef);
@@ -214,8 +217,8 @@ export async function addTransaction(
         }
         
         const user = userSnap.data() as User;
-        let amountToChange = 0;
-
+        
+        // 4. Handle logic specific to transaction type
         if (dataToSave.type === 'Withdrawal') {
             const withdrawalAmount = Math.abs(dataToSave.amount);
 
@@ -236,10 +239,11 @@ export async function addTransaction(
             if (user.balance < totalDeduction) {
                 throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
             }
-            amountToChange = -totalDeduction;
+            const newBalance = user.balance - totalDeduction;
+            transaction.update(userRef, { balance: newBalance });
 
-            if (dataToSave.withdrawalDetails) {
-                 dataToSave.withdrawalDetails.fee = feeAmount;
+            if (newTransactionDataWithDate.withdrawalDetails) {
+                 newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
             }
 
         } else if (dataToSave.type === 'Investment') {
@@ -247,22 +251,23 @@ export async function addTransaction(
             if (user.balance < investmentAmount) {
                 throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
             }
-            amountToChange = -investmentAmount;
-        }
-        
-        if (amountToChange !== 0) {
-            const newBalance = user.balance + amountToChange;
+            const newBalance = user.balance - investmentAmount;
             transaction.update(userRef, { balance: newBalance });
         }
         
+        // 5. Save the new transaction document
         transaction.set(newDocRef, newTransactionDataWithDate);
     });
 
+    // 6. Construct the final transaction object to return
     const finalTransaction: Transaction = { ...newTransactionDataWithDate, id: newDocRef.id };
 
-    // Handle payout simulation AFTER the main transaction is committed
-    handleInvestmentPayout(firestore, finalTransaction);
+    // 7. Handle post-transaction logic, like scheduling payouts
+    if (finalTransaction.type === 'Investment') {
+        handleInvestmentPayout(firestore, finalTransaction);
+    }
 
+    // 8. Return the committed transaction
     return finalTransaction;
 }
 
