@@ -81,7 +81,7 @@ export default function AgentLayout({
              <SidebarMenuItem>
               <hr className="my-2 border-sidebar-border" />
             </SidebarMenuItem>
-             {managementMenuItems.filter(item => item.permission).map((item) => (
+             {managementMenuItems.map((item) => (item.permission || (process.env.NODE_ENV === 'development')) && (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton

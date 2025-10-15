@@ -27,7 +27,8 @@ export default function AgentDepositsPage() {
     const [loading, setLoading] = React.useState(true)
     const [searchTerm, setSearchTerm] = React.useState("")
 
-    const hasPermission = agentProfile?.role === 'admin' || (agentProfile as any)?.canApproveDeposits;
+    // @ts-ignore
+    const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveDeposits;
 
     React.useEffect(() => {
         if (!firestore || !hasPermission) {

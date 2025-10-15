@@ -25,7 +25,8 @@ export default function AgentWithdrawalsPage() {
     const [loading, setLoading] = React.useState(true)
     const [searchTerm, setSearchTerm] = React.useState("")
 
-    const hasPermission = agentProfile?.role === 'admin' || (agentProfile as any)?.canApproveWithdrawals;
+    // @ts-ignore
+    const hasPermission = agentProfile?.role === 'admin' || agentProfile?.canApproveWithdrawals;
 
     React.useEffect(() => {
         if (!firestore || !hasPermission) {
