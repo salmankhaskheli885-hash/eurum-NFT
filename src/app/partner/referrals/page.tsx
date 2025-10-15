@@ -19,17 +19,22 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Users, TrendingUp } from "lucide-react"
+import { DollarSign, Users, TrendingUp, Copy } from "lucide-react"
 import { useFirestore } from "@/firebase/provider"
 import { useUser } from "@/hooks/use-user"
 import type { User } from "@/lib/data"
 import { listenToAllUsers } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
 
 export default function ReferralsPage() {
   const { t } = useTranslation()
   const firestore = useFirestore()
   const { user: currentUser, loading: userLoading } = useUser()
+  const { toast } = useToast()
   
   const [referredUsers, setReferredUsers] = React.useState<User[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -37,10 +42,8 @@ export default function ReferralsPage() {
   React.useEffect(() => {
     if (!firestore || !currentUser) return;
     setLoading(true);
-    // In a real app, you'd query for users where `referredBy === currentUser.uid`
-    // For this demo, we'll just show all users except the current one as "referred"
     const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-        setReferredUsers(allUsers.filter(u => u.uid !== currentUser.uid));
+        setReferredUsers(allUsers.filter(u => u.referredBy === currentUser.uid));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -56,6 +59,15 @@ export default function ReferralsPage() {
     }).format(amount)
   }
   
+  const handleCopyLink = () => {
+    if (!currentUser?.referralLink) return;
+    navigator.clipboard.writeText(currentUser.referralLink);
+    toast({
+        title: "Link Copied!",
+        description: "Your referral link has been copied to the clipboard.",
+    })
+  }
+
   const isLoading = userLoading || loading;
 
   return (
@@ -64,6 +76,36 @@ export default function ReferralsPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('referrals.title')}</h1>
         <p className="text-muted-foreground">{t('referrals.description')}</p>
       </div>
+
+       <Card>
+            <CardHeader>
+                <CardTitle>{t('referrals.yourLink')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex space-x-2">
+                        <Skeleton className="h-10 flex-1" />
+                        <Skeleton className="h-10 w-10" />
+                    </div>
+                ): (
+                    <div className="flex items-center space-x-2">
+                        <div className="grid flex-1 gap-2">
+                            <Label htmlFor="link" className="sr-only">
+                                Link
+                            </Label>
+                            <Input
+                                id="link"
+                                defaultValue={currentUser?.referralLink}
+                                readOnly
+                            />
+                        </div>
+                        <Button type="submit" size="icon" className="shrink-0" onClick={handleCopyLink}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+       </Card>
 
        <div className="grid gap-4 md:grid-cols-3">
         <Card>

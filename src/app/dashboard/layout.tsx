@@ -1,3 +1,4 @@
+
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -13,6 +14,7 @@ import {
   Shield,
   History,
   Settings,
+  UserCheck,
 } from "lucide-react"
 
 import {
@@ -50,6 +52,7 @@ export default function DashboardLayout({
     { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
+    { href: "/dashboard/kyc", label: t('kyc.title'), icon: UserCheck },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
     { href: "/dashboard/settings", label: t('nav.settings'), icon: Settings },
   ]
@@ -60,6 +63,7 @@ export default function DashboardLayout({
     { href: "/partner/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/partner/transactions", label: t('nav.transactions'), icon: History },
     { href: "/partner/referrals", label: t('nav.referrals'), icon: Share2 },
+    { href: "/partner/kyc", label: t('kyc.title'), icon: UserCheck },
     { href: "/partner/profile", label: t('nav.profile'), icon: User },
     { href: "/partner/settings", label: t('nav.settings'), icon: Settings },
   ]

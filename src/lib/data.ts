@@ -15,7 +15,7 @@ export type Transaction = {
   userId: string;
   userName: string;
   type: 'Deposit' | 'Withdrawal' | 'Investment' | 'Payout' | 'Commission';
-  date: string;
+  date: string; // ISO 8601 format
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
   details?: string;
@@ -24,6 +24,7 @@ export type Transaction = {
     accountName: string;
     method: string;
     fee?: number; // Fee amount
+    isFirstOfDay?: boolean;
   };
   investmentDetails?: {
     planId: string;
@@ -33,6 +34,12 @@ export type Transaction = {
     durationDays: number;
     maturityDate: string;
     isMatured: boolean;
+  },
+  kycDetails?: {
+    cnicFrontUrl: string;
+    cnicBackUrl: string;
+    selfieUrl: string;
+    mobileNumber: string;
   }
 };
 

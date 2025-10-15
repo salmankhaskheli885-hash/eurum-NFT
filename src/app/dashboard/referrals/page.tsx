@@ -1,6 +1,6 @@
 
 "use client"
-
+import * as React from "react"
 import {
   Card,
   CardContent,
@@ -18,14 +18,39 @@ import {
 } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { mockReferredUsers } from "@/lib/data"
-import { DollarSign, Users, TrendingUp } from "lucide-react"
+import { DollarSign, Users, TrendingUp, Copy } from "lucide-react"
+import { useUser } from "@/hooks/use-user"
+import { useFirestore } from "@/firebase/provider"
+import { listenToAllUsers } from "@/lib/firestore"
+import type { User } from "@/lib/data"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useToast } from "@/hooks/use-toast"
+import { Label } from "@/components/ui/label"
 
 export default function ReferralsPage() {
   const { t } = useTranslation()
+  const firestore = useFirestore()
+  const { user: currentUser, loading: userLoading } = useUser()
+  const { toast } = useToast()
+  
+  const [referredUsers, setReferredUsers] = React.useState<User[]>([])
+  const [loading, setLoading] = React.useState(true)
 
-  const totalReferredUsers = mockReferredUsers.length;
-  const totalDeposits = mockReferredUsers.reduce((acc, user) => acc + user.totalDeposit, 0);
+  React.useEffect(() => {
+    if (!firestore || !currentUser) return;
+    setLoading(true);
+    const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
+        setReferredUsers(allUsers.filter(u => u.referredBy === currentUser.uid));
+        setLoading(false);
+    });
+    return () => unsubscribe();
+  }, [firestore, currentUser]);
+
+
+  const totalReferredUsers = referredUsers.length;
+  const totalDeposits = referredUsers.reduce((acc, user) => acc + (user.balance > 0 ? user.balance : 0), 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -34,12 +59,53 @@ export default function ReferralsPage() {
     }).format(amount)
   }
 
+  const handleCopyLink = () => {
+    if (!currentUser?.referralLink) return;
+    navigator.clipboard.writeText(currentUser.referralLink);
+    toast({
+        title: "Link Copied!",
+        description: "Your referral link has been copied to the clipboard.",
+    })
+  }
+
+  const isLoading = userLoading || loading;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('referrals.title')}</h1>
         <p className="text-muted-foreground">{t('referrals.description')}</p>
       </div>
+
+       <Card>
+            <CardHeader>
+                <CardTitle>{t('referrals.yourLink')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <div className="flex space-x-2">
+                        <Skeleton className="h-10 flex-1" />
+                        <Skeleton className="h-10 w-10" />
+                    </div>
+                ): (
+                    <div className="flex items-center space-x-2">
+                        <div className="grid flex-1 gap-2">
+                            <Label htmlFor="link" className="sr-only">
+                                Link
+                            </Label>
+                            <Input
+                                id="link"
+                                defaultValue={currentUser?.referralLink}
+                                readOnly
+                            />
+                        </div>
+                        <Button type="submit" size="icon" className="shrink-0" onClick={handleCopyLink}>
+                            <Copy className="h-4 w-4" />
+                        </Button>
+                    </div>
+                )}
+            </CardContent>
+       </Card>
 
        <div className="grid gap-4 md:grid-cols-3">
         <Card>
@@ -48,7 +114,7 @@ export default function ReferralsPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalReferredUsers}</div>
+             {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{totalReferredUsers}</div>}
           </CardContent>
         </Card>
         <Card>
@@ -57,7 +123,7 @@ export default function ReferralsPage() {
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>
+             {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>}
           </CardContent>
         </Card>
          <Card>
@@ -66,7 +132,7 @@ export default function ReferralsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">5%</div>
+            <div className="text-2xl font-bold">{currentUser?.role === 'partner' ? '10%' : '5%'}</div>
              <p className="text-xs text-muted-foreground">{t('referrals.commissionNotice')}</p>
           </CardContent>
         </Card>
@@ -82,22 +148,36 @@ export default function ReferralsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('referrals.table.name')}</TableHead>
-                <TableHead className="text-right">{t('referrals.table.totalDeposit')}</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead className="text-center">{t('referrals.table.status')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockReferredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell className="text-right">{formatCurrency(user.totalDeposit)}</TableCell>
-                  <TableCell className="text-center">
-                    <Badge variant={user.status === 'Active' ? 'default' : 'secondary'}>
-                      {t(`referrals.table.statusValue.${user.status.toLowerCase()}`)}
-                    </Badge>
-                  </TableCell>
+              {isLoading ? (
+                 [...Array(3)].map((_, i) => (
+                    <TableRow key={i}>
+                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                    </TableRow>
+                ))
+              ) : referredUsers.length > 0 ? (
+                referredUsers.map((user) => (
+                  <TableRow key={user.uid}>
+                    <TableCell className="font-medium">{user.displayName}</TableCell>
+                     <TableCell>{user.email}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant={user.status === 'Active' ? 'default' : 'destructive'}>
+                        {user.status}
+                      </Badge>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                    <TableCell colSpan={3} className="h-24 text-center">No referred users yet.</TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>

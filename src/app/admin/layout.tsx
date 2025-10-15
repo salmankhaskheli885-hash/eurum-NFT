@@ -12,7 +12,8 @@ import {
   LogOut,
   Settings,
   User,
-  Handshake
+  Handshake,
+  UserCheck
 } from "lucide-react"
 
 import {
@@ -46,6 +47,7 @@ export default function AdminLayout({
     { href: "/admin/deposits", label: t('admin.nav.deposits'), icon: DollarSign },
     { href: "/admin/withdrawals", label: t('admin.nav.withdrawals'), icon: Landmark },
     { href: "/admin/investments", label: t('admin.nav.investments'), icon: FileCog },
+    { href: "/admin/kyc", label: t('admin.nav.kyc'), icon: UserCheck },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
     { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
   ]

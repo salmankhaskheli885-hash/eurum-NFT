@@ -18,7 +18,8 @@ import {
   onSnapshot, // Import onSnapshot
   type Unsubscribe,
   serverTimestamp,
-  runTransaction
+  runTransaction,
+  Timestamp
 } from 'firebase/firestore';
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement } from './data';
@@ -41,8 +42,6 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         let referredBy: string | undefined = undefined;
 
         if (refId) {
-             // In a real app, you'd query users collection to find user with this shortUid
-             // For now, we assume refId is the full UID for simplicity
              const referrerQuery = query(collection(firestore, "users"), where("shortUid", "==", refId), limit(1));
              const referrerSnap = await getDocs(referrerQuery);
              if (!referrerSnap.empty) {
@@ -80,7 +79,7 @@ export function listenToUser(firestore: ReturnType<typeof getFirestore>, userId:
 export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, callback: (users: User[]) => void): Unsubscribe {
     const usersCollection = collection(firestore, 'users');
     return onSnapshot(usersCollection, (snapshot) => {
-        const users = snapshot.docs.map(doc => doc.data() as User);
+        const users = snapshot.docs.map(doc => ({...doc.data(), uid: doc.id } as User));
         callback(users);
     });
 }
@@ -95,9 +94,27 @@ export async function deleteUser(firestore: ReturnType<typeof getFirestore>, use
     await deleteDoc(userRef);
 }
 
+export async function submitKyc(firestore: ReturnType<typeof getFirestore>, userId: string, kycData: Transaction['kycDetails']) {
+    const userRef = doc(firestore, 'users', userId);
+    // This is a simplified KYC submission. In a real app, you'd upload files to Firebase Storage and save URLs.
+    // For now, we'll just save the placeholder data and update the status.
+    await updateDoc(userRef, {
+        kycStatus: 'pending',
+        // In a real app, you'd save file URLs from Firebase Storage here
+        cnicFrontUrl: kycData?.cnicFrontUrl,
+        cnicBackUrl: kycData?.cnicBackUrl,
+        selfieUrl: kycData?.selfieUrl,
+        mobileNumber: kycData?.mobileNumber,
+    });
+}
+
+export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>, userId: string, status: 'approved' | 'rejected') {
+    const userRef = doc(firestore, 'users', userId);
+    await updateDoc(userRef, { kycStatus: status });
+}
+
 
 // TRANSACTION FUNCTIONS
-// This function now handles all types of transactions including simulated auto-payout
 export async function addTransaction(firestore: ReturnType<typeof getFirestore>, transactionData: Omit<Transaction, 'id' | 'date'>): Promise<Transaction | null> {
     
     return await runTransaction(firestore, async (transaction) => {
@@ -109,58 +126,74 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
         }
         
         const user = userSnap.data() as User;
-        let amountToChange = 0; // The amount to add/subtract from balance
+        let amountToChange = 0;
 
-        // DEPOSIT: Status is pending, balance change happens on admin approval.
-        if (transactionData.type === 'Deposit') {
-            amountToChange = 0; 
-        }
-
-        // WITHDRAWAL: Deduct from balance immediately. On failure, refund.
-        else if (transactionData.type === 'Withdrawal') {
+        if (transactionData.type === 'Withdrawal') {
             const withdrawalAmount = Math.abs(transactionData.amount);
-            if (user.balance < withdrawalAmount) {
-                throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
-            }
-            amountToChange = -withdrawalAmount;
-        }
 
-        // INVESTMENT: Deduct from balance immediately. On failure, refund.
-        else if (transactionData.type === 'Investment') {
-             const investmentAmount = Math.abs(transactionData.amount);
+            // Check daily withdrawal limit
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const startOfDay = Timestamp.fromDate(today);
+
+            const withdrawalQuery = query(
+                collection(firestore, 'transactions'),
+                where('userId', '==', transactionData.userId),
+                where('type', '==', 'Withdrawal'),
+                where('date', '>=', today.toISOString().split('T')[0])
+            );
+            const todaysWithdrawals = await getDocs(withdrawalQuery);
+
+            if (!todaysWithdrawals.empty) {
+                throw new Error("You can only make one withdrawal request per day.");
+            }
+
+            // Fee calculation
+            const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+            const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+            const feeAmount = withdrawalAmount * (feePercentage / 100);
+            const totalDeduction = withdrawalAmount + feeAmount;
+
+            if (user.balance < totalDeduction) {
+                throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
+            }
+            amountToChange = -totalDeduction;
+
+            // Add fee info to withdrawal details
+            if (transactionData.withdrawalDetails) {
+                 transactionData.withdrawalDetails.fee = feeAmount;
+            }
+
+        } else if (transactionData.type === 'Investment') {
+            const investmentAmount = Math.abs(transactionData.amount);
             if (user.balance < investmentAmount) {
                 throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
             }
             amountToChange = -investmentAmount;
-        }
-
-        // PAYOUT/COMMISSION: These are earnings, add to balance.
-        else {
+        } else if (transactionData.type === 'Deposit') {
+            amountToChange = 0;
+        } else {
              amountToChange = transactionData.amount;
         }
         
-        // Update balance within the transaction if there's a change
         if (amountToChange !== 0) {
             const newBalance = user.balance + amountToChange;
             transaction.update(userRef, { balance: newBalance });
         }
         
-        // Create the new transaction record
         const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
             ...transactionData,
-            date: new Date().toISOString().split('T')[0]
+            date: new Date().toISOString()
         };
         const newDocRef = doc(collection(firestore, 'transactions'));
         transaction.set(newDocRef, newTransactionDataWithDate);
         
         const newTransaction = { ...newTransactionDataWithDate, id: newDocRef.id } as Transaction;
 
-        // SIMULATE AUTOMATIC PAYOUT FOR INVESTMENTS - This part runs outside the transaction
         if (newTransaction.type === 'Investment' && newTransaction.investmentDetails) {
             const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = newTransaction.investmentDetails;
             const profit = investedAmount * (dailyReturn / 100) * durationDays;
             const payoutAmount = investedAmount + profit;
-
             const maturityTimestamp = new Date(maturityDate).getTime();
             const nowTimestamp = new Date().getTime();
             const delay = maturityTimestamp - nowTimestamp;
@@ -176,7 +209,6 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
                             status: 'Completed',
                             details: `Matured investment from ${planName}`
                         };
-                        // Use a separate transaction for the payout to ensure balance is updated correctly
                         await addTransaction(firestore, payoutTransactionData);
                     } catch(e) {
                         console.error("Failed to process automatic payout:", e);
@@ -216,37 +248,31 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         }
         const user = userSnap.data() as User;
         
-        // Update transaction status first
         transaction.update(transactionRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
-            // If a DEPOSIT is completed, add funds to user's balance
             if (txData.type === 'Deposit') {
                 const newBalance = user.balance + txData.amount;
                 transaction.update(userRef, { balance: newBalance });
 
-                // --- COMMISSION LOGIC ---
                 if (user.referredBy) {
                     const referrerRef = doc(firestore, 'users', user.referredBy);
                     const referrerSnap = await transaction.get(referrerRef);
 
                     if (referrerSnap.exists()) {
                         const referrer = referrerSnap.data() as User;
-                        const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05; // 10% for partners, 5% for users
+                        const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
                         const commissionAmount = txData.amount * commissionRate;
-
-                        // Add commission to referrer's balance
                         const newReferrerBalance = referrer.balance + commissionAmount;
                         transaction.update(referrerRef, { balance: newReferrerBalance });
 
-                        // Log commission transaction for the referrer
                         const commissionTransactionData: Omit<Transaction, 'id' | 'date'> = {
                             userId: referrer.uid,
                             userName: referrer.displayName || 'N/A',
                             type: 'Commission',
                             amount: commissionAmount,
                             status: 'Completed',
-                            date: new Date().toISOString().split('T')[0],
+                            date: new Date().toISOString(),
                             details: `From ${user.displayName}'s deposit`
                         };
                          const commissionDocRef = doc(collection(firestore, 'transactions'));
@@ -254,15 +280,13 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     }
                 }
             }
-            // For withdrawals, balance is already deducted at request time. No action needed on completion.
-        
         } else if (newStatus === 'Failed') {
-            // If a WITHDRAWAL fails, refund the user (amount is negative, so we subtract to add it back)
             if (txData.type === 'Withdrawal') {
-                const newBalance = user.balance - txData.amount; // e.g., balance - (-1000) = balance + 1000
-                transaction.update(userRef, { balance: newBalance });
+                 const feeAmount = txData.withdrawalDetails?.fee || 0;
+                 const refundAmount = Math.abs(txData.amount) + feeAmount;
+                 const newBalance = user.balance + refundAmount;
+                 transaction.update(userRef, { balance: newBalance });
             }
-             // For deposits, no balance was changed, so no refund needed on failure.
         }
         
         return true;
@@ -274,7 +298,7 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection, orderBy("date", "desc"));
     return onSnapshot(q, (snapshot) => {
-        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: new Date(doc.data().date).toLocaleDateString() } as Transaction));
         callback(transactions);
     });
 }
@@ -288,7 +312,7 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
         q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"));
     }
     return onSnapshot(q, (snapshot) => {
-        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: new Date(doc.data().date).toLocaleDateString() } as Transaction));
         callback(transactions);
     });
 }
@@ -331,7 +355,7 @@ export function listenToAppSettings(firestore: ReturnType<typeof getFirestore>, 
                 adminWalletNumber: "0300-1234567",
                 adminWalletName: "JazzCash",
                 adminAccountHolderName: "Fynix Pro Admin",
-                withdrawalFee: "2"
+                withdrawalFee: 2
             });
         }
     });

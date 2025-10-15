@@ -87,6 +87,7 @@
     "referrals": {
         "title": "Referrals",
         "description": "Track your referred users and commission earnings.",
+        "yourLink": "Your Unique Referral Link",
         "totalReferredUsers": "Total Referred Users",
         "totalDeposits": "Total Referral Deposits",
         "commissionRate": "Commission Rate",
@@ -269,6 +270,7 @@
             "deposits": "Deposits",
             "withdrawals": "Withdrawals",
             "investments": "Plans",
+            "kyc": "KYC",
             "security": "Security",
             "settings": "Settings"
         },
@@ -294,13 +296,40 @@
         "activityPlaceholder": "Activity logs will appear here..."
     },
     "kyc": {
+        "title": "KYC Verification",
+        "description": "Verify your identity to unlock all features, including partner promotion.",
+        "formTitle": "Submit Your Documents",
+        "formDescription": "Please provide clear images of your documents.",
+        "mobileNumber": "Mobile Number",
+        "cnicFront": "CNIC Front Photo",
+        "cnicBack": "CNIC Back Photo",
+        "selfie": "Selfie Photo",
+        "submitButton": "Submit for Verification",
+        "successTitle": "KYC Submitted",
+        "successDescription": "Your documents have been submitted and are under review.",
         "statusPill": {
             "approved": "Approved",
-            "pending": "Pending",
+            "pending": "Pending Review",
             "rejected": "Rejected",
             "unsubmitted": "Unsubmitted"
+        },
+        "statusCard": {
+            "unsubmitted": {
+                "title": "Your Account is Unverified",
+                "description": "Please submit your documents for KYC verification to unlock all features and become eligible for partner promotion."
+            },
+            "pending": {
+                "title": "Your Submission is Under Review",
+                "description": "Your documents are currently being reviewed by our team. This usually takes 24-48 hours."
+            },
+            "approved": {
+                "title": "Your Account is Verified!",
+                "description": "Congratulations! Your identity has been verified. You can now request to become a partner if you meet the referral criteria."
+            },
+            "rejected": {
+                "title": "Your Submission was Rejected",
+                "description": "Unfortunately, we couldn't verify your documents. Please check your email for details and resubmit with clear images."
+            }
         }
     }
 }
-
-    
