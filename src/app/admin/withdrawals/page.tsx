@@ -160,7 +160,7 @@ export default function AdminWithdrawalsPage() {
                                         </div>
                                     )}
                                 </TableCell>
-                                <TableCell>{withdrawal.date}</TableCell>
+                                <TableCell>{new Date(withdrawal.date).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right text-destructive">
                                     {formatCurrency(Math.abs(withdrawal.amount))}
                                 </TableCell>

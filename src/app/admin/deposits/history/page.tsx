@@ -110,7 +110,7 @@ export default function AdminDepositsHistoryPage() {
                     <TableRow key={deposit.id}>
                     <TableCell className="font-medium">{deposit.id}</TableCell>
                     <TableCell>{deposit.userName}</TableCell>
-                    <TableCell>{deposit.date}</TableCell>
+                    <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                         {deposit.receiptUrl ? (
