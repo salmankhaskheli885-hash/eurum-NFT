@@ -325,8 +325,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 
 export function listenToAllTransactions(firestore: ReturnType<typeof getFirestore>, callback: (transactions: Transaction[]) => void): Unsubscribe {
     const transactionsCollection = collection(firestore, 'transactions');
-    // Removing orderBy to prevent silent failures if the composite index doesn't exist.
-    // Sorting will be done client-side.
     const q = query(transactionsCollection);
     return onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => {
@@ -344,10 +342,8 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
     const transactionsCollection = collection(firestore, 'transactions');
     let q;
     if (count) {
-        // Removing orderBy to prevent silent failures if the composite index doesn't exist.
         q = query(transactionsCollection, where("userId", "==", userId), limit(count));
     } else {
-        // Removing orderBy to prevent silent failures if the composite index doesn't exist.
         q = query(transactionsCollection, where("userId", "==", userId));
     }
     return onSnapshot(q, (snapshot) => {
