@@ -3,7 +3,6 @@
 
 import { AuthForm } from '@/components/auth/auth-form';
 import { useTranslation } from '@/hooks/use-translation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function LoginPage() {
   const { t } = useTranslation()
@@ -18,18 +17,8 @@ export default function LoginPage() {
              {t('login.description')}
           </p>
         </div>
-        <Tabs defaultValue="user" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="user">{t('login.userTab')}</TabsTrigger>
-            <TabsTrigger value="partner">{t('login.partnerTab')}</TabsTrigger>
-          </TabsList>
-          <TabsContent value="user">
-            <AuthForm role="user" />
-          </TabsContent>
-          <TabsContent value="partner">
-            <AuthForm role="partner" />
-          </TabsContent>
-        </Tabs>
+        {/* The AuthForm will be rebuilt here */}
+        <AuthForm role="user" /> 
       </div>
     </div>
   );

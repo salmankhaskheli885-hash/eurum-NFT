@@ -1,4 +1,1 @@
-
-// This file is intentionally left blank.
-// The server-side auth logic has been removed to fix the authentication flow.
-
+// This file is intentionally left blank to reset server-side auth logic.
