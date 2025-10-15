@@ -210,7 +210,7 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    const transactionObject: Omit<Transaction, 'id'> & { assignedAgentId?: string } = {
+    const transactionObject: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
         status: dataToSave.status || 'Pending',
@@ -228,6 +228,7 @@ export async function addTransaction(
         if (permission) {
              const agentId = await assignAgent(firestore, permission);
              if (agentId) {
+                // @ts-ignore
                 transactionObject.assignedAgentId = agentId;
              }
         }
@@ -530,7 +531,7 @@ export async function isUserAChatAgent(firestore: ReturnType<typeof getFirestore
     return !querySnapshot.empty;
 }
 
-export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, agent: Omit<ChatAgent, 'id'>) {
+export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, agent: Omit<ChatAgent, 'id' | 'depositsApproved' | 'depositsRejected' | 'withdrawalsApproved' | 'withdrawalsRejected'>) {
     // Check if agent with this email already exists
     const q = query(collection(firestore, "chat_agents"), where("email", "==", agent.email));
     const querySnapshot = await getDocs(q);

@@ -88,6 +88,7 @@ function AgentFormDialog({ agent, onSave }: { agent?: ChatAgent; onSave: () => v
                     email,
                     canApproveDeposits,
                     canApproveWithdrawals,
+                    isActive: false
                 });
                 toast({ title: "Chat Agent Added", description: `${email} can now log in to the chat panel.` });
             }
