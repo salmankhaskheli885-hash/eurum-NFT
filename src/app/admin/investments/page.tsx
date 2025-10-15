@@ -57,6 +57,7 @@ import Image from "next/image"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
@@ -143,43 +144,47 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-md">
-                <DialogHeader>
-                    <DialogTitle>{plan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
-                    <DialogDescription>
-                        {plan ? 'Make changes to the investment plan.' : 'Create a new investment plan for users.'}
-                    </DialogDescription>
-                </DialogHeader>
-                <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="name" className="text-right">Name</Label>
-                        <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
+            <DialogContent className="sm:max-w-2xl">
+                 <ScrollArea className="max-h-[80vh]">
+                    <div className="p-6">
+                        <DialogHeader className="pr-6">
+                            <DialogTitle>{plan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
+                            <DialogDescription>
+                                {plan ? 'Make changes to the investment plan.' : 'Create a new investment plan for users.'}
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="name" className="text-right">Name</Label>
+                                <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="dailyReturn" className="text-right">Daily Return %</Label>
+                                <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="durationDays" className="text-right">Duration (Days)</Label>
+                                <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="minInvestment" className="text-right">Min Investment</Label>
+                                <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="requiredVipLevel" className="text-right">Required VIP</Label>
+                                <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} className="col-span-3" />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="imageSeed" className="text-right">Image Topic</Label>
+                                <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} className="col-span-3" placeholder="e.g., gold coins, crypto" />
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center col-span-4 -mt-2">Just type a topic for the image, or paste a full URL.</p>
+                        </div>
+                        <DialogFooter>
+                            <Button type="submit" onClick={handleSubmit}>Save changes</Button>
+                        </DialogFooter>
                     </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="dailyReturn" className="text-right">Daily Return</Label>
-                        <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="durationDays" className="text-right">Duration (Days)</Label>
-                        <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="minInvestment" className="text-right">Min Investment</Label>
-                        <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} className="col-span-3" />
-                    </div>
-                     <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="requiredVipLevel" className="text-right">Required VIP</Label>
-                        <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} className="col-span-3" />
-                    </div>
-                    <div className="grid grid-cols-4 items-center gap-4">
-                        <Label htmlFor="imageSeed" className="text-right">Image Topic</Label>
-                        <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} className="col-span-3" placeholder="e.g., gold coins, crypto" />
-                    </div>
-                    <p className="text-xs text-muted-foreground text-center col-span-4 -mt-2">Just type a topic for the image, or paste a full URL.</p>
-                </div>
-                <DialogFooter>
-                    <Button type="submit" onClick={handleSubmit}>Save changes</Button>
-                </DialogFooter>
+                </ScrollArea>
             </DialogContent>
         </Dialog>
     )
@@ -274,7 +279,7 @@ export default function AdminInvestmentsPage() {
               <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Name</TableHead>
-                <TableHead>Daily Return</TableHead>
+                <TableHead>Daily Return %</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>Min Investment</TableHead>
                 <TableHead>Required VIP</TableHead>
@@ -363,6 +368,3 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
-
-    
-    
