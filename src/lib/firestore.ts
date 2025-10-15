@@ -129,94 +129,72 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 }
 
 
-// New, simplified, and robust transaction function
 export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
   const { receiptFile, ...dataToSave } = transactionData;
 
-  // Step 1: Create a new transaction document reference with an auto-generated ID.
   const transactionDocRef = doc(collection(firestore, 'transactions'));
   
-  let receiptUrl: string | undefined = undefined;
+  if (dataToSave.type === 'Deposit') {
+      dataToSave.status = 'Completed'; // Auto-complete deposits
+  } else if (dataToSave.type === 'Withdrawal') {
+      // For withdrawals, we need to check balance first.
+      const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+      const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+      const withdrawalAmount = Math.abs(dataToSave.amount);
+      const feeAmount = withdrawalAmount * (feePercentage / 100);
+      const totalDeduction = withdrawalAmount + feeAmount;
 
-  // Step 2: If it's a deposit with a receipt, upload the file first.
+      const userRef = doc(firestore, 'users', dataToSave.userId);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists() || userSnap.data().balance < totalDeduction) {
+          dataToSave.status = 'Failed'; // Mark as failed if balance is insufficient
+      } else {
+          dataToSave.status = 'Completed'; // Auto-complete if balance is sufficient
+      }
+  } else if (dataToSave.type === 'Investment') {
+      const userRef = doc(firestore, 'users', dataToSave.userId);
+      const userSnap = await getDoc(userRef);
+      const investmentAmount = Math.abs(dataToSave.amount);
+      if (!userSnap.exists() || userSnap.data().balance < investmentAmount) {
+          throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+      }
+      dataToSave.status = 'Completed'; // Auto-complete investments
+  }
+  
+  let receiptUrl: string | undefined = undefined;
   if (dataToSave.type === 'Deposit' && receiptFile) {
     try {
       const storage = getStorage();
-      // Use the new transaction ID in the file path for easy association.
       const receiptPath = `receipts/${dataToSave.userId}/${transactionDocRef.id}_${receiptFile.name}`;
       const storageRef = ref(storage, receiptPath);
       const snapshot = await uploadBytes(storageRef, receiptFile);
       receiptUrl = await getDownloadURL(snapshot.ref);
     } catch (error) {
       console.error("Error uploading receipt:", error);
-      // Throw an error to stop the process and inform the user.
       throw new Error("Receipt upload failed. Please try again.");
     }
   }
-
-  // Step 3: Prepare the final transaction object with all details.
+  
   const finalTransactionData: Omit<Transaction, 'id'> = {
     ...dataToSave,
     date: new Date().toISOString(),
-    receiptUrl: receiptUrl, // Add the URL if it exists
+    receiptUrl: receiptUrl,
   };
 
-  // Step 4: Save the complete transaction document.
   await setDoc(transactionDocRef, finalTransactionData);
-
-
-  // Step 5: Handle post-transaction logic like balance updates for investments.
-  // This is now separate from the initial save, making the process more reliable.
-  if (dataToSave.type === 'Investment') {
-    try {
-        await runTransaction(firestore, async (transaction) => {
-            const userRef = doc(firestore, 'users', dataToSave.userId);
-            const userSnap = await transaction.get(userRef);
-            if (!userSnap.exists()) {
-                throw new Error("User not found to update balance for investment.");
-            }
-            const user = userSnap.data() as User;
-            const investmentAmount = Math.abs(dataToSave.amount);
-            if (user.balance < investmentAmount) {
-                throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-            }
-            const newBalance = user.balance - investmentAmount;
-            transaction.update(userRef, { balance: newBalance });
-        });
-
-        // Now schedule the payout
-        const finalTx = { id: transactionDocRef.id, ...finalTransactionData } as Transaction;
-        handleInvestmentPayout(firestore, finalTx);
-    } catch (error) {
-        // If balance check fails, delete the already created transaction document for consistency.
-        await deleteDoc(transactionDocRef);
-        console.error("Investment balance check failed:", error);
-        throw error; // Re-throw to inform the UI
-    }
-  } else if (dataToSave.type === 'Withdrawal') {
-      try {
-           await runTransaction(firestore, async (transaction) => {
-               const userRef = doc(firestore, 'users', dataToSave.userId);
-               const userSnap = await transaction.get(userRef);
-                if (!userSnap.exists()) throw new Error("User not found.");
-
-                const user = userSnap.data() as User;
-                const withdrawalAmount = Math.abs(dataToSave.amount);
-                if (user.balance < withdrawalAmount) {
-                     throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
-                }
-           });
-      } catch (error) {
-          await deleteDoc(transactionDocRef);
-          console.error("Withdrawal pre-check failed:", error);
-          throw error;
-      }
+  
+  // Now, run balance updates and other side-effects in a separate transaction
+  // for completed transactions.
+  if (finalTransactionData.status === 'Completed') {
+      await updateTransactionStatus(firestore, transactionDocRef.id, 'Completed', finalTransactionData);
+  } else if (finalTransactionData.status === 'Failed') {
+      // You can add logic here if something needs to happen on auto-fail.
+      // e.g. notify user of failed withdrawal due to insufficient funds.
   }
 }
-
 
 async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>, finalTransaction: Transaction) {
     if (finalTransaction.type !== 'Investment' || !finalTransaction.investmentDetails) {
@@ -260,28 +238,48 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
     }, delay);
 }
 
-export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed') {
+export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed', txData?: Transaction) {
     
     await runTransaction(firestore, async (transaction) => {
-        const transactionRef = doc(firestore, 'transactions', transactionId);
-        const transactionSnap = await transaction.get(transactionRef);
+        let currentTxData = txData;
 
-        if (!transactionSnap.exists()) throw new Error("Transaction not found");
+        // If transaction data is not passed, fetch it. This is for manual admin actions.
+        // For automatic flow, txData will be provided.
+        if (!currentTxData) {
+            const transactionRef = doc(firestore, 'transactions', transactionId);
+            const transactionSnap = await transaction.get(transactionRef);
+            if (!transactionSnap.exists()) throw new Error("Transaction not found");
+            currentTxData = transactionSnap.data() as Transaction;
+             // Update the status in DB if it was a manual call
+            transaction.update(transactionRef, { status: newStatus });
+        }
         
-        const txData = transactionSnap.data() as Transaction;
-        if (txData.status !== 'Pending') return;
+        if (currentTxData.status !== 'Completed' && newStatus !== 'Completed') {
+            // This transaction was already processed or is being failed.
+            // If it's a deposit failing, handle failed count.
+             if (newStatus === 'Failed' && currentTxData.type === 'Deposit') {
+                const userRef = doc(firestore, 'users', currentTxData.userId);
+                const userSnap = await transaction.get(userRef);
+                if (userSnap.exists()) {
+                    const user = userSnap.data() as User;
+                    const newFailedCount = (user.failedDepositCount || 0) + 1;
+                    const updates: Partial<User> = { failedDepositCount: newFailedCount };
+                    if (newFailedCount >= 5) updates.status = 'Suspended';
+                    transaction.update(userRef, updates);
+                }
+            }
+            return;
+        };
 
-        const userRef = doc(firestore, 'users', txData.userId);
+        const userRef = doc(firestore, 'users', currentTxData.userId);
         const userSnap = await transaction.get(userRef);
         if (!userSnap.exists()) throw new Error("User for transaction not found");
 
         const user = userSnap.data() as User;
         
-        transaction.update(transactionRef, { status: newStatus });
-
         if (newStatus === 'Completed') {
-            if (txData.type === 'Withdrawal') {
-                 const withdrawalAmount = Math.abs(txData.amount);
+            if (currentTxData.type === 'Withdrawal') {
+                 const withdrawalAmount = Math.abs(currentTxData.amount);
                  const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
                  const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
                  const feeAmount = withdrawalAmount * (feePercentage / 100);
@@ -297,9 +295,9 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 });
             }
 
-            if (txData.type === 'Deposit') {
-                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
-                const newBalance = user.balance + txData.amount;
+            if (currentTxData.type === 'Deposit') {
+                const newTotalDeposits = (user.totalDeposits || 0) + currentTxData.amount;
+                const newBalance = user.balance + currentTxData.amount;
                 let newVipLevel = user.vipLevel;
                 let vipProgress = user.vipProgress;
 
@@ -323,7 +321,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     if (referrerSnap.exists()) {
                         const referrer = referrerSnap.data() as User;
                         const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
-                        const commissionAmount = txData.amount * commissionRate;
+                        const commissionAmount = currentTxData.amount * commissionRate;
                         transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
 
                         const commissionTxRef = doc(collection(firestore, 'transactions'));
@@ -339,13 +337,16 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     }
                 }
             }
-        } else if (newStatus === 'Failed') {
-            if (txData.type === 'Deposit') {
-                const newFailedCount = (user.failedDepositCount || 0) + 1;
-                const updates: Partial<User> = { failedDepositCount: newFailedCount };
-                if (newFailedCount >= 5) updates.status = 'Suspended';
-                transaction.update(userRef, updates);
+             if (currentTxData.type === 'Investment') {
+                const investmentAmount = Math.abs(currentTxData.amount);
+                 if (user.balance < investmentAmount) {
+                     throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+                 }
+                const newBalance = user.balance - investmentAmount;
+                transaction.update(userRef, { balance: newBalance });
+                handleInvestmentPayout(firestore, currentTxData);
             }
+
         }
     });
 }
