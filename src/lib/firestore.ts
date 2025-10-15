@@ -294,14 +294,40 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
     
     await runTransaction(firestore, async (transaction) => {
         const txRef = doc(firestore, 'transactions', transactionId);
+        
+        // --- READS FIRST ---
+        const userRef = doc(firestore, 'users', txData.userId);
+        const userSnap = await transaction.get(userRef);
+        if (!userSnap.exists()) throw new Error("User for transaction not found");
+        const user = userSnap.data() as User;
+
+        const appSettingsDocSnap = await transaction.get(doc(firestore, 'app', 'settings'));
+        const settings = appSettingsDocSnap.data() as AppSettings;
+
+        let agentRef: any = null;
+        if (txData.assignedAgentId) {
+            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+            // You can't use getDocs in a transaction. We must assume the UID is unique and get the doc directly if we know its ID,
+            // or query outside. For simplicity, we'll perform this read outside the main transaction logic if needed,
+            // but for increment, it's better to get the ref first. We'll query outside for the ref.
+        }
+
+        let referrerSnap: any = null;
+        if (user.referredBy) {
+            const referrerRef = doc(firestore, 'users', user.referredBy);
+            referrerSnap = await transaction.get(referrerRef);
+        }
+
+
+        // --- WRITES SECOND ---
         transaction.update(txRef, { status: newStatus });
 
         // Agent Performance Tracking
         if (txData.assignedAgentId) {
-            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
-            const agentDocs = await getDocs(agentQuery); // Use getDocs for queries
-            if (!agentDocs.empty) {
-                const agentRef = agentDocs.docs[0].ref;
+             const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+             const agentDocs = await getDocs(agentQuery); // This is outside transaction, which is fine for getting the ref
+             if (!agentDocs.empty) {
+                const agentDocRef = agentDocs.docs[0].ref;
                 let fieldToIncrement: string | null = null;
                 if (txData.type === 'Deposit') {
                     fieldToIncrement = newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected';
@@ -309,31 +335,20 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     fieldToIncrement = newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected';
                 }
                 if (fieldToIncrement) {
-                    transaction.update(agentRef, { [fieldToIncrement]: increment(1) });
+                    transaction.update(agentDocRef, { [fieldToIncrement]: increment(1) });
                 }
             }
         }
         
         if (newStatus !== 'Completed') {
             if (txData.type === 'Deposit') {
-                const userRef = doc(firestore, 'users', txData.userId);
-                const userSnap = await transaction.get(userRef);
-                if (userSnap.exists()) {
-                    const user = userSnap.data() as User;
-                    const newFailedCount = (user.failedDepositCount || 0) + 1;
-                    const updates: Partial<User> = { failedDepositCount: newFailedCount };
-                    if (newFailedCount >= 5) updates.status = 'Suspended';
-                    transaction.update(userRef, updates);
-                }
+                const newFailedCount = (user.failedDepositCount || 0) + 1;
+                const updates: Partial<User> = { failedDepositCount: newFailedCount };
+                if (newFailedCount >= 5) updates.status = 'Suspended';
+                transaction.update(userRef, updates);
             }
             return;
         };
-
-        const userRef = doc(firestore, 'users', txData.userId);
-        const userSnap = await transaction.get(userRef);
-        if (!userSnap.exists()) throw new Error("User for transaction not found");
-
-        const user = userSnap.data() as User;
         
         switch (txData.type) {
             case 'Deposit': {
@@ -356,39 +371,36 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     vipProgress: Math.min(100, Math.max(0, Math.floor(vipProgress)))
                 });
 
-                if (user.referredBy) {
-                    const referrerRef = doc(firestore, 'users', user.referredBy);
-                    const referrerSnap = await transaction.get(referrerRef);
-                    if (referrerSnap.exists()) {
-                        const referrer = referrerSnap.data() as User;
-                        const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
-                        const commissionAmount = txData.amount * commissionRate;
-                        transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
+                if (user.referredBy && referrerSnap && referrerSnap.exists()) {
+                    const referrer = referrerSnap.data() as User;
+                    const referrerRef = doc(firestore, 'users', user.referredBy); // get ref again for writing
+                    const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
+                    const commissionAmount = txData.amount * commissionRate;
+                    transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
 
-                        const commissionTxRef = doc(collection(firestore, 'transactions'));
-                        transaction.set(commissionTxRef, {
-                            userId: referrer.uid,
-                            userName: referrer.displayName || 'N/A',
-                            type: 'Commission',
-                            amount: commissionAmount,
-                            status: 'Completed',
-                            date: new Date().toISOString(),
-                            details: `From ${user.displayName}'s deposit`
-                        });
-                    }
+                    const commissionTxRef = doc(collection(firestore, 'transactions'));
+                    transaction.set(commissionTxRef, {
+                        userId: referrer.uid,
+                        userName: referrer.displayName || 'N/A',
+                        type: 'Commission',
+                        amount: commissionAmount,
+                        status: 'Completed',
+                        date: new Date().toISOString(),
+                        details: `From ${user.displayName}'s deposit`
+                    });
                 }
                 break;
             }
             case 'Withdrawal': {
                 const withdrawalAmount = Math.abs(txData.amount);
-                const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-                const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                const feePercentage = settings?.withdrawalFee || 0;
                 const feeAmount = withdrawalAmount * (feePercentage / 100);
                 const totalDeduction = withdrawalAmount + feeAmount;
 
                 if (user.balance < totalDeduction) {
                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
-                    throw new Error(`Insufficient balance for withdrawal. Required ${totalDeduction}, but had only ${user.balance}.`);
+                    // throw new Error() is not needed, just update and return
+                    return;
                 }
                 
                 transaction.update(userRef, { 
@@ -401,15 +413,21 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const investmentAmount = Math.abs(txData.amount);
                  if (user.balance < investmentAmount) {
                      transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
-                     throw new Error(`Insufficient balance for investment. Required ${investmentAmount}, had ${user.balance}.`);
+                     return;
                  }
                 const newBalance = user.balance - investmentAmount;
                 transaction.update(userRef, { balance: newBalance });
-                handleInvestmentPayout(firestore, txData);
+                // We cannot call an async function with await inside the transaction.
+                // We'll call it outside.
                  break;
             }
         }
     });
+
+    // Call async operations like setTimeout outside the transaction
+    if (newStatus === 'Completed' && txData.type === 'Investment') {
+        handleInvestmentPayout(firestore, txData);
+    }
 }
 
 
