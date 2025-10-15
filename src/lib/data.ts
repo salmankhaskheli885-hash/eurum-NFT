@@ -1,4 +1,5 @@
 
+
 // This file is now deprecated for storing live data.
 // All data operations have been moved to src/lib/firestore.ts to use Firebase Firestore for persistence.
 // We are keeping the type definitions and some initial mock data for seeding purposes if needed.
@@ -52,6 +53,7 @@ export type InvestmentPlan = {
   minInvestment: number;
   requiredVipLevel: number;
   imageUrl: string;
+  isActive: boolean; // To lock/unlock the plan
 };
 
 export type AppSettings = {

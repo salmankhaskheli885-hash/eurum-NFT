@@ -43,6 +43,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 
@@ -58,6 +59,8 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Switch } from "@/components/ui/switch"
+import { Badge } from "@/components/ui/badge"
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
@@ -66,20 +69,20 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const { toast } = useToast()
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
         plan 
-        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl } 
-        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'new plan' }
+        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl, isActive: plan.isActive } 
+        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'new plan', isActive: true }
     );
      const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new plan');
 
     React.useEffect(() => {
         if (open) {
           if (plan) {
-              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl });
+              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl, isActive: plan.isActive });
               // A simple way to extract a seed if it follows the picsum pattern
               const match = plan.imageUrl.match(/picsum\.photos\/seed\/([^/]+)/);
               setImageSeed(match ? match[1] : 'custom');
           } else {
-              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: '' });
+              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: '', isActive: true });
               setImageSeed('new plan');
           }
         }
@@ -93,6 +96,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
 
     const handleImageSeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setImageSeed(e.target.value);
+    }
+    
+    const handleSwitchChange = (checked: boolean) => {
+        setFormData(prev => ({ ...prev, isActive: checked }));
     }
 
     const handleSubmit = async () => {
@@ -179,6 +186,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                 <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} placeholder="e.g., gold coins, crypto" />
                                 <p className="text-xs text-muted-foreground pt-1">Just type a topic for the image, or paste a full URL.</p>
                             </div>
+                             <div className="flex items-center space-x-2">
+                                <Switch id="isActive" checked={formData.isActive} onCheckedChange={handleSwitchChange} />
+                                <Label htmlFor="isActive">Plan is Active</Label>
+                            </div>
                         </div>
                         <DialogFooter>
                             <Button type="submit" onClick={handleSubmit}>Save changes</Button>
@@ -243,6 +254,24 @@ export default function AdminInvestmentsPage() {
     }
   }
 
+  const handleToggleStatus = async (plan: InvestmentPlan) => {
+      if (!firestore) return;
+      const newStatus = !plan.isActive;
+      try {
+        await updateInvestmentPlan(firestore, { ...plan, isActive: newStatus });
+        toast({
+            title: "Plan Status Updated",
+            description: `The plan "${plan.name}" is now ${newStatus ? 'Active' : 'Locked'}.`,
+        });
+      } catch (error) {
+          toast({
+            variant: "destructive",
+            title: "Update Failed",
+            description: "Could not update the plan status.",
+          });
+      }
+  }
+
 
   return (
     <div className="flex flex-col gap-4">
@@ -279,6 +308,7 @@ export default function AdminInvestmentsPage() {
               <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Name</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Daily Return %</TableHead>
                 <TableHead>Duration (Days)</TableHead>
                 <TableHead>Min Investment</TableHead>
@@ -296,6 +326,7 @@ export default function AdminInvestmentsPage() {
                             <Skeleton className="h-10 w-10 rounded-md" />
                         </TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
@@ -317,6 +348,11 @@ export default function AdminInvestmentsPage() {
                         />
                     </TableCell>
                   <TableCell className="font-medium">{plan.name}</TableCell>
+                   <TableCell>
+                      <Badge variant={plan.isActive ? 'default' : 'secondary'}>
+                        {plan.isActive ? 'Active' : 'Locked'}
+                      </Badge>
+                   </TableCell>
                   <TableCell>{plan.dailyReturn}</TableCell>
                   <TableCell>{plan.durationDays}</TableCell>
                   <TableCell>{plan.minInvestment.toLocaleString()}</TableCell>
@@ -334,6 +370,10 @@ export default function AdminInvestmentsPage() {
                         <PlanForm plan={plan} onSave={() => {}}>
                            <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 w-full text-left">Edit</button>
                         </PlanForm>
+                        <DropdownMenuItem onClick={() => handleToggleStatus(plan)}>
+                            {plan.isActive ? 'Lock Plan' : 'Unlock Plan'}
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <AlertDialog>
                             <AlertDialogTrigger asChild>
                                 <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
@@ -358,7 +398,7 @@ export default function AdminInvestmentsPage() {
               ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
+                    <TableCell colSpan={8} className="h-24 text-center">No investment plans found. Add one to get started.</TableCell>
                 </TableRow>
               )}
             </TableBody>

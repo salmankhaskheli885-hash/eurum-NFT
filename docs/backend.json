@@ -57,6 +57,21 @@
         }
       },
       "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus"]
+    },
+    "InvestmentPlan": {
+        "title": "Investment Plan",
+        "description": "Defines an investment plan available to users.",
+        "type": "object",
+        "properties": {
+            "name": { "type": "string" },
+            "dailyReturn": { "type": "number" },
+            "durationDays": { "type": "number" },
+            "minInvestment": { "type": "number" },
+            "requiredVipLevel": { "type": "number" },
+            "imageUrl": { "type": "string" },
+            "isActive": { "type": "boolean" }
+        },
+        "required": ["name", "dailyReturn", "durationDays", "minInvestment", "requiredVipLevel", "imageUrl", "isActive"]
     }
   },
   "auth": {
@@ -68,6 +83,12 @@
         "$ref": "#/entities/UserProfile"
       },
       "description": "Stores public profile information for each user."
+    },
+    "/investment_plans/{planId}": {
+        "schema": {
+            "$ref": "#/entities/InvestmentPlan"
+        },
+        "description": "Stores all available investment plans."
     }
   }
 }

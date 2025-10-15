@@ -37,7 +37,7 @@ import {
 import { useToast } from "@/hooks/use-toast"
 import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
-import { Lock, Info } from "lucide-react"
+import { Lock, Info, Ban } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -272,9 +272,11 @@ export default function InvestmentsPage() {
       </div>
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {plans.map((plan) => {
-          const isLocked = (user?.vipLevel ?? 1) < plan.requiredVipLevel
+          const isVipLocked = (user?.vipLevel ?? 1) < plan.requiredVipLevel
+          const isManuallyLocked = !plan.isActive;
+
           return (
-            <Card key={plan.id} className={`flex flex-col ${isLocked ? 'bg-muted/50 border-dashed' : ''}`}>
+            <Card key={plan.id} className={`flex flex-col ${isVipLocked || isManuallyLocked ? 'bg-muted/50 border-dashed' : ''}`}>
               <CardHeader>
                 <div className="relative h-40 w-full mb-4">
                     <Image 
@@ -287,7 +289,7 @@ export default function InvestmentsPage() {
                 </div>
                 <div className="flex justify-between items-start">
                   <CardTitle>{plan.name}</CardTitle>
-                  {isLocked && <Lock className="text-muted-foreground" />}
+                  {(isVipLocked || isManuallyLocked) && <Lock className="text-muted-foreground" />}
                 </div>
                 <CardDescription>
                   {t('investments.requiredVip', { level: plan.requiredVipLevel })}
@@ -310,7 +312,12 @@ export default function InvestmentsPage() {
                 </div>
               </CardContent>
               <CardFooter>
-                {isLocked ? (
+                {isManuallyLocked ? (
+                   <Button variant="destructive" className="w-full" disabled>
+                        <Ban className="mr-2 h-4 w-4" />
+                        Not for sale
+                    </Button>
+                ) : isVipLocked ? (
                   <Button variant="outline" className="w-full" disabled>
                     <Lock className="mr-2 h-4 w-4" />
                     {t('investments.locked')}
