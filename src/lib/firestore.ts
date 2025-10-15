@@ -488,7 +488,7 @@ export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirest
             createdAt: new Date().toISOString(),
             lastMessage: "Chat started",
             lastMessageAt: new Date().toISOString(),
-            isResolved: false
+            isResolved: false // A new chat always needs a reply
         };
         const newRoomRef = await addDoc(roomsRef, newRoomData);
         return { id: newRoomRef.id, ...newRoomData };
