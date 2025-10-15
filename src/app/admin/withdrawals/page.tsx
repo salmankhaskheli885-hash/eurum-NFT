@@ -20,15 +20,18 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
-import { Search } from "lucide-react"
+import { Search, CheckCircle, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions } from "@/lib/firestore"
+import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Button } from "@/components/ui/button"
+import { useToast } from "@/hooks/use-toast"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
   const firestore = useFirestore()
+  const { toast } = useToast()
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -37,7 +40,7 @@ export default function AdminWithdrawalsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -68,16 +71,33 @@ export default function AdminWithdrawalsPage() {
     return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
   }
 
+  const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
+    if (!firestore) return;
+    try {
+      await updateTransactionStatus(firestore, transaction.id, status, transaction);
+      toast({
+        title: `Withdrawal ${status}`,
+        description: `Transaction has been updated.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Action Failed",
+        description: error.message || "Could not update withdrawal status.",
+      });
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
        <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.withdrawals')}</h1>
-        <p className="text-muted-foreground">View all user withdrawal history.</p>
+        <p className="text-muted-foreground">Review and approve pending user withdrawals.</p>
       </div>
         <Card>
             <CardHeader>
-            <CardTitle>Withdrawal History</CardTitle>
-            <CardDescription>A list of all withdrawals. Withdrawals are now processed automatically.</CardDescription>
+            <CardTitle>Pending Withdrawal Requests</CardTitle>
+            <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
             <div className="relative pt-2">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -93,64 +113,70 @@ export default function AdminWithdrawalsPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Transaction ID</TableHead>
-                    <TableHead>Account & User Details</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead className="text-right">Amount (USD)</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Account Details</TableHead>
+                    <TableHead className="text-right">Amount</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {loading ? (
                     [...Array(5)].map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                            <TableCell>
+                                 <div className="space-y-2">
+                                    <Skeleton className="h-5 w-24" />
+                                    <Skeleton className="h-4 w-32" />
+                                 </div>
+                            </TableCell>
                             <TableCell>
                                 <div className="space-y-2">
-                                    <Skeleton className="h-5 w-32" />
                                     <Skeleton className="h-4 w-40" />
                                     <Skeleton className="h-4 w-48" />
                                 </div>
                             </TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                         </TableRow>
                     ))
                 ) : filteredWithdrawals.length > 0 ? (
                     filteredWithdrawals.map((withdrawal) => (
                         <TableRow key={withdrawal.id}>
-                        <TableCell className="font-medium">{withdrawal.id}</TableCell>
                         <TableCell>
                             <div className="font-medium">{withdrawal.userName}</div>
                             <div className="text-sm text-muted-foreground">
-                                <span className="font-semibold">UID:</span> {withdrawal.userId}
+                                {new Date(withdrawal.date).toLocaleString()}
                             </div>
+                        </TableCell>
+                        <TableCell>
                             {withdrawal.withdrawalDetails && (
-                                <div className="text-xs space-y-1 mt-2">
+                                <div className="text-sm space-y-1">
                                 <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
                                 <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
                                 <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
-                                {withdrawal.withdrawalDetails.fee !== undefined && (
-                                    <p><span className="font-semibold">Fee:</span> <span className="text-destructive">{formatCurrency(withdrawal.withdrawalDetails.fee)}</span></p>
-                                )}
                                 </div>
                             )}
                         </TableCell>
-                        <TableCell>{new Date(withdrawal.date).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-right text-destructive">
+                        <TableCell className="text-right text-destructive font-medium">
                             {formatCurrency(Math.abs(withdrawal.amount))}
                         </TableCell>
                         <TableCell className="text-center">
-                            <Badge variant={getStatusVariant(withdrawal.status)}>
-                            {withdrawal.status}
-                            </Badge>
+                            <div className="flex gap-2 justify-center">
+                                <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal, 'Completed')}>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal, 'Failed')}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                </Button>
+                            </div>
                         </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">No withdrawals found.</TableCell>
+                        <TableCell colSpan={4} className="h-24 text-center">No pending withdrawals found.</TableCell>
                     </TableRow>
                 )}
                 </TableBody>
@@ -160,3 +186,5 @@ export default function AdminWithdrawalsPage() {
     </div>
   )
 }
+
+    

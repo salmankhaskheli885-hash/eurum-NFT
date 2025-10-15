@@ -22,16 +22,17 @@ import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
-import { Search, Eye } from "lucide-react"
+import { Search, Eye, CheckCircle, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions } from "@/lib/firestore"
+import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
   const firestore = useFirestore()
+  const { toast } = useToast()
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -40,8 +41,8 @@ export default function AdminDepositsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show all deposits, as they are auto-processed now
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
+        // Show only PENDING deposits for action
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -58,24 +59,34 @@ export default function AdminDepositsPage() {
     });
   }, [searchTerm, transactions]);
 
- const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
+ const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
+    if (!firestore) return;
+    try {
+      await updateTransactionStatus(firestore, transaction.id, status, transaction);
+      toast({
+        title: `Deposit ${status}`,
+        description: `Transaction has been updated.`,
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Action Failed",
+        description: error.message || "Could not update deposit status.",
+      });
     }
   }
+
 
   return (
     <div className="flex flex-col gap-4">
        <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.deposits')}</h1>
-        <p className="text-muted-foreground">View all user deposit history.</p>
+        <p className="text-muted-foreground">Review and approve pending user deposits.</p>
       </div>
         <Card>
             <CardHeader>
-            <CardTitle>Deposit History</CardTitle>
-            <CardDescription>A list of all deposits. Deposits are now processed automatically.</CardDescription>
+            <CardTitle>Pending Deposit Requests</CardTitle>
+            <CardDescription>A list of all deposits awaiting approval.</CardDescription>
             <div className="relative pt-2">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -91,31 +102,31 @@ export default function AdminDepositsPage() {
             <Table>
                 <TableHeader>
                 <TableRow>
-                    <TableHead>Transaction ID</TableHead>
                     <TableHead>User</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead className="text-right">Amount (USD)</TableHead>
                     <TableHead className="text-center">Receipt</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {loading ? (
                     [...Array(5)].map((_, i) => (
                         <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                             <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                             <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                             <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                            <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                         </TableRow>
                     ))
                 ) : filteredDeposits.length > 0 ? (
                     filteredDeposits.map((deposit) => (
                         <TableRow key={deposit.id}>
-                        <TableCell className="font-medium">{deposit.id}</TableCell>
-                        <TableCell>{deposit.userName}</TableCell>
+                        <TableCell>
+                            <div className="font-medium">{deposit.userName}</div>
+                            <div className="text-sm text-muted-foreground">{deposit.id}</div>
+                        </TableCell>
                         <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                         <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                         <TableCell className="text-center">
@@ -131,15 +142,22 @@ export default function AdminDepositsPage() {
                             )}
                         </TableCell>
                         <TableCell className="text-center">
-                           <Badge variant={getStatusVariant(deposit.status)}>
-                                {deposit.status}
-                            </Badge>
+                            <div className="flex gap-2 justify-center">
+                                <Button variant="outline" size="sm" onClick={() => handleAction(deposit, 'Completed')}>
+                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                    Approve
+                                </Button>
+                                <Button variant="destructive" size="sm" onClick={() => handleAction(deposit, 'Failed')}>
+                                    <XCircle className="mr-2 h-4 w-4" />
+                                    Reject
+                                </Button>
+                            </div>
                         </TableCell>
                         </TableRow>
                     ))
                 ) : (
                     <TableRow>
-                        <TableCell colSpan={6} className="h-24 text-center">No deposits found.</TableCell>
+                        <TableCell colSpan={5} className="h-24 text-center">No pending deposits found.</TableCell>
                     </TableRow>
                 )}
                 </TableBody>
@@ -149,3 +167,5 @@ export default function AdminDepositsPage() {
     </div>
   )
 }
+
+    

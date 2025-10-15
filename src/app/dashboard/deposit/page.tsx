@@ -52,7 +52,7 @@ export default function DepositPage() {
     // useEffect for fetching deposit history
     useEffect(() => {
         if (!user || !firestore) {
-            setHistoryLoading(false);
+            if (!userLoading) setHistoryLoading(false);
             return;
         };
         setHistoryLoading(true);
@@ -64,7 +64,7 @@ export default function DepositPage() {
             setHistoryLoading(false);
         });
         return () => unsubscribe();
-    }, [user, firestore]);
+    }, [user, firestore, userLoading]);
 
     const handleCopy = () => {
         if (!settings) return;
@@ -125,7 +125,7 @@ export default function DepositPage() {
                 userName: user.displayName || 'Unknown User',
                 type: 'Deposit',
                 amount: parseFloat(amount),
-                status: 'Completed', 
+                status: 'Pending', 
                 receiptFile: receiptFile,
                 details: `Deposit via ${yourNumber} with TID: ${tid}`
             });
@@ -294,3 +294,5 @@ export default function DepositPage() {
     </div>
   )
 }
+
+    
