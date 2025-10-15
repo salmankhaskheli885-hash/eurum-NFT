@@ -27,9 +27,7 @@ const loginSchema = z.object({
 
 type UserFormValues = z.infer<typeof loginSchema>
 
-interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-    // No role prop needed, will be handled by tabs
-}
+interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function AuthForm({ className, ...props }: AuthFormProps) {
   const { t } = useTranslation()
@@ -37,7 +35,6 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
   const firestore = useFirestore()
   const router = useRouter()
   const { toast } = useToast()
-  const searchParams = useSearchParams()
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [activeTab, setActiveTab] = React.useState<'user' | 'partner' | 'agent'>("user")
   
@@ -58,7 +55,7 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
         toast({ title: t('login.successTitle') })
         
         // Redirect based on the role selected in the tab
-        if (activeTab === 'admin') router.push("/admin");
+        if (activeTab === 'agent') router.push("/agent");
         else if (activeTab === 'partner') router.push("/partner");
         else router.push("/dashboard");
 
@@ -82,13 +79,10 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
       const result = await signInWithPopup(auth, provider)
       const firebaseUser = result.user
 
-      // This is crucial. It ensures the user document exists in Firestore
-      // with the correct role before we redirect.
       const userProfile = await getOrCreateUser(firestore, firebaseUser, activeTab);
 
       toast({ title: t('login.successTitle') })
       
-      // Redirect logic
       if (userProfile.role === 'admin') router.push('/admin');
       else if (userProfile.role === 'partner') router.push('/partner');
       else if (userProfile.role === 'agent') router.push('/agent');
@@ -171,11 +165,10 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
         {isLoading ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          // Using a simple SVG for Google icon to avoid extra dependencies
           <svg className="mr-2 h-4 w-4" aria-hidden="true" focusable="false" data-prefix="fab" data-icon="google" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 488 512"><path fill="currentColor" d="M488 261.8C488 403.3 391.1 504 248 504 110.8 504 0 393.2 0 256S110.8 8 248 8c66.8 0 126 23.4 172.9 61.9l-76.2 64.5C308.6 106.5 280.1 96 248 96c-84.3 0-152.3 67.8-152.3 152s68 152 152.3 152c92.8 0 134.4-65.4 140.8-99.9h-141v-70h242.3c1.3 12.2 2.6 24.5 2.6 37.4z"></path></svg>
         )}
         {t('login.googleButton')}
-      </BODYA>
+      </Button>
       <p className="px-8 text-center text-sm text-muted-foreground">
         {t('login.noAccount')}{" "}
         <a href="/register" className="underline underline-offset-4 hover:text-primary">
