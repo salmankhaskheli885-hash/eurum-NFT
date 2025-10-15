@@ -100,6 +100,15 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
       }
   };
 
+  const showMaintenancePage = () => {
+    document.body.innerHTML = `
+        <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background-color: #f1f5f9; text-align: center; font-family: sans-serif;">
+            <h1 style="font-size: 1.875rem; font-weight: bold; color: #1e293b;">Panel Temporarily Unavailable</h1>
+            <p style="font-size: 1.125rem; color: #475569; margin-top: 1rem;">This panel is currently under maintenance. Please try again later.</p>
+        </div>
+    `;
+  }
+
   const handleGoogleSignIn = async () => {
     if (!app || !firestore) {
         toast({
@@ -112,28 +121,6 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
     setLoading(true);
 
     try {
-        const settings = await getAppSettings(firestore);
-
-        // Check if the intended panel is enabled
-        if (intendedRole === 'user' && !settings.isUserPanelEnabled) {
-            toast({
-                variant: "destructive",
-                title: "Panel Temporarily Unavailable",
-                description: "The user panel is currently under maintenance. Please try again later.",
-            });
-            setLoading(false);
-            return;
-        }
-        if (intendedRole === 'partner' && !settings.isPartnerPanelEnabled) {
-            toast({
-                variant: "destructive",
-                title: "Panel Temporarily Unavailable",
-                description: "The partner panel is currently under maintenance. Please try again later.",
-            });
-            setLoading(false);
-            return;
-        }
-
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
@@ -141,46 +128,46 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         
         // Get or create the user profile from Firestore to get their role
         const userProfile = await getOrCreateUser(firestore, firebaseUser, intendedRole);
+        const settings = await getAppSettings(firestore);
         
         toast({
             title: t('login.successTitle'),
             description: `Welcome, ${userProfile.displayName}!`,
         });
 
+        // 1. Check if user is an Admin
         if (userProfile.role === 'admin') {
             setShowRoleDialog(true);
             setLoading(false);
             return;
         }
         
-        // Check if the user is a chat agent (but not an admin)
+        // 2. Check if user is a Chat Agent
         const isAgent = await isUserAChatAgent(firestore, firebaseUser.email!);
         if (isAgent) {
              if (!settings.isAgentPanelEnabled) {
-                toast({
-                    variant: "destructive",
-                    title: "Panel Temporarily Unavailable",
-                    description: "The agent panel is currently under maintenance. Please try again later.",
-                });
-                await auth.signOut(); // Sign out the user
-                setLoading(false);
+                showMaintenancePage();
                 return;
             }
-             toast({
-                title: "Agent Login Successful",
-                description: `Welcome, ${userProfile.displayName}!`,
-            });
-            router.push('/agent'); // Redirect agents to the agent panel
+            router.push('/agent');
             return;
         }
-
-        // Redirect based on the role stored in Firestore
+        
+        // 3. Check role from Firestore and panel status
         switch(userProfile.role) {
             case 'partner':
+                if (!settings.isPartnerPanelEnabled) {
+                   showMaintenancePage();
+                   return;
+                }
                 router.push('/partner');
                 break;
             case 'user':
             default:
+                if (!settings.isUserPanelEnabled) {
+                   showMaintenancePage();
+                   return;
+                }
                 router.push('/dashboard');
                 break;
         }
