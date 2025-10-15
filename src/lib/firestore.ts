@@ -153,16 +153,16 @@ export async function addTransaction(
     const finalTransactionData: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
-        status: 'Completed' // Set to completed immediately
+        status: 'Completed' // Optimistically set to completed
     };
 
     // Step 1: Create the transaction document immediately to get an ID
     const transactionDocRef = await addDoc(collection(firestore, 'transactions'), finalTransactionData);
     
-    // Step 2: Handle balance and side-effects in a separate, reliable transaction
+    // Step 2: Handle balance and other side-effects reliably and automatically
     await updateTransactionStatus(firestore, transactionDocRef.id, 'Completed', { ...finalTransactionData, id: transactionDocRef.id });
 
-    // Step 3: If it was a deposit with a file, start the background upload
+    // Step 3: If it was a deposit with a file, start the background upload (does not block UI)
     if (dataToSave.type === 'Deposit' && receiptFile) {
         uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
     }
@@ -216,18 +216,14 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
     await runTransaction(firestore, async (transaction) => {
         let currentTxData = txData;
 
-        // If transaction data is not passed, fetch it. This is for manual admin actions.
-        // For automatic flow, txData will be provided.
         if (!currentTxData) {
             const transactionRef = doc(firestore, 'transactions', transactionId);
             const transactionSnap = await transaction.get(transactionRef);
             if (!transactionSnap.exists()) throw new Error("Transaction not found");
             currentTxData = transactionSnap.data() as Transaction;
-             // Update the status in DB if it was a manual call
             transaction.update(transactionRef, { status: newStatus });
         }
         
-        // This is now the main logic for automatic updates
         if (newStatus !== 'Completed') {
             if (currentTxData.type === 'Deposit') {
                 const userRef = doc(firestore, 'users', currentTxData.userId);
@@ -240,7 +236,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     transaction.update(userRef, updates);
                 }
             }
-            return; // Do not proceed with balance updates if not completed
+            return;
         };
 
         const userRef = doc(firestore, 'users', currentTxData.userId);
@@ -301,10 +297,9 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const totalDeduction = withdrawalAmount + feeAmount;
 
                 if (user.balance < totalDeduction) {
-                    // This is a server-side check. We should fail the transaction here.
                     const txRef = doc(firestore, 'transactions', transactionId);
                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
-                    return; // Stop processing
+                    throw new Error(`Insufficient balance for withdrawal. Required ${totalDeduction}, but had only ${user.balance}.`);
                 }
                 
                 transaction.update(userRef, { 
@@ -318,7 +313,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                  if (user.balance < investmentAmount) {
                      const txRef = doc(firestore, 'transactions', transactionId);
                      transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
-                     return; // Stop processing
+                     throw new Error(`Insufficient balance for investment. Required ${investmentAmount}, had ${user.balance}.`);
                  }
                 const newBalance = user.balance - investmentAmount;
                 transaction.update(userRef, { balance: newBalance });
@@ -334,7 +329,13 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection, orderBy("date", "desc"));
     return onSnapshot(q, (snapshot) => {
-        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
+        const transactions = snapshot.docs.map(doc => {
+            const data = doc.data()
+            return {
+                id: doc.id,
+                ...data,
+            } as Transaction
+        });
         callback(transactions);
     });
 }
@@ -425,3 +426,5 @@ export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFires
         }
     });
 }
+
+    
