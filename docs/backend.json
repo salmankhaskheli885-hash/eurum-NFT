@@ -24,6 +24,11 @@
           "enum": ["user", "partner", "admin"],
           "description": "The user's role in the system."
         },
+        "status": {
+            "type": "string",
+            "enum": ["Active", "Suspended"],
+            "description": "The current status of the user's account."
+        },
         "shortUid": {
             "type": "string"
         },
@@ -60,7 +65,7 @@
             "description": "Tracks the number of failed or rejected deposits for a user."
         }
       },
-      "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus", "failedDepositCount"]
+      "required": ["uid", "email", "role", "balance", "currency", "vipLevel", "vipProgress", "kycStatus", "failedDepositCount", "status"]
     },
     "InvestmentPlan": {
         "title": "Investment Plan",

@@ -182,7 +182,7 @@ export default function AdminUsersPage() {
                             <Button asChild variant="outline" size="sm">
                                 <Link href={`/admin/users/${user.uid}`} className="flex items-center">
                                     <Eye className="mr-2 h-4 w-4"/>
-                                    View
+                                    Details
                                 </Link>
                             </Button>
                             <DropdownMenu>
@@ -194,6 +194,10 @@ export default function AdminUsersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem asChild>
+                                    <Link href={`/dashboard?userId=${user.uid}`} target="_blank">View as User</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
                                 <DropdownMenuSub>
                                 <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
                                 <DropdownMenuSubContent>
@@ -243,5 +247,3 @@ export default function AdminUsersPage() {
     </div>
   )
 }
-
-    
