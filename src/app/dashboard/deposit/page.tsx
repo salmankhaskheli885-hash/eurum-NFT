@@ -166,9 +166,9 @@ export default function DepositPage() {
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="amount">{t('deposit.amount')}</Label>
                     <Input id="amount" type="number" placeholder="5000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-                    {settings && (settings.minDeposit || settings.maxDeposit) && (
+                    {settings && (settings.minDeposit) && (
                         <p className="text-xs text-muted-foreground pt-1">
-                            Deposit between ${settings.minDeposit || 0} and ${settings.maxDeposit || 'unlimited'}.
+                           Minimum deposit is ${settings.minDeposit || 0}.
                         </p>
                     )}
                 </div>
@@ -190,5 +190,3 @@ export default function DepositPage() {
     </div>
   )
 }
-
-    

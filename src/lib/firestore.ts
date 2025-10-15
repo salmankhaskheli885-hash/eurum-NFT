@@ -62,7 +62,8 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
             kycStatus: 'unsubmitted',
             referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
             status: 'Active',
-            referredBy: referredBy
+            referredBy: referredBy,
+            totalDeposits: 0,
         };
         await setDoc(userRef, newUser);
         return newUser;
@@ -134,7 +135,6 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
             // Check daily withdrawal limit
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            const startOfDay = Timestamp.fromDate(today);
 
             const withdrawalQuery = query(
                 collection(firestore, 'transactions'),
@@ -142,7 +142,9 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
                 where('type', '==', 'Withdrawal'),
                 where('date', '>=', today.toISOString().split('T')[0])
             );
-            const todaysWithdrawals = await getDocs(withdrawalQuery);
+            const todaysWithdrawalsSnap = await getDocs(withdrawalQuery);
+            
+            const todaysWithdrawals = todaysWithdrawalsSnap.docs.filter(doc => doc.data().status !== 'Failed');
 
             if (!todaysWithdrawals.empty) {
                 throw new Error("You can only make one withdrawal request per day.");
@@ -199,6 +201,8 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
             const delay = maturityTimestamp - nowTimestamp;
 
             if (delay > 0) {
+                // This is a simulation of a server-side scheduled function (like a Cloud Function).
+                // In a real production app, this logic should be on a server to guarantee execution.
                 setTimeout(async () => {
                     try {
                         const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
@@ -209,7 +213,18 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
                             status: 'Completed',
                             details: `Matured investment from ${planName}`
                         };
-                        await addTransaction(firestore, payoutTransactionData);
+                         // Use a transaction for the payout to ensure atomicity
+                        await runTransaction(firestore, async (payoutTx) => {
+                            const userForPayoutRef = doc(firestore, 'users', newTransaction.userId);
+                            const userForPayoutSnap = await payoutTx.get(userForPayoutRef);
+                            if (userForPayoutSnap.exists()) {
+                                const newBalance = userForPayoutSnap.data().balance + payoutAmount;
+                                payoutTx.update(userForPayoutRef, { balance: newBalance });
+
+                                const payoutDocRef = doc(collection(firestore, 'transactions'));
+                                payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
+                            }
+                        });
                     } catch(e) {
                         console.error("Failed to process automatic payout:", e);
                     }
@@ -252,8 +267,18 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 
         if (newStatus === 'Completed') {
             if (txData.type === 'Deposit') {
+                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
-                transaction.update(userRef, { balance: newBalance });
+
+                // Automatic VIP Level Up Logic
+                let newVipLevel = user.vipLevel;
+                if (newTotalDeposits >= 500) {
+                    newVipLevel = 3;
+                } else if (newTotalDeposits >= 100) {
+                    newVipLevel = 2;
+                }
+                
+                transaction.update(userRef, { balance: newBalance, totalDeposits: newTotalDeposits, vipLevel: newVipLevel });
 
                 if (user.referredBy) {
                     const referrerRef = doc(firestore, 'users', user.referredBy);

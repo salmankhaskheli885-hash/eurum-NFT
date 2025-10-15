@@ -8,6 +8,7 @@ import { type User as FirebaseUser } from "firebase/auth";
 
 export type User = UserProfile & {
   status: 'Active' | 'Suspended';
+  totalDeposits?: number;
 };
 
 export type Transaction = {
@@ -24,7 +25,6 @@ export type Transaction = {
     accountName: string;
     method: string;
     fee?: number; // Fee amount
-    isFirstOfDay?: boolean;
   };
   investmentDetails?: {
     planId: string;
@@ -32,7 +32,7 @@ export type Transaction = {
     investedAmount: number;
     dailyReturn: number;
     durationDays: number;
-    maturityDate: string;
+    maturityDate: string; // ISO 8601 format
     isMatured: boolean;
   },
   kycDetails?: {
@@ -162,5 +162,3 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         referredBy: undefined
     };
 }
-
-    

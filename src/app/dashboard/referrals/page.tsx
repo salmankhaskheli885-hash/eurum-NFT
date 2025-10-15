@@ -21,8 +21,8 @@ import { useTranslation } from "@/hooks/use-translation"
 import { DollarSign, Users, TrendingUp, Copy } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllUsers } from "@/lib/firestore"
-import type { User } from "@/lib/data"
+import { listenToAllUsers, listenToUserTransactions } from "@/lib/firestore"
+import type { User, Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -36,21 +36,32 @@ export default function ReferralsPage() {
   const { toast } = useToast()
   
   const [referredUsers, setReferredUsers] = React.useState<User[]>([])
+  const [commissions, setCommissions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
 
   React.useEffect(() => {
     if (!firestore || !currentUser) return;
     setLoading(true);
-    const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
+    // Listen to users who were referred by the current user
+    const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         setReferredUsers(allUsers.filter(u => u.referredBy === currentUser.uid));
         setLoading(false);
     });
-    return () => unsubscribe();
+
+    // Listen to commission transactions for the current user
+    const unsubscribeCommissions = listenToUserTransactions(firestore, currentUser.uid, (transactions) => {
+        setCommissions(transactions.filter(tx => tx.type === 'Commission'));
+    });
+
+    return () => {
+        unsubscribeUsers();
+        unsubscribeCommissions();
+    }
   }, [firestore, currentUser]);
 
 
   const totalReferredUsers = referredUsers.length;
-  const totalDeposits = referredUsers.reduce((acc, user) => acc + (user.balance > 0 ? user.balance : 0), 0);
+  const totalCommissionEarned = commissions.reduce((acc, tx) => acc + tx.amount, 0);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -119,11 +130,11 @@ export default function ReferralsPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('referrals.totalDeposits')}</CardTitle>
+            <CardTitle className="text-sm font-medium">Total Commission</CardTitle>
             <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-             {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(totalDeposits)}</div>}
+             {isLoading ? <Skeleton className="h-8 w-3/4" /> : <div className="text-2xl font-bold">{formatCurrency(totalCommissionEarned)}</div>}
           </CardContent>
         </Card>
          <Card>
