@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CheckCircle, XCircle, UserCheck, Eye, Search } from "lucide-react"
+import { CheckCircle, XCircle, Eye, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -20,7 +20,9 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import Image from "next/image"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import AdminKycHistoryPage from "./history/page"
 
 function KycDetailsDialog({ user }: { user: User }) {
     return (
@@ -75,7 +77,7 @@ export default function AdminKycPage() {
         if (!firestore) return;
         setLoading(true);
         const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-            setUsers(allUsers);
+            setUsers(allUsers.filter(u => u.kycStatus === 'pending'));
             setLoading(false);
         });
         return () => unsubscribe();
@@ -101,9 +103,8 @@ export default function AdminKycPage() {
     const filteredUsers = React.useMemo(() => {
         const lowercasedFilter = searchTerm.toLowerCase();
         return users.filter(user => 
-            user.kycStatus === 'pending' &&
-            (user.displayName?.toLowerCase().includes(lowercasedFilter) ||
-            user.email?.toLowerCase().includes(lowercasedFilter))
+            user.displayName?.toLowerCase().includes(lowercasedFilter) ||
+            user.email?.toLowerCase().includes(lowercasedFilter)
         );
     }, [searchTerm, users]);
 
@@ -113,77 +114,88 @@ export default function AdminKycPage() {
                 <h1 className="text-3xl font-bold tracking-tight">KYC Management</h1>
                 <p className="text-muted-foreground">Review and approve user identity verification submissions.</p>
             </div>
-             <Card>
-                <CardHeader>
-                <CardTitle>Pending KYC Requests</CardTitle>
-                <CardDescription>A list of all users awaiting KYC verification.</CardDescription>
-                <div className="relative pt-2">
-                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                    type="search"
-                    placeholder="Search by name or email..."
-                    className="w-full pl-8"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                </CardHeader>
-                <CardContent>
-                <Table>
-                    <TableHeader>
-                    <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                        <TableHead className="text-center">Documents</TableHead>
-                        <TableHead className="text-center">Actions</TableHead>
-                    </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                     {loading ? (
-                        [...Array(3)].map((_, i) => (
-                            <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                                <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
-                                <TableCell className="text-center"><Skeleton className="h-8 w-8 rounded-md mx-auto" /></TableCell>
-                                <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+            <Tabs defaultValue="pending">
+                <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+                    <TabsTrigger value="history">History</TabsTrigger>
+                </TabsList>
+                <TabsContent value="pending">
+                     <Card>
+                        <CardHeader>
+                        <CardTitle>Pending KYC Requests</CardTitle>
+                        <CardDescription>A list of all users awaiting KYC verification.</CardDescription>
+                        <div className="relative pt-2">
+                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                            type="search"
+                            placeholder="Search by name or email..."
+                            className="w-full pl-8"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                        </CardHeader>
+                        <CardContent>
+                        <Table>
+                            <TableHeader>
+                            <TableRow>
+                                <TableHead>User</TableHead>
+                                <TableHead>Email</TableHead>
+                                <TableHead className="text-center">Status</TableHead>
+                                <TableHead className="text-center">Documents</TableHead>
+                                <TableHead className="text-center">Actions</TableHead>
                             </TableRow>
-                        ))
-                     ) : filteredUsers.length > 0 ? (
-                        filteredUsers.map((user) => (
-                            <TableRow key={user.uid}>
-                                <TableCell className="font-medium">{user.displayName}</TableCell>
-                                <TableCell>{user.email}</TableCell>
-                                <TableCell className="text-center">
-                                    <Badge variant="secondary">{user.kycStatus}</Badge>
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <KycDetailsDialog user={user} />
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <div className="flex gap-2 justify-center">
-                                        <Button variant="outline" size="sm" onClick={() => handleAction(user.uid, 'approved')}>
-                                            <CheckCircle className="mr-2 h-4 w-4" />
-                                            Approve
-                                        </Button>
-                                        <Button variant="destructive" size="sm" onClick={() => handleAction(user.uid, 'rejected')}>
-                                            <XCircle className="mr-2 h-4 w-4" />
-                                            Reject
-                                        </Button>
-                                    </div>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                     ) : (
-                         <TableRow>
-                            <TableCell colSpan={5} className="h-24 text-center">No pending KYC requests found.</TableCell>
-                        </TableRow>
-                     )}
-                    </TableBody>
-                </Table>
-                </CardContent>
-            </Card>
+                            </TableHeader>
+                            <TableBody>
+                            {loading ? (
+                                [...Array(3)].map((_, i) => (
+                                    <TableRow key={i}>
+                                        <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                        <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                        <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                                        <TableCell className="text-center"><Skeleton className="h-8 w-8 rounded-md mx-auto" /></TableCell>
+                                        <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                                    </TableRow>
+                                ))
+                            ) : filteredUsers.length > 0 ? (
+                                filteredUsers.map((user) => (
+                                    <TableRow key={user.uid}>
+                                        <TableCell className="font-medium">{user.displayName}</TableCell>
+                                        <TableCell>{user.email}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Badge variant="secondary">{user.kycStatus}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <KycDetailsDialog user={user} />
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <div className="flex gap-2 justify-center">
+                                                <Button variant="outline" size="sm" onClick={() => handleAction(user.uid, 'approved')}>
+                                                    <CheckCircle className="mr-2 h-4 w-4" />
+                                                    Approve
+                                                </Button>
+                                                <Button variant="destructive" size="sm" onClick={() => handleAction(user.uid, 'rejected')}>
+                                                    <XCircle className="mr-2 h-4 w-4" />
+                                                    Reject
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))
+                            ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="h-24 text-center">No pending KYC requests found.</TableCell>
+                                </TableRow>
+                            )}
+                            </TableBody>
+                        </Table>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+                <TabsContent value="history">
+                    <AdminKycHistoryPage />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

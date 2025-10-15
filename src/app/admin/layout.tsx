@@ -13,7 +13,8 @@ import {
   Settings,
   User,
   Handshake,
-  UserCheck
+  UserCheck,
+  History
 } from "lucide-react"
 
 import {
@@ -27,6 +28,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
   SidebarFooter,
+  SidebarMenuSub,
+  SidebarMenuSubButton
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/icons"
 import { UserNav } from "@/components/user-nav"
@@ -44,10 +47,31 @@ export default function AdminLayout({
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
     { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
-    { href: "/admin/deposits", label: t('admin.nav.deposits'), icon: DollarSign },
-    { href: "/admin/withdrawals", label: t('admin.nav.withdrawals'), icon: Landmark },
+    { 
+      href: "/admin/deposits", 
+      label: t('admin.nav.deposits'), 
+      icon: DollarSign,
+      subItems: [
+        { href: "/admin/deposits/history", label: "History" }
+      ] 
+    },
+    { 
+      href: "/admin/withdrawals", 
+      label: t('admin.nav.withdrawals'), 
+      icon: Landmark,
+      subItems: [
+        { href: "/admin/withdrawals/history", label: "History" }
+      ] 
+    },
     { href: "/admin/investments", label: t('admin.nav.investments'), icon: FileCog },
-    { href: "/admin/kyc", label: t('admin.nav.kyc'), icon: UserCheck },
+    { 
+      href: "/admin/kyc", 
+      label: t('admin.nav.kyc'), 
+      icon: UserCheck,
+      subItems: [
+        { href: "/admin/kyc/history", label: "History" }
+      ]
+    },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
     { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
   ]
@@ -72,13 +96,27 @@ export default function AdminLayout({
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton
-                    isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))}
+                    isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href) && !item.subItems)}
                     tooltip={item.label}
                   >
                     <item.icon />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
+                {item.subItems && (
+                  <SidebarMenuSub>
+                    {item.subItems.map(subItem => (
+                      <SidebarMenuSubItem key={subItem.href}>
+                        <Link href={subItem.href} passHref legacyBehavior>
+                           <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                              <History />
+                              <span>{subItem.label}</span>
+                          </SidebarMenuSubButton>
+                        </Link>
+                      </SidebarMenuSubItem>
+                    ))}
+                  </SidebarMenuSub>
+                )}
               </SidebarMenuItem>
             ))}
              <SidebarMenuItem>
