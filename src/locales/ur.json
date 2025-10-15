@@ -63,7 +63,8 @@
         "status": "حیثیت",
         "all": "تمام",
         "deposits": "ڈیپازٹس",
-        "withdrawals": "وِدڈرالز"
+        "withdrawals": "وِدڈرالز",
+        "investments": "دیگر"
     },
     "investments": {
         "title": "سرمایہ کاری کے منصوبے",

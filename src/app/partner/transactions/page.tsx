@@ -46,6 +46,10 @@ export default function TransactionsPage() {
       maximumFractionDigits: 2,
     }).format(amount)
   }
+  
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  }
 
   const getStatusVariant = (status: Transaction['status']) => {
     switch (status) {
@@ -87,7 +91,7 @@ export default function TransactionsPage() {
             <TableRow key={transaction.id}>
               <TableCell className="font-medium">{transaction.id.substring(0,8)}...</TableCell>
               <TableCell>{transaction.type}</TableCell>
-              <TableCell>{transaction.date}</TableCell>
+              <TableCell>{formatDate(transaction.date)}</TableCell>
               <TableCell className={`text-right font-medium ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {formatCurrency(transaction.amount)}
               </TableCell>

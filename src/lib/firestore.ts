@@ -240,7 +240,7 @@ export async function addTransaction(
         
         const user = userSnap.data() as User;
         
-        const newTransactionDataWithDate = {
+        const newTransactionDataWithDate: Omit<Transaction, 'id'| 'receiptUrl'> = {
             ...dataToSave,
             date: new Date().toISOString(),
         }
@@ -421,7 +421,7 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
         q = query(transactionsCollection, where("userId", "==", userId), orderBy("date", "desc"));
     }
     return onSnapshot(q, (snapshot) => {
-        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), date: new Date(doc.data().date).toLocaleDateString() } as Transaction));
+        const transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Transaction));
         callback(transactions);
     });
 }

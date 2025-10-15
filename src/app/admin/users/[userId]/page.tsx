@@ -59,6 +59,10 @@ export default function AdminUserDetailsPage() {
     const handleSelectChange = (id: string, value: string) => {
         setEditableUser(prev => ({...prev, [id]: value }))
     }
+    
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString();
+    }
 
     const handleSaveChanges = async () => {
         if (!firestore || !userId) return;
@@ -209,7 +213,7 @@ export default function AdminUserDetailsPage() {
                                         <TableRow key={tx.id}>
                                             <TableCell>{tx.investmentDetails?.planName}</TableCell>
                                             <TableCell>${Math.abs(tx.amount).toLocaleString()}</TableCell>
-                                            <TableCell>{new Date(tx.investmentDetails!.maturityDate).toLocaleDateString()}</TableCell>
+                                            <TableCell>{formatDate(tx.investmentDetails!.maturityDate)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={new Date(tx.investmentDetails!.maturityDate) < new Date() ? 'default' : 'secondary'}>
                                                     {new Date(tx.investmentDetails!.maturityDate) < new Date() ? 'Matured' : 'Active'}
@@ -247,7 +251,7 @@ export default function AdminUserDetailsPage() {
                                             <TableCell className="font-mono text-xs">{tx.id.substring(0, 8)}...</TableCell>
                                             <TableCell>{tx.type}</TableCell>
                                             <TableCell className={`${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>${tx.amount.toLocaleString()}</TableCell>
-                                            <TableCell>{tx.date}</TableCell>
+                                            <TableCell>{formatDate(tx.date)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
                                             </TableCell>
@@ -266,5 +270,3 @@ export default function AdminUserDetailsPage() {
         </div>
     )
 }
-
-    

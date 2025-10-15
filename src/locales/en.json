@@ -63,7 +63,8 @@
         "status": "Status",
         "all": "All",
         "deposits": "Deposits",
-        "withdrawals": "Withdrawals"
+        "withdrawals": "Withdrawals",
+        "investments": "Others"
     },
     "investments": {
         "title": "Investment Plans",
