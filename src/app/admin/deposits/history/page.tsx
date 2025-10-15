@@ -88,7 +88,7 @@ export default function AdminDepositsHistoryPage() {
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Amount (USD)</TableHead>
+                <TableHead className="text-right">Amount (PKR)</TableHead>
                 <TableHead className="text-center">Receipt</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>

@@ -36,7 +36,7 @@
         "formTitle": "Confirm Your Deposit",
         "formDescription": "After sending the money, fill in the details below.",
         "yourNumber": "Your Number (from which you sent money)",
-        "amount": "Amount Sent (USD)",
+        "amount": "Amount Sent (PKR)",
         "tidNumber": "Transaction ID (TID)",
         "submitButton": "Submit Deposit Request"
     },
@@ -47,7 +47,7 @@
         "method": "Withdrawal Method",
         "accountNumber": "Account Number",
         "accountName": "Account Holder Name",
-        "amount": "Amount to Withdraw (USD)",
+        "amount": "Amount to Withdraw (PKR)",
         "feeNotice": "A 2% fee will be deducted from the withdrawal amount. Funds will be transferred within 12-24 hours.",
         "submitButton": "Submit Withdrawal Request",
         "successTitle": "Withdrawal Request Submitted",
@@ -59,7 +59,7 @@
         "id": "ID",
         "type": "Type",
         "date": "Date",
-        "amount": "Amount (USD)",
+        "amount": "Amount (PKR)",
         "status": "Status",
         "all": "All",
         "deposits": "Deposits",
@@ -76,7 +76,7 @@
         "duration": "Duration",
         "days": "Days",
         "investmentRange": "Investment",
-        "investmentAmount": "Investment Amount (USD)",
+        "investmentAmount": "Investment Amount (PKR)",
         "successTitle": "Investment Successful",
         "successDescription": "You have invested in the {planName} plan.",
         "confirmTitle": "Confirm Investment",
@@ -97,7 +97,7 @@
         "referredUsersListDescription": "A list of all users you have referred.",
         "table": {
             "name": "Name",
-            "totalDeposit": "Total Deposit (USD)",
+            "totalDeposit": "Total Deposit (PKR)",
             "status": "Status",
             "statusValue": {
                 "active": "Active",
@@ -228,7 +228,7 @@
             "title": "Partner Dashboard",
             "description": "Overview of your network and earnings.",
             "totalUsers": "Total Users in Network",
-            "totalInvested": "Total Network Investment",
+            "totalInvested": "Total Network Investment (PKR)",
             "totalCommission": "Total Commission Earned",
             "pendingKyc": "Pending KYC Submissions"
         },
@@ -280,9 +280,9 @@
         "dashboardDescription": "Manage all aspects of the Fynix Pro application.",
         "stats": {
             "totalUsers": "Total Users",
-            "totalDeposits": "Total Deposits (USD)",
+            "totalDeposits": "Total Deposits (PKR)",
             "pendingWithdrawals": "Pending Withdrawals",
-            "totalInvested": "Total Invested (USD)",
+            "totalInvested": "Total Invested (PKR)",
             "pendingKyc": "Pending KYC"
         },
         "manualActions": "Manual Actions",

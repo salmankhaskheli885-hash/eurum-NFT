@@ -104,7 +104,7 @@ export default function AdminDepositsPage() {
                 <TableRow>
                     <TableHead>User</TableHead>
                     <TableHead>Date & Time</TableHead>
-                    <TableHead className="text-right">Amount (USD)</TableHead>
+                    <TableHead className="text-right">Amount (PKR)</TableHead>
                     <TableHead className="text-center">Receipt</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
                 </TableRow>

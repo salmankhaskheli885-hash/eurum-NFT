@@ -81,7 +81,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
                             <TableHead>Transaction ID</TableHead>
                             <TableHead>User</TableHead>
                             <TableHead>Date & Time</TableHead>
-                            <TableHead className="text-right">Amount (USD)</TableHead>
+                            <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Final Status</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -224,7 +224,7 @@ export default function AgentDepositsPage() {
                             <TableRow>
                                 <TableHead>User</TableHead>
                                 <TableHead>Date & Time</TableHead>
-                                <TableHead className="text-right">Amount (USD)</TableHead>
+                                <TableHead className="text-right">Amount (PKR)</TableHead>
                                 <TableHead className="text-center">Receipt</TableHead>
                                 <TableHead className="text-center">Actions</TableHead>
                             </TableRow>

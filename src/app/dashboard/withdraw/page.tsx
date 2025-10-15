@@ -39,7 +39,7 @@ function WithdrawalHistory() {
     }, [user, firestore]);
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
-    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
     const getStatusVariant = (status: Transaction['status']) => {
         switch (status) {
             case 'Completed': return 'default'
@@ -148,11 +148,11 @@ export default function WithdrawPage() {
         }
 
         if (settings.minWithdrawal && withdrawalAmount < settings.minWithdrawal) {
-            toast({ variant: 'destructive', title: `Minimum withdrawal is $${settings.minWithdrawal}` });
+            toast({ variant: 'destructive', title: `Minimum withdrawal is PKR ${settings.minWithdrawal}` });
             return;
         }
         if (settings.maxWithdrawal && withdrawalAmount > settings.maxWithdrawal) {
-            toast({ variant: 'destructive', title: `Maximum withdrawal is $${settings.maxWithdrawal}` });
+            toast({ variant: 'destructive', title: `Maximum withdrawal is PKR ${settings.maxWithdrawal}` });
             return;
         }
         
@@ -202,7 +202,7 @@ export default function WithdrawPage() {
         <CardHeader>
           <CardTitle>{t('withdraw.formTitle')}</CardTitle>
           <CardDescription>
-            {loading ? <Skeleton className="h-5 w-48"/> : `Your current balance is ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(user?.balance || 0)}`}
+            {loading ? <Skeleton className="h-5 w-48"/> : `Your current balance is ${new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(user?.balance || 0)}`}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -234,7 +234,7 @@ export default function WithdrawPage() {
                  {settings?.withdrawalFee && <p className="text-xs text-muted-foreground pt-1">A {settings.withdrawalFee}% fee will be deducted. Funds will be transferred within 12-24 hours.</p>}
                  {settings && (settings.minWithdrawal || settings.maxWithdrawal) && (
                     <p className="text-xs text-muted-foreground pt-1">
-                        Withdraw between ${settings.minWithdrawal || 0} and ${settings.maxWithdrawal || 'unlimited'}.
+                        Withdraw between PKR {settings.minWithdrawal || 0} and PKR {settings.maxWithdrawal || 'unlimited'}.
                     </p>
                  )}
             </div>

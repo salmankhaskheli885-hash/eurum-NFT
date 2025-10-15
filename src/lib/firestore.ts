@@ -85,7 +85,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
             role: role,
             shortUid: firebaseUser.uid.substring(0, 8),
             balance: 0,
-            currency: 'USD',
+            currency: 'PKR',
             vipLevel: 1,
             vipProgress: 0,
             kycStatus: 'unsubmitted',

@@ -109,11 +109,11 @@ export default function DepositPage() {
         }
 
         if (settings.minDeposit && depositAmount < settings.minDeposit) {
-            toast({ variant: 'destructive', title: `Minimum deposit is $${settings.minDeposit}` });
+            toast({ variant: 'destructive', title: `Minimum deposit is PKR ${settings.minDeposit}` });
             return;
         }
         if (settings.maxDeposit && depositAmount > settings.maxDeposit) {
-            toast({ variant: 'destructive', title: `Maximum deposit is $${settings.maxDeposit}` });
+            toast({ variant: 'destructive', title: `Maximum deposit is PKR ${settings.maxDeposit}` });
             return;
         }
         
@@ -153,7 +153,7 @@ export default function DepositPage() {
     
     // Helper functions for rendering history
     const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
-    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
     const getStatusVariant = (status: Transaction['status']) => {
         switch (status) {
             case 'Completed': return 'default'
@@ -224,7 +224,7 @@ export default function DepositPage() {
                     <Input id="amount" type="number" placeholder="5000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
                     {settings && (settings.minDeposit) && (
                         <p className="text-xs text-muted-foreground pt-1">
-                           Minimum deposit is ${settings.minDeposit || 0}.
+                           Minimum deposit is PKR {settings.minDeposit || 0}.
                         </p>
                     )}
                 </div>

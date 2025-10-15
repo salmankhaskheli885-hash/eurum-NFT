@@ -40,7 +40,7 @@ export default function ProfilePage() {
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat("en-US", {
             style: "currency",
-            currency: user?.currency || "USD",
+            currency: user?.currency || "PKR",
         }).format(amount)
     }
     

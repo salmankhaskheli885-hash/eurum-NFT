@@ -51,7 +51,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
     const { t } = useTranslation()
     const [amount, setAmount] = React.useState(plan.minInvestment);
 
-    const formatCurrency = (val: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+    const formatCurrency = (val: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
 
     const totalProfit = amount * (plan.dailyReturn / 100) * plan.durationDays;
     const totalIncome = amount + totalProfit;
@@ -174,7 +174,7 @@ export default function InvestmentsPage() {
         toast({
             variant: "destructive",
             title: "Insufficient Balance",
-            description: `You need at least $${amount} to invest. Your current balance is $${user.balance.toFixed(2)}.`,
+            description: `You need at least PKR ${amount} to invest. Your current balance is PKR ${user.balance.toFixed(2)}.`,
         });
         return;
     }
@@ -182,7 +182,7 @@ export default function InvestmentsPage() {
         toast({
             variant: "destructive",
             title: "Invalid Amount",
-            description: `Minimum investment for this plan is $${plan.minInvestment}.`,
+            description: `Minimum investment for this plan is PKR ${plan.minInvestment}.`,
         });
         return;
     }
@@ -224,7 +224,7 @@ export default function InvestmentsPage() {
   }
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
   }
   
   const calculateTotalIncome = (plan: InvestmentPlan) => {

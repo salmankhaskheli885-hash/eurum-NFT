@@ -64,7 +64,7 @@ export default function AdminWithdrawalsHistoryPage() {
   
   const formatCurrency = (val: number | undefined) => {
     if (val === undefined) return 'N/A';
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
   }
 
   return (
@@ -90,7 +90,7 @@ export default function AdminWithdrawalsHistoryPage() {
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>Account & User Details</TableHead>
                 <TableHead>Date & Time</TableHead>
-                <TableHead className="text-right">Amount (USD)</TableHead>
+                <TableHead className="text-right">Amount (PKR)</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>
             </TableHeader>

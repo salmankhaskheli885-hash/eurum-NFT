@@ -36,7 +36,7 @@
         "formTitle": "اپنی جمع کی تصدیق کریں",
         "formDescription": "رقم بھیجنے کے بعد، نیچے دی گئی تفصیلات پُر کریں۔",
         "yourNumber": "آپ کا نمبر (جس سے آپ نے رقم بھیجی)",
-        "amount": "بھیجی گئی رقم",
+        "amount": "بھیجی گئی رقم (PKR)",
         "tidNumber": "ٹرانزیکشن ID (TID)",
         "submitButton": "جمع کروانے کی درخواست بھیجیں"
     },
@@ -47,7 +47,7 @@
         "method": "نکلوانے کا طریقہ",
         "accountNumber": "اکاؤنٹ نمبر",
         "accountName": "اکاؤنٹ ہولڈر کا نام",
-        "amount": "نکلوائی جانے والی رقم",
+        "amount": "نکلوائی جانے والی رقم (PKR)",
         "feeNotice": "نکلوائی گئی رقم سے 2% فیس کاٹی جائے گی۔ فنڈز 12-24 گھنٹوں میں منتقل کر دیے جائیں گے۔",
         "submitButton": "رقم نکلوانے کی درخواست بھیجیں",
         "successTitle": "رقم نکلوانے کی درخواست جمع ہوگئی",
@@ -59,7 +59,7 @@
         "id": "ID",
         "type": "قسم",
         "date": "تاریخ",
-        "amount": "رقم",
+        "amount": "رقم (PKR)",
         "status": "حیثیت",
         "all": "تمام",
         "deposits": "ڈیپازٹس",
@@ -76,6 +76,7 @@
         "duration": "مدت",
         "days": "دن",
         "investmentRange": "سرمایہ کاری",
+        "investmentAmount": "سرمایہ کاری کی رقم (PKR)",
         "successTitle": "سرمایہ کاری کامیاب",
         "successDescription": "آپ نے {planName} پلان میں سرمایہ کاری کی ہے۔",
         "confirmTitle": "سرمایہ کاری کی تصدیق کریں",
@@ -96,7 +97,7 @@
         "referredUsersListDescription": "ان تمام صارفین کی فہرست جن کو آپ نے ریفر کیا ہے۔",
         "table": {
             "name": "نام",
-            "totalDeposit": "کل ڈیپازٹ",
+            "totalDeposit": "کل ڈیپازٹ (PKR)",
             "status": "حیثیت",
             "statusValue": {
                 "active": "فعال",
@@ -227,7 +228,7 @@
             "title": "پارٹنر ڈیش بورڈ",
             "description": "آپ کے نیٹ ورک اور آمدنی کا جائزہ۔",
             "totalUsers": "نیٹ ورک میں کل صارفین",
-            "totalInvested": "کل نیٹ ورک سرمایہ کاری",
+            "totalInvested": "کل نیٹ ورک سرمایہ کاری (PKR)",
             "totalCommission": "کل کمیشن حاصل کیا",
             "pendingKyc": "زیر التواء KYC جمع කිරීම"
         },
@@ -279,9 +280,9 @@
         "dashboardDescription": "فائنکس پرو ایپلیکیشن کے تمام پہلوؤں کا نظم کریں۔",
         "stats": {
             "totalUsers": "کل صارفین",
-            "totalDeposits": "کل ڈیپازٹس",
+            "totalDeposits": "کل ڈیپازٹس (PKR)",
             "pendingWithdrawals": "زیر التواء وِدڈرالز",
-            "totalInvested": "کل سرمایہ کاری",
+            "totalInvested": "کل سرمایہ کاری (PKR)",
             "pendingKyc": "زیر التواء KYC"
         },
         "manualActions": "دستی کاروائیاں",

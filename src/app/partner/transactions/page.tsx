@@ -42,7 +42,7 @@ export default function TransactionsPage() {
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "PKR",
       maximumFractionDigits: 2,
     }).format(amount)
   }

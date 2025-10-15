@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
    const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "PKR",
       notation: "compact"
     }).format(amount)
   }
@@ -146,7 +146,7 @@ export default function AdminDashboardPage() {
                             </TableCell>
                             <TableCell>{tx.type}</TableCell>
                             <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tx.amount)}
+                                {new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(tx.amount)}
                             </TableCell>
                              <TableCell className="text-center">
                                 <Badge variant={getStatusVariant(tx.status)}>
