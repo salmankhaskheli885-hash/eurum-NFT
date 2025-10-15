@@ -8,6 +8,10 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllUsers, listenToAllTransactions } from "@/lib/firestore"
 import { type User, type Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
+import { Button } from "@/components/ui/button"
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation()
@@ -25,16 +29,21 @@ export default function AdminDashboardPage() {
     const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         setUsers(allUsers);
         // We can set loading to false once one of the listeners returns data
-        setLoading(false); 
+        if (transactions.length > 0) setLoading(false); 
     });
     
     const unsubscribeTransactions = listenToAllTransactions(firestore, (allTransactions) => {
         setTransactions(allTransactions);
+         if (users.length > 0 || allTransactions.length > 0) setLoading(false);
     });
+
+    // Initial loading fallback
+    const timer = setTimeout(() => setLoading(false), 3000);
 
     return () => {
         unsubscribeUsers();
         unsubscribeTransactions();
+        clearTimeout(timer);
     };
   }, [firestore]);
 
@@ -64,6 +73,15 @@ export default function AdminDashboardPage() {
     { title: t('admin.stats.totalInvested'), value: formatCurrency(totalInvested), icon: TrendingUp },
     { title: t('admin.stats.pendingKyc'), value: pendingKyc.toString(), icon: ShieldCheck },
   ]
+  
+  const getStatusVariant = (status: Transaction['status']) => {
+    switch (status) {
+      case 'Completed': return 'default'
+      case 'Pending': return 'secondary'
+      case 'Failed': return 'destructive'
+      default: return 'outline'
+    }
+  }
 
   const StatCard = ({ stat, isLoading }: { stat: typeof stats[0], isLoading: boolean }) => (
      <Card>
@@ -76,6 +94,8 @@ export default function AdminDashboardPage() {
         </CardContent>
     </Card>
   )
+
+  const recentTransactions = transactions.slice(0, 5);
 
   return (
     <div className="flex flex-col gap-4">
@@ -90,28 +110,92 @@ export default function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-            <CardHeader>
-                <CardTitle>{t('admin.manualActions')}</CardTitle>
-                <CardDescription>{t('admin.manualActionsDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    <li>{t('admin.action.approveWithdrawals')}</li>
-                    <li>{t('admin.action.manageUsers')}</li>
-                    <li>{t('admin.action.approveKyc')}</li>
-                    <li>{t('admin.action.managePlans')}</li>
-                </ul>
-            </CardContent>
-        </Card>
-        <Card>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+        <Card className="lg:col-span-2">
             <CardHeader>
                 <CardTitle>{t('admin.activityLogs')}</CardTitle>
                 <CardDescription>{t('admin.activityLogsDescription')}</CardDescription>
             </CardHeader>
             <CardContent>
-                <p className="text-muted-foreground text-sm">{t('admin.activityPlaceholder')}</p>
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {loading ? (
+                        [...Array(5)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-16" /></TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                            </TableRow>
+                        ))
+                    ) : recentTransactions.length > 0 ? (
+                        recentTransactions.map((tx) => (
+                        <TableRow key={tx.id}>
+                            <TableCell>
+                                <div className="font-medium">{tx.userName}</div>
+                                <div className="text-sm text-muted-foreground hidden md:inline">{tx.userId.substring(0,10)}...</div>
+                            </TableCell>
+                            <TableCell>{tx.type}</TableCell>
+                            <TableCell className={`text-right font-medium ${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tx.amount)}
+                            </TableCell>
+                             <TableCell className="text-center">
+                                <Badge variant={getStatusVariant(tx.status)}>
+                                {tx.status}
+                                </Badge>
+                            </TableCell>
+                        </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">
+                            {t('admin.activityPlaceholder')}
+                            </TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader>
+                <CardTitle>{t('admin.manualActions')}</CardTitle>
+                <CardDescription>{t('admin.manualActionsDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <div className="flex flex-col gap-2">
+                    <Link href="/admin/deposits">
+                        <Button variant="outline" className="w-full justify-start">
+                            Approve Deposits
+                            {pendingDeposits > 0 && <Badge className="ml-auto">{pendingDeposits}</Badge>}
+                        </Button>
+                    </Link>
+                     <Link href="/admin/withdrawals">
+                        <Button variant="outline" className="w-full justify-start">
+                             Approve Withdrawals
+                            {pendingWithdrawals > 0 && <Badge className="ml-auto">{pendingWithdrawals}</Badge>}
+                        </Button>
+                    </Link>
+                     <Link href="/admin/kyc">
+                        <Button variant="outline" className="w-full justify-start">
+                            Approve KYC
+                             {pendingKyc > 0 && <Badge className="ml-auto">{pendingKyc}</Badge>}
+                        </Button>
+                    </Link>
+                      <Link href="/admin/users">
+                        <Button variant="outline" className="w-full justify-start">
+                            Manage Users
+                        </Button>
+                    </Link>
+                </div>
             </CardContent>
         </Card>
       </div>
