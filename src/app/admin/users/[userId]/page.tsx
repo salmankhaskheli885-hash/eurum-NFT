@@ -212,7 +212,7 @@ export default function AdminUserDetailsPage() {
                                     {getInvestmentPlans().length > 0 ? getInvestmentPlans().map(tx => (
                                         <TableRow key={tx.id}>
                                             <TableCell>{tx.investmentDetails?.planName}</TableCell>
-                                            <TableCell>${Math.abs(tx.amount).toLocaleString()}</TableCell>
+                                            <TableCell>PKR {Math.abs(tx.amount).toLocaleString()}</TableCell>
                                             <TableCell>{formatDate(tx.investmentDetails!.maturityDate)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={new Date(tx.investmentDetails!.maturityDate) < new Date() ? 'default' : 'secondary'}>
@@ -250,7 +250,7 @@ export default function AdminUserDetailsPage() {
                                         <TableRow key={tx.id}>
                                             <TableCell className="font-mono text-xs">{tx.id.substring(0, 8)}...</TableCell>
                                             <TableCell>{tx.type}</TableCell>
-                                            <TableCell className={`${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>${tx.amount.toLocaleString()}</TableCell>
+                                            <TableCell className={`${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>PKR {tx.amount.toLocaleString()}</TableCell>
                                             <TableCell>{formatDate(tx.date)}</TableCell>
                                             <TableCell>
                                                 <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
