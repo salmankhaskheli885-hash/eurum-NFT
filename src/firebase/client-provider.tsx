@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -39,7 +40,7 @@ export function FirebaseClientProvider({
   }, [firebase]);
 
   if (!firebase || !firebase.app) {
-    // You can return a loader here. Returning null for now.
+    // You can return a loader here. Returning null for now prevents children from rendering prematurely.
     return null;
   }
 
