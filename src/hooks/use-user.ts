@@ -1,11 +1,11 @@
 
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import type { UserProfile } from '@/lib/schema';
 import { useAuth, useFirestore } from '@/firebase/provider';
 import { onAuthStateChanged, type User as FirebaseUser } from 'firebase/auth';
-import { getOrCreateUser, listenToUser } from '@/lib/firestore';
+import { listenToUser } from '@/lib/firestore';
 
 /**
  * This hook provides the currently logged-in user's profile and authentication state in real-time.
@@ -20,47 +20,41 @@ export function useUser({ viewAsUserId }: { viewAsUserId?: string | null } = {})
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
-    setLoading(true);
     let unsubscribe: (() => void) | null = null;
-    let authUnsubscribe: (() => void) | null = null;
     
-    if (!firestore) {
-        setLoading(false);
-        return;
-    }
-
-    if (viewAsUserId) {
-        // Admin is viewing a specific user profile
-        unsubscribe = listenToUser(firestore, viewAsUserId, (userProfile) => {
+    // Function to start listening to a user's document
+    const subscribeToUser = (uid: string) => {
+        if (!firestore) return;
+        setLoading(true);
+        unsubscribe = listenToUser(firestore, uid, (userProfile) => {
             setUser(userProfile);
             setLoading(false);
         });
+    };
+
+    // If an admin is viewing a specific user, bypass auth state
+    if (viewAsUserId) {
+        subscribeToUser(viewAsUserId);
         return () => {
             if (unsubscribe) unsubscribe();
         };
     }
-    
-    if (!auth) {
+
+    // For regular users, wait for auth state
+    if (!auth || !firestore) {
         setLoading(false);
         return;
     }
 
-    authUnsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
-      // Clean up previous user listener
+    const authUnsubscribe = onAuthStateChanged(auth, (firebaseUser: FirebaseUser | null) => {
+      // Clean up previous Firestore listener if auth state changes
       if (unsubscribe) unsubscribe();
 
       if (firebaseUser) {
-        // The listener will handle the case where the document might not exist yet.
-        // It will eventually get the data once getOrCreateUser creates it on login.
-        unsubscribe = listenToUser(firestore, firebaseUser.uid, (userProfile) => {
-            if (userProfile) {
-                setUser(userProfile);
-                setLoading(false);
-            }
-            // If userProfile is null, we keep loading until it's created.
-            // A timeout could be added here to prevent infinite loading state.
-        });
+        // User is logged in, start listening to their Firestore document
+        subscribeToUser(firebaseUser.uid);
       } else {
+        // User is not logged in
         setUser(null);
         setLoading(false);
       }
