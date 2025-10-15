@@ -161,87 +161,94 @@ async function uploadReceiptAndUpdateTransaction(
 }
 
 // TRANSACTION FUNCTIONS
-export function addTransaction(
+export async function addTransaction(
     firestore: ReturnType<typeof getFirestore>,
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
-): Promise<void> {
-    return new Promise(async (resolve, reject) => {
-        const { receiptFile, ...dataToSave } = transactionData;
+) {
+    const { receiptFile, ...dataToSave } = transactionData;
+    let newTransactionDocId: string;
 
-        try {
-            await runTransaction(firestore, async (transaction) => {
-                const userRef = doc(firestore, 'users', dataToSave.userId);
-                const userSnap = await transaction.get(userRef);
+    try {
+        // Step 1: Run the database transaction to update balances and create the transaction document.
+        newTransactionDocId = await runTransaction(firestore, async (transaction) => {
+            const userRef = doc(firestore, 'users', dataToSave.userId);
+            const userSnap = await transaction.get(userRef);
 
-                if (!userSnap.exists()) {
-                    throw new Error("User not found for transaction");
-                }
+            if (!userSnap.exists()) {
+                throw new Error("User not found for transaction");
+            }
 
-                const user = userSnap.data() as User;
-                const newTransactionDataWithDate: Omit<Transaction, 'id'|'receiptUrl'> = {
-                    ...dataToSave,
-                    date: new Date().toISOString(),
-                };
+            const user = userSnap.data() as User;
+            
+            const newTransactionDataWithDate = {
+                ...dataToSave,
+                date: new Date().toISOString(),
+            };
+            // Remove receiptFile from the object to be saved in Firestore
+            delete (newTransactionDataWithDate as any).receiptFile;
 
-                // Specific logic for Withdrawal
-                if (dataToSave.type === 'Withdrawal') {
-                    if (user.lastWithdrawalDate) {
-                        const today = new Date();
-                        today.setHours(0, 0, 0, 0);
-                        const lastWithdrawal = new Date(user.lastWithdrawalDate);
-                        if (lastWithdrawal >= today) {
-                            throw new Error("You can only make one withdrawal request per day.");
-                        }
-                    }
-                    const withdrawalAmount = Math.abs(dataToSave.amount);
-                    const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-                    const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-                    const feeAmount = withdrawalAmount * (feePercentage / 100);
-                    const totalDeduction = withdrawalAmount; // Fee is only added for display, not double-deducted
-
-                    if (user.balance < withdrawalAmount) {
-                        throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
-                    }
-                    const newBalance = user.balance - totalDeduction;
-                    transaction.update(userRef, { balance: newBalance });
-
-                    if (newTransactionDataWithDate.withdrawalDetails){
-                        newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
+            // --- Handle balance changes within the transaction ---
+            if (dataToSave.type === 'Withdrawal') {
+                 if (user.lastWithdrawalDate) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const lastWithdrawal = new Date(user.lastWithdrawalDate);
+                    if (lastWithdrawal >= today) {
+                        throw new Error("You can only make one withdrawal request per day.");
                     }
                 }
-                // Specific logic for Investment
-                else if (dataToSave.type === 'Investment') {
-                    const investmentAmount = Math.abs(dataToSave.amount);
-                    if (user.balance < investmentAmount) {
-                        throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-                    }
-                    const newBalance = user.balance - investmentAmount;
-                    transaction.update(userRef, { balance: newBalance });
+                const withdrawalAmount = Math.abs(dataToSave.amount);
+                 const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+                const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                const feeAmount = withdrawalAmount * (feePercentage / 100);
+                
+                if (user.balance < withdrawalAmount) {
+                     throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
+                }
+                const newBalance = user.balance - withdrawalAmount;
+                transaction.update(userRef, { balance: newBalance });
+
+                if (newTransactionDataWithDate.withdrawalDetails){
+                    newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
                 }
 
-                // Create the transaction document
-                const transactionDocRef = doc(collection(firestore, 'transactions'));
-                transaction.set(transactionDocRef, newTransactionDataWithDate);
-
-                // Handle background upload for deposits
-                if (dataToSave.type === 'Deposit' && receiptFile) {
-                    uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
+            } else if (dataToSave.type === 'Investment') {
+                const investmentAmount = Math.abs(dataToSave.amount);
+                if (user.balance < investmentAmount) {
+                    throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
                 }
+                const newBalance = user.balance - investmentAmount;
+                transaction.update(userRef, { balance: newBalance });
+            }
+            // --- End of balance changes ---
 
-                // Handle investment payout scheduling
-                if (dataToSave.type === 'Investment') {
-                    const finalTx = {id: transactionDocRef.id, ...newTransactionDataWithDate} as Transaction;
-                    handleInvestmentPayout(firestore, finalTx);
-                }
-            });
+            const transactionDocRef = doc(collection(firestore, 'transactions'));
+            transaction.set(transactionDocRef, newTransactionDataWithDate);
+            
+            return transactionDocRef.id; // Return the new document ID
+        });
 
-            resolve();
-
-        } catch (error) {
-            console.error("Transaction failed:", error);
-            reject(error);
+        // Step 2: If it was a deposit with a receipt, upload the file in the background.
+        // This happens *after* the database transaction is successfully committed.
+        if (dataToSave.type === 'Deposit' && receiptFile) {
+            await uploadReceiptAndUpdateTransaction(firestore, newTransactionDocId, dataToSave.userId, receiptFile);
         }
-    });
+
+        // Step 3: Handle post-transaction logic like scheduling payouts
+        if (dataToSave.type === 'Investment') {
+             const finalTx = {
+                id: newTransactionDocId, 
+                ...dataToSave,
+                date: new Date().toISOString()
+            } as Transaction;
+            handleInvestmentPayout(firestore, finalTx);
+        }
+
+    } catch (error) {
+        console.error("Transaction failed:", error);
+        // Re-throw the error so the calling UI can handle it
+        throw error;
+    }
 }
 
 
