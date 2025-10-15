@@ -1,6 +1,7 @@
 
 "use client"
 import Link from "next/link"
+import React from "react"
 import { usePathname } from "next/navigation"
 import {
   LayoutDashboard,
@@ -30,12 +31,16 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem
+  SidebarMenuSubItem,
+  SidebarMenuBadge
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/icons"
 import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { useFirestore } from "@/firebase/provider"
+import { listenToAllTransactions } from "@/lib/firestore"
+import type { Transaction } from "@/lib/data"
 
 export default function AdminLayout({
   children,
@@ -44,6 +49,24 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname()
   const { t } = useTranslation()
+  const firestore = useFirestore()
+
+  const [pendingDeposits, setPendingDeposits] = React.useState(0);
+  const [pendingWithdrawals, setPendingWithdrawals] = React.useState(0);
+
+  React.useEffect(() => {
+    if (!firestore) return;
+
+    const unsubscribe = listenToAllTransactions(firestore, (transactions: Transaction[]) => {
+      const deposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending').length;
+      const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
+      setPendingDeposits(deposits);
+      setPendingWithdrawals(withdrawals);
+    });
+
+    return () => unsubscribe();
+  }, [firestore]);
+
 
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
@@ -52,6 +75,7 @@ export default function AdminLayout({
       href: "/admin/deposits", 
       label: t('admin.nav.deposits'), 
       icon: DollarSign,
+      badge: pendingDeposits,
       subItems: [
         { href: "/admin/deposits/history", label: "History" }
       ] 
@@ -60,6 +84,7 @@ export default function AdminLayout({
       href: "/admin/withdrawals", 
       label: t('admin.nav.withdrawals'), 
       icon: Landmark,
+      badge: pendingWithdrawals,
       subItems: [
         { href: "/admin/withdrawals/history", label: "History" }
       ] 
@@ -102,6 +127,9 @@ export default function AdminLayout({
                   >
                     <item.icon />
                     <span>{item.label}</span>
+                     {item.badge && item.badge > 0 ? (
+                      <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                    ) : null}
                   </SidebarMenuButton>
                 </Link>
                 {item.subItems && (
