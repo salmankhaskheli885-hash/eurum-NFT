@@ -513,7 +513,7 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     await updateDoc(roomRef, {
         lastMessage: text,
         lastMessageAt: new Date().toISOString(),
-        isResolved: senderType === 'agent' ? true : false,
+        isResolved: senderType === 'agent', // Resolve on agent reply, un-resolve on user reply
     });
 }
 

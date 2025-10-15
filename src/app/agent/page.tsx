@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Send, Bot } from "lucide-react"
@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils"
 function ChatRoomList({ rooms, onSelectRoom, selectedRoomId, loading }: { rooms: ChatRoom[], onSelectRoom: (roomId: string) => void, selectedRoomId: string | null, loading: boolean }) {
     if (loading) {
         return (
-            <div className="space-y-2">
+            <div className="space-y-2 p-2">
                 {[...Array(3)].map((_, i) => (
                     <div key={i} className="flex items-center gap-4 p-2">
                         <Skeleton className="h-12 w-12 rounded-full" />
@@ -159,17 +159,15 @@ export default function AgentDashboardPage() {
             const activeRooms = newRooms.filter(room => !room.isResolved);
             setRooms(activeRooms);
             setRoomsLoading(false);
-            if (!selectedRoomId && activeRooms.length > 0) {
-                setSelectedRoomId(activeRooms[0].id);
-            }
-             // If the currently selected room is resolved, deselect it
-            if (selectedRoomId && !activeRooms.find(r => r.id === selectedRoomId)) {
+            
+            // If there's no selected room OR the selected room is no longer in the active list, select the first active room.
+            if (!selectedRoomId || !activeRooms.find(r => r.id === selectedRoomId)) {
                 setSelectedRoomId(activeRooms.length > 0 ? activeRooms[0].id : null);
             }
         });
 
         return () => unsubscribe();
-    }, [firestore, selectedRoomId]);
+    }, [firestore, selectedRoomId]); // Re-run if selectedRoomId changes to re-evaluate the selection
     
     React.useEffect(() => {
         if (!firestore || !selectedRoomId) {
