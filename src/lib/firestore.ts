@@ -26,7 +26,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent } from './data';
 
 // USER FUNCTIONS
-export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser): Promise<User> {
+export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole: 'user' | 'partner'): Promise<User> {
     const userRef = doc(firestore, 'users', firebaseUser.uid);
     const userSnap = await getDoc(userRef);
 
@@ -46,8 +46,9 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         return userData;
     } else {
         const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
-        const isPartner = firebaseUser.email === 'vitalik@fynix.pro';
-        const role = isAdmin ? 'admin' : isPartner ? 'partner' : 'user';
+        
+        // If not admin, use the role from the tab they clicked
+        const role = isAdmin ? 'admin' : intendedRole;
 
         let referredBy: string | undefined = undefined;
         try {
@@ -428,6 +429,13 @@ export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFires
 }
 
 // CHAT AGENT FUNCTIONS
+export async function isUserAChatAgent(firestore: ReturnType<typeof getFirestore>, email: string): Promise<boolean> {
+    const agentsRef = collection(firestore, 'chat_agents');
+    const q = query(agentsRef, where("email", "==", email), limit(1));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+}
+
 export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, agent: Omit<ChatAgent, 'id'>) {
     const agentsCollection = collection(firestore, 'chat_agents');
     await addDoc(agentsCollection, agent);

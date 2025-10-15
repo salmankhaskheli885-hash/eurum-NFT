@@ -2,7 +2,6 @@
 "use client"
 
 import { AuthForm } from '@/components/auth/auth-form';
-import { AgentAuthForm } from '@/components/auth/agent-auth-form';
 import { useTranslation } from '@/hooks/use-translation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -20,19 +19,15 @@ export default function LoginPage() {
           </p>
         </div>
         <Tabs defaultValue="user" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="user">{t('login.userTab')}</TabsTrigger>
             <TabsTrigger value="partner">{t('login.partnerTab')}</TabsTrigger>
-            <TabsTrigger value="agent">Agent</TabsTrigger>
           </TabsList>
           <TabsContent value="user">
-            <AuthForm mode="login" role="user" />
+            <AuthForm role="user" />
           </TabsContent>
           <TabsContent value="partner">
-            <AuthForm mode="login" role="partner" />
-          </TabsContent>
-           <TabsContent value="agent">
-            <AgentAuthForm />
+            <AuthForm role="partner" />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,15 +1,14 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
-import type { UserProfile } from '@/lib/schema';
-import { getOrCreateUser } from '@/lib/firestore'; // Import getOrCreateUser
+import { getOrCreateUser, isUserAChatAgent } from '@/lib/firestore';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -18,8 +17,6 @@ import {
     AlertDialogTitle,
     AlertDialogFooter
 } from "@/components/ui/alert-dialog"
-import Link from 'next/link';
-
 
 function GoogleIcon(props: any) {
     return (
@@ -98,7 +95,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
               router.push('/partner');
               break;
           case 'agent':
-              router.push('/admin'); // Placeholder: agent panel not yet built
+              router.push('/admin'); // Redirect agent to admin panel for now
               break;
       }
   };
@@ -120,7 +117,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         const firebaseUser = result.user;
         
         // Get or create the user profile from Firestore to get their role
-        const userProfile = await getOrCreateUser(firestore, firebaseUser);
+        const userProfile = await getOrCreateUser(firestore, firebaseUser, intendedRole);
         
         toast({
             title: t('login.successTitle'),
@@ -130,6 +127,16 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         if (userProfile.role === 'admin') {
             setShowRoleDialog(true);
             setLoading(false);
+            return;
+        }
+
+        // Check if the user is a chat agent (but not an admin)
+        if (firebaseUser.email && await isUserAChatAgent(firestore, firebaseUser.email)) {
+             toast({
+                title: "Agent Login Successful",
+                description: `Welcome, ${userProfile.displayName}!`,
+            });
+            router.push('/admin'); // Redirect agents to the admin panel
             return;
         }
 
