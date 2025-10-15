@@ -210,27 +210,35 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    let assignedAgentId: string | null = null;
-    // Assign agent only for pending deposits and withdrawals
-    if (dataToSave.status === 'Pending') {
-        if (dataToSave.type === 'Deposit') {
-            assignedAgentId = await assignAgent(firestore, 'canApproveDeposits');
-        } else if (dataToSave.type === 'Withdrawal') {
-            assignedAgentId = await assignAgent(firestore, 'canApproveWithdrawals');
-        }
-    }
-    
-    const finalTransactionData: Omit<Transaction, 'id'> = {
+    const transactionObject: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
         status: dataToSave.status || 'Pending',
-        assignedAgentId: assignedAgentId || undefined
     };
     
-    const newTransactionRef = await addDoc(collection(firestore, 'transactions'), finalTransactionData);
-    const fullTransaction = { ...finalTransactionData, id: newTransactionRef.id };
+    // Assign agent only for pending deposits and withdrawals
+    if (transactionObject.status === 'Pending') {
+        let permission: 'canApproveDeposits' | 'canApproveWithdrawals' | null = null;
+        if (transactionObject.type === 'Deposit') {
+            permission = 'canApproveDeposits';
+        } else if (transactionObject.type === 'Withdrawal') {
+            permission = 'canApproveWithdrawals';
+        }
 
-    if (finalTransactionData.status === 'Completed') {
+        if (permission) {
+             transactionObject.assignedAgentId = await assignAgent(firestore, permission) || undefined;
+        }
+    }
+    
+    // Remove assignedAgentId if it's null or undefined to prevent Firestore errors
+    if (transactionObject.assignedAgentId === null || transactionObject.assignedAgentId === undefined) {
+        delete transactionObject.assignedAgentId;
+    }
+    
+    const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
+    const fullTransaction = { ...transactionObject, id: newTransactionRef.id } as Transaction;
+
+    if (transactionObject.status === 'Completed') {
          await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', fullTransaction);
     }
 
@@ -606,7 +614,7 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     await addDoc(messagesRef, messageData);
     
     // If agent sends a message, resolve it. If user sends, unresolve it.
-    const isResolved = senderType === 'agent';
+    const isResolved = senderType !== 'user';
     
     await updateDoc(roomRef, {
         lastMessage: text,
