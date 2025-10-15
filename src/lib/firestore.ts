@@ -1,3 +1,4 @@
+
 'use client';
 import {
   getFirestore,
@@ -205,79 +206,89 @@ async function uploadReceiptAndUpdateTransaction(
 
 
 // TRANSACTION FUNCTIONS
-export async function addTransaction(
-    firestore: ReturnType<typeof getFirestore>, 
+export function addTransaction(
+    firestore: ReturnType<typeof getFirestore>,
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
-) {
-    
-    // Separate the local file object from the data to be saved in Firestore
-    const { receiptFile, ...dataToSave } = transactionData;
-    
-    // This is the core logic for all transaction types
-    await runTransaction(firestore, async (transaction) => {
-        const userRef = doc(firestore, 'users', dataToSave.userId);
-        const userSnap = await transaction.get(userRef);
+): Promise<void> {
+    return new Promise(async (resolve, reject) => {
+        const { receiptFile, ...dataToSave } = transactionData;
 
-        if (!userSnap.exists()) {
-            throw new Error("User not found for transaction");
-        }
-        
-        const user = userSnap.data() as User;
+        try {
+            await runTransaction(firestore, async (transaction) => {
+                const userRef = doc(firestore, 'users', dataToSave.userId);
+                const userSnap = await transaction.get(userRef);
 
-        const newTransactionDataWithDate: Omit<Transaction, 'id' | 'receiptUrl'> = {
-            ...dataToSave,
-            date: new Date().toISOString(),
-        }
-
-        if (dataToSave.type === 'Withdrawal') {
-            if (user.lastWithdrawalDate) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const lastWithdrawal = new Date(user.lastWithdrawalDate);
-                if (lastWithdrawal >= today) {
-                    throw new Error("You can only make one withdrawal request per day.");
+                if (!userSnap.exists()) {
+                    throw new Error("User not found for transaction");
                 }
-            }
-            const withdrawalAmount = Math.abs(dataToSave.amount);
-            const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-            const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-            const feeAmount = withdrawalAmount * (feePercentage / 100);
-            const totalDeduction = withdrawalAmount + feeAmount;
 
-            if (user.balance < totalDeduction) {
-                throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
-            }
-            const newBalance = user.balance - totalDeduction;
-            transaction.update(userRef, { balance: newBalance });
-            if(newTransactionDataWithDate.withdrawalDetails){
-                newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
-            }
+                const user = userSnap.data() as User;
 
-        } else if (dataToSave.type === 'Investment') {
-            const investmentAmount = Math.abs(dataToSave.amount);
-            if (user.balance < investmentAmount) {
-                throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-            }
-            const newBalance = user.balance - investmentAmount;
-            transaction.update(userRef, { balance: newBalance });
-        }
-        
-        // Always create the transaction document
-        const transactionDocRef = doc(collection(firestore, 'transactions'));
-        transaction.set(transactionDocRef, newTransactionDataWithDate);
+                const newTransactionDataWithDate: Omit<Transaction, 'id' | 'receiptUrl'> = {
+                    ...dataToSave,
+                    date: new Date().toISOString(),
+                };
 
-        // Handle background upload for deposits
-        if (dataToSave.type === 'Deposit' && receiptFile) {
-            uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
-        }
+                // Specific logic for Withdrawal
+                if (dataToSave.type === 'Withdrawal') {
+                    if (user.lastWithdrawalDate) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const lastWithdrawal = new Date(user.lastWithdrawalDate);
+                        if (lastWithdrawal >= today) {
+                            throw new Error("You can only make one withdrawal request per day.");
+                        }
+                    }
+                    const withdrawalAmount = Math.abs(dataToSave.amount);
+                    const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+                    const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                    const feeAmount = withdrawalAmount * (feePercentage / 100);
+                    const totalDeduction = withdrawalAmount + feeAmount;
 
-        // Handle investment payout scheduling
-        if (dataToSave.type === 'Investment') {
-            const finalTx = {id: transactionDocRef.id, ...newTransactionDataWithDate} as Transaction;
-            handleInvestmentPayout(firestore, finalTx);
+                    if (user.balance < totalDeduction) {
+                        throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
+                    }
+                    const newBalance = user.balance - totalDeduction;
+                    transaction.update(userRef, { balance: newBalance });
+                    if(newTransactionDataWithDate.withdrawalDetails){
+                        newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
+                    }
+                }
+                // Specific logic for Investment
+                else if (dataToSave.type === 'Investment') {
+                    const investmentAmount = Math.abs(dataToSave.amount);
+                    if (user.balance < investmentAmount) {
+                        throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+                    }
+                    const newBalance = user.balance - investmentAmount;
+                    transaction.update(userRef, { balance: newBalance });
+                }
+
+                // Create the transaction document
+                const transactionDocRef = doc(collection(firestore, 'transactions'));
+                transaction.set(transactionDocRef, newTransactionDataWithDate);
+
+                // Handle background upload for deposits
+                if (dataToSave.type === 'Deposit' && receiptFile) {
+                    uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
+                }
+
+                // Handle investment payout scheduling
+                if (dataToSave.type === 'Investment') {
+                    const finalTx = {id: transactionDocRef.id, ...newTransactionDataWithDate} as Transaction;
+                    handleInvestmentPayout(firestore, finalTx);
+                }
+            });
+
+            resolve(); // The entire transaction was successful
+
+        } catch (error) {
+            console.error("Transaction failed:", error);
+            reject(error); // The transaction failed
         }
     });
 }
+
 
 
 export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed') {
@@ -321,21 +332,21 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 let vipProgress = user.vipProgress;
 
                 // --- Corrected VIP Level Up Logic ---
-                if (newTotalDeposits >= 500 && newVipLevel < 3) {
+                if (newTotalDeposits >= 500 && user.vipLevel < 3) {
                     newVipLevel = 3;
                     const nextLevelThreshold = 1000; // Example for next level
                     const currentLevelThreshold = 500;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (newTotalDeposits >= 100 && newVipLevel < 2) {
+                } else if (newTotalDeposits >= 100 && user.vipLevel < 2) {
                     newVipLevel = 2;
                     const nextLevelThreshold = 500;
                     const currentLevelThreshold = 100;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (newVipLevel === 1) {
+                } else if (user.vipLevel === 1) {
                     const nextLevelThreshold = 100;
                     vipProgress = (newTotalDeposits / nextLevelThreshold) * 100;
                 }
