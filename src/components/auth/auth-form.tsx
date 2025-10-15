@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
-import { getOrCreateUser, isUserAChatAgent } from '@/lib/firestore';
+import { getOrCreateUser, isUserAChatAgent, getAppSettings } from '@/lib/firestore';
 import {
     AlertDialog,
     AlertDialogContent,
@@ -110,9 +110,32 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         return;
     }
     setLoading(true);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
+
     try {
+        const settings = await getAppSettings(firestore);
+
+        // Check if the intended panel is enabled
+        if (intendedRole === 'user' && !settings.isUserPanelEnabled) {
+            toast({
+                variant: "destructive",
+                title: "Panel Temporarily Unavailable",
+                description: "The user panel is currently under maintenance. Please try again later.",
+            });
+            setLoading(false);
+            return;
+        }
+        if (intendedRole === 'partner' && !settings.isPartnerPanelEnabled) {
+            toast({
+                variant: "destructive",
+                title: "Panel Temporarily Unavailable",
+                description: "The partner panel is currently under maintenance. Please try again later.",
+            });
+            setLoading(false);
+            return;
+        }
+
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
         const result = await signInWithPopup(auth, provider);
         const firebaseUser = result.user;
         
@@ -129,9 +152,20 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
             setLoading(false);
             return;
         }
-
+        
         // Check if the user is a chat agent (but not an admin)
-        if (firebaseUser.email && await isUserAChatAgent(firestore, firebaseUser.email)) {
+        const isAgent = await isUserAChatAgent(firestore, firebaseUser.email!);
+        if (isAgent) {
+             if (!settings.isAgentPanelEnabled) {
+                toast({
+                    variant: "destructive",
+                    title: "Panel Temporarily Unavailable",
+                    description: "The agent panel is currently under maintenance. Please try again later.",
+                });
+                await auth.signOut(); // Sign out the user
+                setLoading(false);
+                return;
+            }
              toast({
                 title: "Agent Login Successful",
                 description: `Welcome, ${userProfile.displayName}!`,

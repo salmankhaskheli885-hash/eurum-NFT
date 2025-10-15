@@ -210,7 +210,7 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    const transactionObject: Omit<Transaction, 'id'> = {
+    const transactionObject: Partial<Transaction> = {
         ...dataToSave,
         date: new Date().toISOString(),
         status: dataToSave.status || 'Pending',
@@ -228,7 +228,6 @@ export async function addTransaction(
         if (permission) {
              const agentId = await assignAgent(firestore, permission);
              if (agentId) {
-                // @ts-ignore
                 transactionObject.assignedAgentId = agentId;
              }
         }
@@ -478,6 +477,24 @@ export function listenToAllInvestmentPlans(firestore: ReturnType<typeof getFires
 }
 
 // APP SETTINGS FUNCTIONS
+export async function getAppSettings(firestore: ReturnType<typeof getFirestore>): Promise<AppSettings> {
+    const settingsRef = doc(firestore, 'app', 'settings');
+    const docSnap = await getDoc(settingsRef);
+    if (docSnap.exists()) {
+        return docSnap.data() as AppSettings;
+    }
+    return {
+        adminWalletNumber: "",
+        adminWalletName: "",
+        adminAccountHolderName: "",
+        withdrawalFee: 0,
+        isUserPanelEnabled: true,
+        isPartnerPanelEnabled: true,
+        isAgentPanelEnabled: true,
+    };
+}
+
+
 export function listenToAppSettings(firestore: ReturnType<typeof getFirestore>, callback: (settings: AppSettings) => void): Unsubscribe {
     const settingsRef = doc(firestore, 'app', 'settings');
     return onSnapshot(settingsRef, (doc) => {
@@ -488,7 +505,10 @@ export function listenToAppSettings(firestore: ReturnType<typeof getFirestore>, 
                 adminWalletNumber: "0300-1234567",
                 adminWalletName: "JazzCash",
                 adminAccountHolderName: "Fynix Pro Admin",
-                withdrawalFee: 2
+                withdrawalFee: 2,
+                isUserPanelEnabled: true,
+                isPartnerPanelEnabled: true,
+                isAgentPanelEnabled: true,
             });
         }
     });

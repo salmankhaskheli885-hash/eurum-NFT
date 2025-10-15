@@ -161,7 +161,10 @@
             "maxDeposit": { "type": "number" },
             "minWithdrawal": { "type": "number" },
             "maxWithdrawal": { "type": "number" },
-            "lastAssignedAgentIndex": { "type": "number", "description": "Internal counter for round-robin agent assignment." }
+            "lastAssignedAgentIndex": { "type": "number", "description": "Internal counter for round-robin agent assignment." },
+            "isUserPanelEnabled": { "type": "boolean", "description": "Controls access to the user panel." },
+            "isPartnerPanelEnabled": { "type": "boolean", "description": "Controls access to the partner panel." },
+            "isAgentPanelEnabled": { "type": "boolean", "description": "Controls access to the agent panel." }
         },
         "required": ["adminWalletNumber", "adminWalletName", "adminAccountHolderName", "withdrawalFee"]
     }

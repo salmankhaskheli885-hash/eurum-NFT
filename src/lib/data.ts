@@ -69,6 +69,9 @@ export type AppSettings = {
     minWithdrawal?: number;
     maxWithdrawal?: number;
     lastAssignedAgentIndex?: number;
+    isUserPanelEnabled?: boolean;
+    isPartnerPanelEnabled?: boolean;
+    isAgentPanelEnabled?: boolean;
 }
 
 export type Announcement = {
@@ -125,6 +128,9 @@ export let appSettings: AppSettings = {
     maxDeposit: 10000,
     minWithdrawal: 20,
     maxWithdrawal: 5000,
+    isUserPanelEnabled: true,
+    isPartnerPanelEnabled: true,
+    isAgentPanelEnabled: true,
 }
 
 // These arrays are no longer the source of truth. They are empty.

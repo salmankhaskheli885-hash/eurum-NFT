@@ -3,15 +3,110 @@
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Users, TrendingUp, ShieldCheck, Hourglass } from "lucide-react"
+import { DollarSign, Users, TrendingUp, ShieldCheck, Hourglass, Power } from "lucide-react"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllUsers, listenToAllTransactions } from "@/lib/firestore"
-import { type User, type Transaction } from "@/lib/data"
+import { listenToAllUsers, listenToAllTransactions, listenToAppSettings, updateAppSettings } from "@/lib/firestore"
+import { type User, type Transaction, type AppSettings } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/hooks/use-toast"
+
+function PanelControlCard() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    const [settings, setSettings] = React.useState<Partial<AppSettings>>({});
+    const [loading, setLoading] = React.useState(true);
+
+    React.useEffect(() => {
+        if (!firestore) return;
+        const unsubscribe = listenToAppSettings(firestore, (appSettings) => {
+            setSettings(appSettings);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [firestore]);
+
+    const handleToggle = async (panel: 'isUserPanelEnabled' | 'isPartnerPanelEnabled' | 'isAgentPanelEnabled') => {
+        if (!firestore) return;
+
+        const newValue = !settings[panel];
+        const newSettings = { ...settings, [panel]: newValue };
+        setSettings(newSettings); // Optimistic update
+
+        try {
+            await updateAppSettings(firestore, { [panel]: newValue });
+            toast({
+                title: "Setting Updated",
+                description: `${panel.replace('is', '').replace('Enabled', '')} has been ${newValue ? 'Enabled' : 'Disabled'}.`
+            });
+        } catch (error) {
+            // Revert on failure
+            setSettings(prev => ({ ...prev, [panel]: !newValue }));
+            toast({
+                variant: "destructive",
+                title: "Update Failed",
+                description: "Could not save the setting."
+            });
+        }
+    };
+    
+    if (loading) {
+        return (
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Power className="h-5 w-5 text-primary"/>Panel Control</CardTitle>
+                    <CardDescription>Enable or disable access to different panels.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                    <Skeleton className="h-10 w-full" />
+                </CardContent>
+            </Card>
+        )
+    }
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Power className="h-5 w-5 text-primary"/>Panel Control</CardTitle>
+                <CardDescription>Enable or disable access to different panels.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                    <Label htmlFor="user-panel-switch" className="font-medium">User Panel</Label>
+                    <Switch
+                        id="user-panel-switch"
+                        checked={settings.isUserPanelEnabled ?? true}
+                        onCheckedChange={() => handleToggle('isUserPanelEnabled')}
+                    />
+                </div>
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                    <Label htmlFor="partner-panel-switch" className="font-medium">Partner Panel</Label>
+                    <Switch
+                        id="partner-panel-switch"
+                        checked={settings.isPartnerPanelEnabled ?? true}
+                        onCheckedChange={() => handleToggle('isPartnerPanelEnabled')}
+                    />
+                </div>
+                 <div className="flex items-center justify-between rounded-lg border p-3">
+                    <Label htmlFor="agent-panel-switch" className="font-medium">Agent Panel</Label>
+                    <Switch
+                        id="agent-panel-switch"
+                        checked={settings.isAgentPanelEnabled ?? true}
+                        onCheckedChange={() => handleToggle('isAgentPanelEnabled')}
+                    />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
+
 
 export default function AdminDashboardPage() {
   const { t } = useTranslation()
@@ -166,39 +261,42 @@ export default function AdminDashboardPage() {
                 </Table>
             </CardContent>
         </Card>
-         <Card>
-            <CardHeader>
-                <CardTitle>{t('admin.manualActions')}</CardTitle>
-                <CardDescription>{t('admin.manualActionsDescription')}</CardDescription>
-            </CardHeader>
-            <CardContent>
-                 <div className="flex flex-col gap-2">
-                    <Link href="/admin/deposits">
-                        <Button variant="outline" className="w-full justify-start">
-                            Approve Deposits
-                            {pendingDeposits > 0 && <Badge className="ml-auto">{pendingDeposits}</Badge>}
-                        </Button>
-                    </Link>
-                     <Link href="/admin/withdrawals">
-                        <Button variant="outline" className="w-full justify-start">
-                             Approve Withdrawals
-                            {pendingWithdrawals > 0 && <Badge className="ml-auto">{pendingWithdrawals}</Badge>}
-                        </Button>
-                    </Link>
-                     <Link href="/admin/kyc">
-                        <Button variant="outline" className="w-full justify-start">
-                            Approve KYC
-                             {pendingKyc > 0 && <Badge className="ml-auto">{pendingKyc}</Badge>}
-                        </Button>
-                    </Link>
-                      <Link href="/admin/users">
-                        <Button variant="outline" className="w-full justify-start">
-                            Manage Users
-                        </Button>
-                    </Link>
-                </div>
-            </CardContent>
-        </Card>
+         <div className="flex flex-col gap-4">
+             <Card>
+                <CardHeader>
+                    <CardTitle>{t('admin.manualActions')}</CardTitle>
+                    <CardDescription>{t('admin.manualActionsDescription')}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col gap-2">
+                        <Link href="/admin/deposits">
+                            <Button variant="outline" className="w-full justify-start">
+                                Approve Deposits
+                                {pendingDeposits > 0 && <Badge className="ml-auto">{pendingDeposits}</Badge>}
+                            </Button>
+                        </Link>
+                        <Link href="/admin/withdrawals">
+                            <Button variant="outline" className="w-full justify-start">
+                                Approve Withdrawals
+                                {pendingWithdrawals > 0 && <Badge className="ml-auto">{pendingWithdrawals}</Badge>}
+                            </Button>
+                        </Link>
+                        <Link href="/admin/kyc">
+                            <Button variant="outline" className="w-full justify-start">
+                                Approve KYC
+                                {pendingKyc > 0 && <Badge className="ml-auto">{pendingKyc}</Badge>}
+                            </Button>
+                        </Link>
+                        <Link href="/admin/users">
+                            <Button variant="outline" className="w-full justify-start">
+                                Manage Users
+                            </Button>
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
+            <PanelControlCard />
+         </div>
       </div>
     </div>
   )
