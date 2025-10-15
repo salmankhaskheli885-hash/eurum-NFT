@@ -16,7 +16,8 @@ import {
   Handshake,
   UserCheck,
   History,
-  MessageSquare
+  MessageSquare,
+  ListChecks
 } from "lucide-react"
 
 import {
@@ -91,6 +92,7 @@ export default function AdminLayout({
       ] 
     },
     { href: "/admin/investments", label: t('admin.nav.investments'), icon: FileCog },
+    { href: "/admin/tasks", label: "Tasks", icon: ListChecks },
     { 
       href: "/admin/kyc", 
       label: t('admin.nav.kyc'), 
@@ -195,3 +197,5 @@ export default function AdminLayout({
     </SidebarProvider>
   )
 }
+
+    

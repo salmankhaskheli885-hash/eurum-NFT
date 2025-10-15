@@ -167,6 +167,48 @@
             "isAgentPanelEnabled": { "type": "boolean", "description": "Controls access to the agent panel." }
         },
         "required": ["adminWalletNumber", "adminWalletName", "adminAccountHolderName", "withdrawalFee"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "A task or challenge for partners to complete for a reward.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["referral_deposit"] },
+        "targetCount": { "type": "number", "description": "Number of referrals/actions needed." },
+        "minDeposit": { "type": "number", "description": "Minimum deposit amount for a referral to count." },
+        "rewardAmount": { "type": "number" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["title", "description", "type", "targetCount", "rewardAmount", "isActive"]
+    },
+    "UserTask": {
+      "title": "User Task Progress",
+      "description": "Tracks a user's progress on a specific task.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "taskId": { "type": "string" },
+        "progress": { "type": "number" },
+        "isCompleted": { "type": "boolean" },
+        "isClaimed": { "type": "boolean" },
+        "qualifiedReferrals": { "type": "array", "items": { "type": "string" }, "description": "List of user UIDs that counted towards progress." }
+      },
+      "required": ["userId", "taskId", "progress", "isCompleted", "isClaimed"]
+    },
+    "PartnerRequest": {
+      "title": "Partner Request",
+      "description": "A user's request to be promoted to a partner.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "requestDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "status", "requestDate"]
     }
   },
   "auth": {
@@ -202,6 +244,20 @@
     "/app/settings": {
         "schema": { "$ref": "#/entities/AppSettings" },
         "description": "Stores global application settings."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/Task" },
+      "description": "Stores all admin-created tasks for partners."
+    },
+    "/users/{userId}/user_tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/UserTask" },
+      "description": "Tracks a user's progress on a specific task."
+    },
+    "/partner_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PartnerRequest" },
+      "description": "Stores user requests to become a partner."
     }
   }
 }
+
+    
