@@ -18,89 +18,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 
-
-function DepositHistory() {
-    const { t } = useTranslation()
-    const { user, loading: userLoading } = useUser()
-    const firestore = useFirestore()
-    const [transactions, setTransactions] = useState<Transaction[]>([])
-    const [loading, setLoading] = useState(true)
-
-    const memoizedListenToUserTransactions = useCallback(() => {
-        if (!user || !firestore) return () => {};
-        setLoading(true);
-        const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
-            setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
-            setLoading(false);
-        });
-        return unsubscribe;
-    }, [user, firestore]);
-
-    useEffect(() => {
-        const unsubscribe = memoizedListenToUserTransactions();
-        return () => unsubscribe();
-    }, [memoizedListenToUserTransactions]);
-
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
-    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
-    const getStatusVariant = (status: Transaction['status']) => {
-        switch (status) {
-            case 'Completed': return 'default'
-            case 'Pending': return 'secondary'
-            case 'Failed': return 'destructive'
-            default: return 'outline'
-        }
-    }
-    
-    const isLoading = userLoading || loading;
-
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Deposit History</CardTitle>
-                <CardDescription>A list of your past deposits.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Date</TableHead>
-                            <TableHead className="text-right">Amount</TableHead>
-                            <TableHead className="text-center">Status</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {isLoading ? (
-                            [...Array(3)].map((_, i) => (
-                                <TableRow key={i}>
-                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                                    <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
-                                </TableRow>
-                            ))
-                        ) : transactions.length > 0 ? (
-                            transactions.map((tx) => (
-                                <TableRow key={tx.id}>
-                                    <TableCell>{formatDate(tx.date)}</TableCell>
-                                    <TableCell className="text-right font-medium text-green-600">{formatCurrency(tx.amount)}</TableCell>
-                                    <TableCell className="text-center">
-                                        <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        ) : (
-                            <TableRow>
-                                <TableCell colSpan={3} className="h-24 text-center">No deposits found.</TableCell>
-                            </TableRow>
-                        )}
-                    </TableBody>
-                </Table>
-            </CardContent>
-        </Card>
-    )
-}
-
-
 export default function DepositPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
@@ -118,6 +35,10 @@ export default function DepositPage() {
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
+    // State for deposit history, moved from the child component
+    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [historyLoading, setHistoryLoading] = useState(true)
+
     useEffect(() => {
         if (!firestore) return;
         setSettingsLoading(true);
@@ -127,7 +48,20 @@ export default function DepositPage() {
         });
         return () => unsubscribe();
     }, [firestore]);
-
+    
+    // useEffect for fetching deposit history
+    useEffect(() => {
+        if (!user || !firestore) {
+            setHistoryLoading(false);
+            return;
+        };
+        setHistoryLoading(true);
+        const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
+            setTransactions(allTransactions.filter(tx => tx.type === 'Deposit'));
+            setHistoryLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user, firestore]);
 
     const handleCopy = () => {
         if (!settings) return;
@@ -202,7 +136,7 @@ export default function DepositPage() {
             setYourNumber("");
             setTid("");
             setReceiptFile(null);
-            // The history component will now update automatically due to the listener
+            // The history component will now update automatically due to the listener in this same component
         } catch (error: any) {
             console.error("Deposit submission error:", error);
             toast({
@@ -214,8 +148,21 @@ export default function DepositPage() {
             setIsSubmitting(false);
         };
     }
+    
+    // Helper functions for rendering history
+    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
+    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(amount);
+    const getStatusVariant = (status: Transaction['status']) => {
+        switch (status) {
+            case 'Completed': return 'default'
+            case 'Pending': return 'secondary'
+            case 'Failed': return 'destructive'
+            default: return 'outline'
+        }
+    }
 
-  const isLoading = userLoading || settingsLoading;
+    const isLoading = userLoading || settingsLoading;
+    const isHistoryLoading = userLoading || historyLoading;
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl mx-auto">
@@ -299,7 +246,50 @@ export default function DepositPage() {
         </CardContent>
       </Card>
       
-      <DepositHistory />
+      <Card>
+            <CardHeader>
+                <CardTitle>Deposit History</CardTitle>
+                <CardDescription>A list of your past deposits.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isHistoryLoading ? (
+                            [...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : transactions.length > 0 ? (
+                            transactions.map((tx) => (
+                                <TableRow key={tx.id}>
+                                    <TableCell>{formatDate(tx.date)}</TableCell>
+                                    <TableCell className="text-right font-medium text-green-600">{formatCurrency(tx.amount)}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center">No deposits found.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     </div>
   )
 }
+
+    
