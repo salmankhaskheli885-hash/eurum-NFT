@@ -3,6 +3,7 @@
 
 import Link from "next/link"
 import Image from "next/image"
+import * as React from "react"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { LogOut as LogOutIcon, User as UserIcon, Settings } from "lucide-react"
 
@@ -22,6 +23,7 @@ import { useAuth } from "@/firebase/provider"
 import { signOut } from "firebase/auth"
 import { useRouter } from "next/navigation"
 import { useUser } from "@/hooks/use-user"
+import { Skeleton } from "@/components/ui/skeleton"
 
 
 export function UserNav() {
@@ -38,7 +40,7 @@ export function UserNav() {
   }
 
   if (loading) {
-    return <div className="h-9 w-9 rounded-full bg-muted animate-pulse" />
+    return <Skeleton className="h-9 w-9 rounded-full" />
   }
 
   if (!user) {

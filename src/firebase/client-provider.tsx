@@ -12,12 +12,14 @@ type FirebaseClientContextValue = {
   app: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
+  loading: boolean;
 };
 
 const FirebaseClientContext = createContext<FirebaseClientContextValue>({
   app: null,
   auth: null,
   firestore: null,
+  loading: true,
 });
 
 export function FirebaseClientProvider({
@@ -25,13 +27,15 @@ export function FirebaseClientProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const [firebase, setFirebase] = useState<FirebaseClientContextValue | null>(null);
+  const [firebase, setFirebase] = useState<Omit<FirebaseClientContextValue, 'loading'> | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // This function ensures Firebase is initialized only once
+    // This function ensures Firebase is initialized only once on the client
     const init = async () => {
       const firebaseInstance = await initializeFirebase();
       setFirebase(firebaseInstance);
+      setLoading(false);
     };
 
     if (typeof window !== 'undefined' && !firebase) {
@@ -39,19 +43,21 @@ export function FirebaseClientProvider({
     }
   }, [firebase]);
 
-  if (!firebase || !firebase.app) {
-    // You can return a loader here. Returning null for now prevents children from rendering prematurely.
-    return null;
+  if (loading || !firebase || !firebase.app) {
+    // You can return a global loader here if you want
+    return null; // Prevents children from rendering until Firebase is ready
   }
 
   return (
-    <FirebaseProvider
-      app={firebase.app}
-      auth={firebase.auth as Auth}
-      firestore={firebase.firestore as Firestore}
-    >
-      {children}
-    </FirebaseProvider>
+    <FirebaseContext.Provider value={{ ...firebase, loading }}>
+        <FirebaseProvider
+            app={firebase.app}
+            auth={firebase.auth as Auth}
+            firestore={firebase.firestore as Firestore}
+        >
+            {children}
+        </FirebaseProvider>
+    </FirebaseContext.Provider>
   );
 }
 
