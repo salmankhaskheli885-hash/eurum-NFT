@@ -1,3 +1,4 @@
+
 "use client"
 import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
@@ -155,10 +156,11 @@ export default function AgentDashboardPage() {
         if (!firestore) return;
         setRoomsLoading(true);
         const unsubscribe = listenToChatRooms(firestore, (newRooms) => {
-            setRooms(newRooms);
+            const activeRooms = newRooms.filter(room => !room.isResolved);
+            setRooms(activeRooms);
             setRoomsLoading(false);
-            if (!selectedRoomId && newRooms.length > 0) {
-                setSelectedRoomId(newRooms[0].id);
+            if (!selectedRoomId && activeRooms.length > 0) {
+                setSelectedRoomId(activeRooms[0].id);
             }
         });
 
@@ -184,13 +186,13 @@ export default function AgentDashboardPage() {
   return (
     <div className="flex flex-col gap-4 h-[calc(100vh-5rem)]">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Agent Dashboard</h1>
-        <p className="text-muted-foreground">Welcome to the support agent panel.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Active Chats</h1>
+        <p className="text-muted-foreground">Respond to users who need help.</p>
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
         <Card className="lg:col-span-1 flex flex-col">
           <CardHeader>
-            <CardTitle>Active User Chats</CardTitle>
+            <CardTitle>User Inbox</CardTitle>
             <CardDescription>Select a user to start a conversation.</CardDescription>
           </CardHeader>
           <CardContent className="flex-grow p-0 overflow-hidden">
@@ -204,7 +206,7 @@ export default function AgentDashboardPage() {
                  <div className="flex flex-col items-center justify-center h-full text-center p-4">
                     <Bot className="h-16 w-16 text-muted-foreground" />
                     <h3 className="mt-4 text-xl font-semibold">No Chat Selected</h3>
-                    <p className="mt-1 text-muted-foreground">Please select a chat from the list to view the conversation.</p>
+                    <p className="mt-1 text-muted-foreground">Please select an active chat from the list to view the conversation.</p>
                 </div>
             )}
         </Card>

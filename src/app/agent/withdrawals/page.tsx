@@ -1,0 +1,170 @@
+
+"use client"
+
+import * as React from "react"
+import { useFirestore } from "@/firebase/provider"
+import type { Transaction } from "@/lib/data"
+import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { CheckCircle, XCircle, Search } from "lucide-react"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/hooks/use-toast"
+import { useUser } from "@/hooks/use-user"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+export default function AgentWithdrawalsPage() {
+    const firestore = useFirestore()
+    const { toast } = useToast()
+    const { user: agentProfile } = useUser()
+
+    const [transactions, setTransactions] = React.useState<Transaction[]>([])
+    const [loading, setLoading] = React.useState(true)
+    const [searchTerm, setSearchTerm] = React.useState("")
+
+    const hasPermission = agentProfile?.role === 'admin' || (agentProfile as any)?.canApproveWithdrawals;
+
+    React.useEffect(() => {
+        if (!firestore || !hasPermission) {
+            setLoading(false);
+            return;
+        };
+        setLoading(true);
+        const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
+            setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [firestore, hasPermission]);
+
+    const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
+        if (!firestore) return;
+        try {
+            await updateTransactionStatus(firestore, transaction.id, status, transaction);
+            toast({
+                title: `Withdrawal ${status}`,
+                description: `Transaction has been updated.`,
+            });
+        } catch (error: any) {
+            toast({
+                variant: "destructive",
+                title: "Action Failed",
+                description: error.message || "Could not update withdrawal status.",
+            });
+        }
+    }
+    
+    const formatCurrency = (val: number) => {
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+    }
+
+    const filteredWithdrawals = React.useMemo(() => {
+        const lowercasedFilter = searchTerm.toLowerCase();
+        return transactions.filter(tx => 
+            tx.userName.toLowerCase().includes(lowercasedFilter) ||
+            tx.id.toLowerCase().includes(lowercasedFilter) ||
+            tx.withdrawalDetails?.accountNumber.includes(lowercasedFilter)
+        );
+    }, [searchTerm, transactions]);
+
+    if (!hasPermission) {
+        return (
+            <Alert variant="destructive">
+                <XCircle className="h-4 w-4" />
+                <AlertTitle>Access Denied</AlertTitle>
+                <AlertDescription>You do not have permission to manage withdrawals.</AlertDescription>
+            </Alert>
+        )
+    }
+
+    return (
+        <div className="flex flex-col gap-4">
+            <div>
+                <h1 className="text-3xl font-bold tracking-tight">Manage Withdrawals</h1>
+                <p className="text-muted-foreground">Review and approve pending user withdrawals.</p>
+            </div>
+             <Card>
+                <CardHeader>
+                <CardTitle>Pending Withdrawal Requests</CardTitle>
+                <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
+                <div className="relative pt-2">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                    type="search"
+                    placeholder="Search by user, ID or account number..."
+                    className="w-full pl-8"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                </CardHeader>
+                <CardContent>
+                <Table>
+                    <TableHeader>
+                    <TableRow>
+                        <TableHead>User</TableHead>
+                        <TableHead>Account Details</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-center">Actions</TableHead>
+                    </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                    {loading ? (
+                        [...Array(3)].map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell>
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-32" />
+                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                            </TableRow>
+                        ))
+                    ) : filteredWithdrawals.length > 0 ? (
+                        filteredWithdrawals.map((withdrawal) => (
+                            <TableRow key={withdrawal.id}>
+                                <TableCell>
+                                    <div className="font-medium">{withdrawal.userName}</div>
+                                    <div className="text-xs text-muted-foreground">{new Date(withdrawal.date).toLocaleString()}</div>
+                                </TableCell>
+                                 <TableCell>
+                                    <div className="font-mono text-sm">{withdrawal.withdrawalDetails?.accountNumber}</div>
+                                    <div className="text-xs text-muted-foreground">
+                                        {withdrawal.withdrawalDetails?.accountName} ({withdrawal.withdrawalDetails?.method})
+                                    </div>
+                                </TableCell>
+                                <TableCell className="text-right text-red-600 font-medium">
+                                    {formatCurrency(Math.abs(withdrawal.amount))}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex gap-2 justify-center">
+                                        <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal, 'Completed')}>
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            Approve
+                                        </Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal, 'Failed')}>
+                                            <XCircle className="mr-2 h-4 w-4" />
+                                            Reject
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ))
+                    ) : (
+                        <TableRow>
+                            <TableCell colSpan={4} className="h-24 text-center">No pending withdrawal requests found.</TableCell>
+                        </TableRow>
+                    )}
+                    </TableBody>
+                </Table>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}

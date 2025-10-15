@@ -8,6 +8,8 @@ import {
   LogOut,
   User,
   History,
+  DollarSign,
+  Landmark
 } from "lucide-react"
 
 import {
@@ -25,6 +27,7 @@ import {
 import { Logo } from "@/components/icons"
 import { UserNav } from "@/components/user-nav"
 import { LanguageSwitcher } from "@/components/language-switcher"
+import { useUser } from "@/hooks/use-user"
 
 export default function AgentLayout({
   children,
@@ -32,13 +35,24 @@ export default function AgentLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const { user: agentProfile, loading } = useUser()
 
   const menuItems = [
     { href: "/agent", label: 'Active Chats', icon: MessageSquare },
     { href: "/agent/history", label: 'Chat History', icon: History },
-    { href: "/agent/profile", label: 'Profile', icon: User },
+  ]
+
+  const managementMenuItems = [
+     // @ts-ignore
+    { href: "/agent/deposits", label: 'Manage Deposits', icon: DollarSign, permission: agentProfile?.canApproveDeposits },
+     // @ts-ignore
+    { href: "/agent/withdrawals", label: 'Manage Withdrawals', icon: Landmark, permission: agentProfile?.canApproveWithdrawals },
   ]
   
+  const profileMenuItems = [
+    { href: "/agent/profile", label: 'Profile', icon: User },
+  ]
+
 
   return (
     <SidebarProvider>
@@ -52,6 +66,38 @@ export default function AgentLayout({
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton
+                    isActive={pathname === item.href}
+                    tooltip={item.label}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+             <SidebarMenuItem>
+              <hr className="my-2 border-sidebar-border" />
+            </SidebarMenuItem>
+             {managementMenuItems.filter(item => item.permission).map((item) => (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
+                  <SidebarMenuButton
+                    isActive={pathname.startsWith(item.href)}
+                    tooltip={item.label}
+                  >
+                    <item.icon />
+                    <span>{item.label}</span>
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+             <SidebarMenuItem>
+              <hr className="my-2 border-sidebar-border" />
+            </SidebarMenuItem>
+             {profileMenuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
                 <Link href={item.href}>
                   <SidebarMenuButton

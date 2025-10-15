@@ -26,12 +26,23 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage } from './data';
 
 // USER FUNCTIONS
-export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole: 'user' | 'partner'): Promise<User> {
+export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole?: 'user' | 'partner'): Promise<User> {
     const userRef = doc(firestore, 'users', firebaseUser.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
         const userData = userSnap.data() as User;
+        
+        // Also fetch agent data if it exists
+        const agentRef = collection(firestore, 'chat_agents');
+        const agentQuery = query(agentRef, where("email", "==", firebaseUser.email), limit(1));
+        const agentSnap = await getDocs(agentQuery);
+        
+        if (!agentSnap.empty) {
+            const agentData = agentSnap.docs[0].data();
+            return { ...userData, ...agentData };
+        }
+
         const updates: Partial<User> = {};
         if (userData.failedDepositCount === undefined) {
              updates.failedDepositCount = 0;
@@ -47,8 +58,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
     } else {
         const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
         
-        // If not admin, use the role from the tab they clicked
-        const role = isAdmin ? 'admin' : intendedRole;
+        const role = isAdmin ? 'admin' : intendedRole || 'user';
 
         let referredBy: string | undefined = undefined;
         try {
@@ -160,15 +170,20 @@ export async function addTransaction(
     const finalTransactionData: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
-        status: 'Completed' // Optimistically set to completed
+        status: dataToSave.status || 'Pending'
     };
 
     // Step 2: Set the document data
     await setDoc(newTransactionRef, finalTransactionData);
+    const fullTransaction = { ...finalTransactionData, id: newTransactionRef.id };
+
 
     // Step 3: Handle all side-effects (balance, etc.) in a separate, reliable transaction
-    // We pass the full data so updateTransactionStatus doesn't need to fetch it again
-    await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', { ...finalTransactionData, id: newTransactionRef.id });
+    // Only auto-process if it's NOT a manual approval flow
+    if (finalTransactionData.status === 'Completed') {
+         await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', fullTransaction);
+    }
+   
 
     // Step 4: If it was a deposit with a file, start the background upload (does not block UI)
     if (dataToSave.type === 'Deposit' && receiptFile) {
@@ -223,6 +238,8 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
     
     await runTransaction(firestore, async (transaction) => {
         let currentTxData = txData;
+        const txRef = doc(firestore, 'transactions', transactionId);
+        transaction.update(txRef, { status: newStatus });
         
         if (newStatus !== 'Completed') {
             if (currentTxData.type === 'Deposit') {
@@ -297,7 +314,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const totalDeduction = withdrawalAmount + feeAmount;
 
                 if (user.balance < totalDeduction) {
-                    const txRef = doc(firestore, 'transactions', transactionId);
                     // This update needs to be part of the transaction
                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
                     throw new Error(`Insufficient balance for withdrawal. Required ${totalDeduction}, but had only ${user.balance}.`);
@@ -313,7 +329,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const investmentAmount = Math.abs(currentTxData.amount);
                  if (user.balance < investmentAmount) {
                      // This update needs to be part of the transaction
-                     const txRef = doc(firestore, 'transactions', transactionId);
                      transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
                      throw new Error(`Insufficient balance for investment. Required ${investmentAmount}, had ${user.balance}.`);
                  }
@@ -498,7 +513,7 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     await updateDoc(roomRef, {
         lastMessage: text,
         lastMessageAt: new Date().toISOString(),
-        isResolved: false
+        isResolved: senderType === 'agent' // If agent sends a message, resolve it. If user sends, unresolve it.
     });
 }
 
