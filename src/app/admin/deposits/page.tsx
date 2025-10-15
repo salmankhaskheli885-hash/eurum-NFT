@@ -22,13 +22,14 @@ import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
-import { CheckCircle, Search, XCircle } from "lucide-react"
+import { CheckCircle, Search, XCircle, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import AdminDepositsHistoryPage from "./history/page"
+import Link from "next/link"
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
@@ -114,7 +115,7 @@ export default function AdminDepositsPage() {
                             <TableHead>User</TableHead>
                             <TableHead>Date</TableHead>
                             <TableHead className="text-right">Amount (USD)</TableHead>
-                            <TableHead className="text-center">Status</TableHead>
+                            <TableHead className="text-center">Receipt</TableHead>
                             <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
                         </TableHeader>
@@ -126,7 +127,7 @@ export default function AdminDepositsPage() {
                                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                                    <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
                                     <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                                 </TableRow>
                             ))
@@ -138,9 +139,16 @@ export default function AdminDepositsPage() {
                                 <TableCell>{deposit.date}</TableCell>
                                 <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                 <TableCell className="text-center">
-                                    <Badge variant="secondary">
-                                    {deposit.status}
-                                    </Badge>
+                                    {deposit.receiptUrl ? (
+                                        <Button variant="outline" size="sm" asChild>
+                                            <Link href={deposit.receiptUrl} target="_blank">
+                                                <Eye className="mr-2 h-4 w-4"/>
+                                                View Receipt
+                                            </Link>
+                                        </Button>
+                                    ) : (
+                                        <Badge variant="secondary">No Receipt</Badge>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-center">
                                     <div className="flex gap-2 justify-center">

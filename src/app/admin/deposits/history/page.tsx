@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -18,7 +19,7 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { type Transaction } from "@/lib/data"
-import { Search } from "lucide-react"
+import { Search, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions } from "@/lib/firestore"
@@ -88,6 +89,7 @@ export default function AdminDepositsHistoryPage() {
                 <TableHead>User</TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount (USD)</TableHead>
+                <TableHead className="text-center">Receipt</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>
             </TableHeader>
@@ -99,6 +101,7 @@ export default function AdminDepositsHistoryPage() {
                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                        <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
                         <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
                     </TableRow>
                 ))
@@ -110,6 +113,18 @@ export default function AdminDepositsHistoryPage() {
                     <TableCell>{deposit.date}</TableCell>
                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
+                        {deposit.receiptUrl ? (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link href={deposit.receiptUrl} target="_blank">
+                                    <Eye className="mr-2 h-4 w-4"/>
+                                    View Receipt
+                                </Link>
+                            </Button>
+                        ) : (
+                            <Badge variant="secondary">No Receipt</Badge>
+                        )}
+                    </TableCell>
+                    <TableCell className="text-center">
                         <Badge variant={getStatusVariant(deposit.status)}>
                         {deposit.status}
                         </Badge>
@@ -118,7 +133,7 @@ export default function AdminDepositsHistoryPage() {
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">No processed deposits found.</TableCell>
+                    <TableCell colSpan={6} className="h-24 text-center">No processed deposits found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

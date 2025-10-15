@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Copy, Camera } from "lucide-react"
+import { Copy, Camera, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { type AppSettings } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
@@ -30,7 +30,8 @@ export default function DepositPage() {
     const [yourNumber, setYourNumber] = useState("")
     const [amount, setAmount] = useState("")
     const [tid, setTid] = useState("")
-    const [receipt, setReceipt] = useState<File | null>(null)
+    const [receiptFile, setReceiptFile] = useState<File | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
 
     useEffect(() => {
         if (!firestore) return;
@@ -68,10 +69,18 @@ export default function DepositPage() {
             })
             return
         }
+        if (!receiptFile) {
+             toast({
+                variant: "destructive",
+                title: "Receipt Required",
+                description: "Please upload a payment receipt to continue.",
+            })
+            return
+        }
 
         const depositAmount = parseFloat(amount);
-        if (isNaN(depositAmount)) {
-            toast({ variant: 'destructive', title: 'Invalid Amount' });
+        if (isNaN(depositAmount) || depositAmount <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number for the amount.' });
             return;
         }
 
@@ -84,6 +93,7 @@ export default function DepositPage() {
             return;
         }
         
+        setIsSubmitting(true);
         try {
             await addTransaction(firestore, {
                 userId: user.uid,
@@ -91,6 +101,7 @@ export default function DepositPage() {
                 type: 'Deposit',
                 amount: parseFloat(amount),
                 status: 'Pending',
+                receiptFile: receiptFile
             });
 
             toast({
@@ -99,12 +110,14 @@ export default function DepositPage() {
             })
 
             router.push('/dashboard/transactions')
-        } catch (error) {
+        } catch (error: any) {
             toast({
                 variant: "destructive",
                 title: "Submission Failed",
-                description: "Could not submit your deposit request.",
+                description: error.message || "Could not submit your deposit request.",
             })
+        } finally {
+            setIsSubmitting(false);
         }
     }
 
@@ -177,12 +190,16 @@ export default function DepositPage() {
                     <Input id="tid-number" type="text" placeholder="A1B2C3D4E5" value={tid} onChange={(e) => setTid(e.target.value)} required />
                 </div>
                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="receipt">Payment Receipt</Label>
-                    <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files ? e.target.files[0] : null)} />
+                    <Label htmlFor="receipt">Payment Receipt (Required)</Label>
+                    <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files ? e.target.files[0] : null)} required />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    <Camera className="mr-2 h-4 w-4" />
-                    {t('deposit.submitButton')}
+                <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
+                    {isSubmitting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        <Camera className="mr-2 h-4 w-4" />
+                    )}
+                    {isSubmitting ? 'Submitting...' : t('deposit.submitButton')}
                 </Button>
             </form>
         </CardContent>

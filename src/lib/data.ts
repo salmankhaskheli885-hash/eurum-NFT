@@ -21,6 +21,7 @@ export type Transaction = {
   date: string; // ISO 8601 format
   amount: number;
   status: 'Completed' | 'Pending' | 'Failed';
+  receiptUrl?: string; // URL of the uploaded deposit receipt
   details?: string;
   withdrawalDetails?: {
     accountNumber: string;
@@ -162,6 +163,7 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         kycStatus: 'unsubmitted',
         referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
         status: 'Active',
-        referredBy: undefined
+        referredBy: undefined,
+        totalDeposits: 0
     };
 }

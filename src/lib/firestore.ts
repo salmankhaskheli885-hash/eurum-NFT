@@ -21,6 +21,7 @@ import {
   runTransaction,
   Timestamp
 } from 'firebase/firestore';
+import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement } from './data';
 
@@ -122,10 +123,29 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 
 
 // TRANSACTION FUNCTIONS
-export async function addTransaction(firestore: ReturnType<typeof getFirestore>, transactionData: Omit<Transaction, 'id' | 'date'>): Promise<Transaction | null> {
+export async function addTransaction(
+    firestore: ReturnType<typeof getFirestore>, 
+    transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
+): Promise<Transaction | null> {
     
+    // Handle receipt upload for deposits
+    if (transactionData.type === 'Deposit' && transactionData.receiptFile) {
+        const storage = getStorage();
+        const receiptRef = ref(storage, `receipts/${transactionData.userId}/${Date.now()}_${transactionData.receiptFile.name}`);
+        
+        try {
+            const snapshot = await uploadBytes(receiptRef, transactionData.receiptFile);
+            transactionData.receiptUrl = await getDownloadURL(snapshot.ref);
+        } catch (error) {
+            console.error("Error uploading receipt:", error);
+            throw new Error("Could not upload receipt image.");
+        }
+    }
+    // Remove the file object before saving to Firestore
+    const { receiptFile, ...dataToSave } = transactionData;
+
     return await runTransaction(firestore, async (transaction) => {
-        const userRef = doc(firestore, 'users', transactionData.userId);
+        const userRef = doc(firestore, 'users', dataToSave.userId);
         const userSnap = await transaction.get(userRef);
 
         if (!userSnap.exists()) {
@@ -135,8 +155,8 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
         const user = userSnap.data() as User;
         let amountToChange = 0;
 
-        if (transactionData.type === 'Withdrawal') {
-            const withdrawalAmount = Math.abs(transactionData.amount);
+        if (dataToSave.type === 'Withdrawal') {
+            const withdrawalAmount = Math.abs(dataToSave.amount);
 
             // Check daily withdrawal limit
             if (user.lastWithdrawalDate) {
@@ -161,20 +181,20 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
             amountToChange = -totalDeduction;
 
             // Add fee info to withdrawal details
-            if (transactionData.withdrawalDetails) {
-                 transactionData.withdrawalDetails.fee = feeAmount;
+            if (dataToSave.withdrawalDetails) {
+                 dataToSave.withdrawalDetails.fee = feeAmount;
             }
 
-        } else if (transactionData.type === 'Investment') {
-            const investmentAmount = Math.abs(transactionData.amount);
+        } else if (dataToSave.type === 'Investment') {
+            const investmentAmount = Math.abs(dataToSave.amount);
             if (user.balance < investmentAmount) {
                 throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
             }
             amountToChange = -investmentAmount;
-        } else if (transactionData.type === 'Deposit') {
+        } else if (dataToSave.type === 'Deposit') {
             amountToChange = 0;
         } else {
-             amountToChange = transactionData.amount;
+             amountToChange = dataToSave.amount;
         }
         
         if (amountToChange !== 0) {
@@ -183,7 +203,7 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
         }
         
         const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
-            ...transactionData,
+            ...dataToSave,
             date: new Date().toISOString()
         };
         const newDocRef = doc(collection(firestore, 'transactions'));
@@ -274,33 +294,28 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
 
-                // --- Start of Corrected VIP Level Up Logic ---
-                let newVipLevel = 1;
-                let vipProgress = 0;
+                let newVipLevel = user.vipLevel;
+                let vipProgress = user.vipProgress;
 
-                // Check from highest level to lowest
+                // --- Corrected VIP Level Up Logic ---
                 if (newTotalDeposits >= 500) {
                     newVipLevel = 3;
-                    // Example: Progress towards a hypothetical Level 4 at $1000
                     const nextLevelThreshold = 1000;
                     const currentLevelThreshold = 500;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-
                 } else if (newTotalDeposits >= 100) {
                     newVipLevel = 2;
-                    // Progress towards Level 3 at $500
                     const nextLevelThreshold = 500;
                     const currentLevelThreshold = 100;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                    
                 } else {
                     newVipLevel = 1;
-                    // Progress towards Level 2 at $100
-                    vipProgress = (newTotalDeposits / 100) * 100;
+                    const nextLevelThreshold = 100;
+                    vipProgress = (newTotalDeposits / nextLevelThreshold) * 100;
                 }
                 // --- End of Corrected VIP Level Up Logic ---
 
