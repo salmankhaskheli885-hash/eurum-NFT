@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
-import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent } from './data';
+import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage } from './data';
 
 // USER FUNCTIONS
 export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole: 'user' | 'partner'): Promise<User> {
@@ -98,7 +98,8 @@ export function listenToUser(firestore: ReturnType<typeof getFirestore>, userId:
 
 export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, callback: (users: User[]) => void): Unsubscribe {
     const usersCollection = collection(firestore, 'users');
-    return onSnapshot(usersCollection, (snapshot) => {
+    const q = query(usersCollection);
+    return onSnapshot(q, (snapshot) => {
         const users = snapshot.docs.map(doc => ({...doc.data(), uid: doc.id } as User));
         callback(users);
     });
@@ -451,5 +452,73 @@ export function listenToAllChatAgents(firestore: ReturnType<typeof getFirestore>
     return onSnapshot(agentsCollection, (snapshot) => {
         const agents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatAgent));
         callback(agents);
+    });
+}
+
+
+// CHAT SYSTEM FUNCTIONS
+export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirestore>, user: User): Promise<ChatRoom> {
+    const roomsRef = collection(firestore, 'chat_rooms');
+    const q = query(roomsRef, where("userId", "==", user.uid), limit(1));
+    
+    const snapshot = await getDocs(q);
+    
+    if (!snapshot.empty) {
+        const doc = snapshot.docs[0];
+        return { id: doc.id, ...doc.data() } as ChatRoom;
+    } else {
+        const newRoomData: Omit<ChatRoom, 'id'> = {
+            userId: user.uid,
+            userName: user.displayName || "Unknown User",
+            createdAt: new Date().toISOString(),
+            lastMessage: "Chat started",
+            lastMessageAt: new Date().toISOString(),
+            isResolved: false
+        };
+        const newRoomRef = await addDoc(roomsRef, newRoomData);
+        return { id: newRoomRef.id, ...newRoomData };
+    }
+}
+
+export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string) {
+    const roomRef = doc(firestore, 'chat_rooms', roomId);
+    const messagesRef = collection(roomRef, 'messages');
+
+    const messageData: Omit<ChatMessage, 'id'> = {
+        roomId: roomId,
+        senderId: senderId,
+        senderType: senderType,
+        text: text,
+        timestamp: new Date().toISOString()
+    };
+    
+    await addDoc(messagesRef, messageData);
+    
+    // Update the last message on the room
+    await updateDoc(roomRef, {
+        lastMessage: text,
+        lastMessageAt: new Date().toISOString(),
+        isResolved: false
+    });
+}
+
+
+export function listenToChatRooms(firestore: ReturnType<typeof getFirestore>, callback: (rooms: ChatRoom[]) => void): Unsubscribe {
+    const roomsCollection = collection(firestore, 'chat_rooms');
+    const q = query(roomsCollection, orderBy("lastMessageAt", "desc"));
+    
+    return onSnapshot(q, (snapshot) => {
+        const rooms = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatRoom));
+        callback(rooms);
+    });
+}
+
+export function listenToMessages(firestore: ReturnType<typeof getFirestore>, roomId: string, callback: (messages: ChatMessage[]) => void): Unsubscribe {
+    const messagesCollection = collection(firestore, 'chat_rooms', roomId, 'messages');
+    const q = query(messagesCollection, orderBy("timestamp", "asc"));
+
+    return onSnapshot(q, (snapshot) => {
+        const messages = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatMessage));
+        callback(messages);
     });
 }

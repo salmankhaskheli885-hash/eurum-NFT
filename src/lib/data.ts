@@ -82,6 +82,30 @@ export type ChatAgent = {
     canApproveWithdrawals: boolean;
 }
 
+export type ChatRoom = {
+    id: string;
+    userId: string;
+    userName: string;
+    agentId?: string;
+    agentName?: string;
+    createdAt: string; // ISO 8601
+    lastMessage: string;
+    lastMessageAt: string; // ISO 8601
+    isResolved: boolean;
+    // Add user avatar if available
+    userAvatar?: string;
+}
+
+export type ChatMessage = {
+    id: string;
+    roomId: string;
+    senderId: string;
+    senderType: 'user' | 'agent' | 'system';
+    text: string;
+    timestamp: string; // ISO 8601
+}
+
+
 // These are now just default values, the live values will be in Firestore.
 export let appSettings: AppSettings = {
     adminWalletNumber: "0300-1234567",
