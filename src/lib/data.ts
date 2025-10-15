@@ -75,6 +75,13 @@ export type Announcement = {
     date: string;
 }
 
+export type ChatAgent = {
+    id?: string;
+    email: string;
+    canApproveDeposits: boolean;
+    canApproveWithdrawals: boolean;
+}
+
 // These are now just default values, the live values will be in Firestore.
 export let appSettings: AppSettings = {
     adminWalletNumber: "0300-1234567",

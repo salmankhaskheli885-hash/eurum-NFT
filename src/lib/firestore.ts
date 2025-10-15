@@ -1,3 +1,4 @@
+
 'use client';
 import {
   getFirestore,
@@ -22,7 +23,7 @@ import {
 } from 'firebase/firestore';
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
-import type { User, InvestmentPlan, Transaction, AppSettings, Announcement } from './data';
+import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent } from './data';
 
 // USER FUNCTIONS
 export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser): Promise<User> {
@@ -151,21 +152,22 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    // Step 1: Create the transaction document immediately to get an ID
+    // Step 1: Create the transaction document to get an ID
     const newTransactionRef = doc(collection(firestore, 'transactions'));
+    
     const finalTransactionData: Omit<Transaction, 'id'> = {
         ...dataToSave,
         date: new Date().toISOString(),
         status: 'Completed' // Optimistically set to completed
     };
 
-    // Step 2: Handle balance and other side-effects reliably and automatically
+    // Step 2: Set the document data
+    await setDoc(newTransactionRef, finalTransactionData);
+
+    // Step 3: Handle all side-effects (balance, etc.) in a separate, reliable transaction
     // We pass the full data so updateTransactionStatus doesn't need to fetch it again
     await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', { ...finalTransactionData, id: newTransactionRef.id });
 
-    // Step 3: Set the actual document data now that side effects are handled
-    await setDoc(newTransactionRef, finalTransactionData);
-    
     // Step 4: If it was a deposit with a file, start the background upload (does not block UI)
     if (dataToSave.type === 'Deposit' && receiptFile) {
         uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, dataToSave.userId, receiptFile);
@@ -422,5 +424,24 @@ export function listenToLatestAnnouncement(firestore: ReturnType<typeof getFires
             const doc = snapshot.docs[0];
             callback({ id: doc.id, ...doc.data() } as Announcement);
         }
+    });
+}
+
+// CHAT AGENT FUNCTIONS
+export async function addChatAgent(firestore: ReturnType<typeof getFirestore>, agent: Omit<ChatAgent, 'id'>) {
+    const agentsCollection = collection(firestore, 'chat_agents');
+    await addDoc(agentsCollection, agent);
+}
+
+export async function deleteChatAgent(firestore: ReturnType<typeof getFirestore>, agentId: string) {
+    const agentRef = doc(firestore, 'chat_agents', agentId);
+    await deleteDoc(agentRef);
+}
+
+export function listenToAllChatAgents(firestore: ReturnType<typeof getFirestore>, callback: (agents: ChatAgent[]) => void): Unsubscribe {
+    const agentsCollection = collection(firestore, 'chat_agents');
+    return onSnapshot(agentsCollection, (snapshot) => {
+        const agents = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatAgent));
+        callback(agents);
     });
 }
