@@ -28,15 +28,23 @@ export default function TransactionsPage() {
   const [loading, setLoading] = React.useState(true)
 
 
-  React.useEffect(() => {
-    if (!firestore || !user?.uid) return;
+  const memoizedListenToUserTransactions = React.useCallback(() => {
+    if (!firestore || !user?.uid) {
+      setLoading(false);
+      return () => {};
+    }
     setLoading(true);
     const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
         setTransactions(newTransactions);
         setLoading(false);
     });
-    return () => unsubscribe();
+    return unsubscribe;
   }, [firestore, user?.uid]);
+  
+  React.useEffect(() => {
+    const unsubscribe = memoizedListenToUserTransactions();
+    return () => unsubscribe();
+  }, [memoizedListenToUserTransactions]);
 
 
   const formatCurrency = (amount: number) => {
