@@ -17,8 +17,7 @@ export default function LoginPage() {
              {t('login.description')}
           </p>
         </div>
-        {/* The AuthForm will be rebuilt here */}
-        <AuthForm role="user" /> 
+        <AuthForm />
       </div>
     </div>
   );
