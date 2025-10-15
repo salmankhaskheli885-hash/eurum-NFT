@@ -178,54 +178,56 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell>{"-not tracked-"}</TableCell>
                     <TableCell>
-                        <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button aria-haspopup="true" size="icon" variant="ghost">
-                            <MoreHorizontal className="h-4 w-4" />
-                            <span className="sr-only">Toggle menu</span>
+                        <div className="flex justify-end gap-2">
+                            <Button asChild variant="outline" size="sm">
+                                <Link href={`/admin/users/${user.uid}`} className="flex items-center">
+                                    <Eye className="mr-2 h-4 w-4"/>
+                                    View
+                                </Link>
                             </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                            <DropdownMenuItem asChild>
-                            <Link href={`/dashboard?userId=${user.uid}`} target="_blank" className="flex items-center">
-                                <Eye className="mr-2 h-4 w-4"/>
-                                View as User
-                            </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuSub>
-                            <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
-                            <DropdownMenuSubContent>
-                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'user')}>Set as User</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'partner')}>Set as Partner</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'admin')}>Set as Admin</DropdownMenuItem>
-                            </DropdownMenuSubContent>
-                            </DropdownMenuSub>
-                            {user.status === 'Active' ? (
-                                <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Suspended')}>Suspend</DropdownMenuItem>
-                            ) : (
-                                <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Active')}>Activate</DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            This action cannot be undone. This will permanently delete the user account.
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => handleDelete(user.uid)}>Delete</AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
+                            <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button aria-haspopup="true" size="icon" variant="ghost">
+                                <MoreHorizontal className="h-4 w-4" />
+                                <span className="sr-only">Toggle menu</span>
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuSub>
+                                <DropdownMenuSubTrigger>Edit Role</DropdownMenuSubTrigger>
+                                <DropdownMenuSubContent>
+                                    <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'user')}>Set as User</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'partner')}>Set as Partner</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleRoleChange(user.uid, 'admin')}>Set as Admin</DropdownMenuItem>
+                                </DropdownMenuSubContent>
+                                </DropdownMenuSub>
+                                {user.status === 'Active' ? (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Suspended')}>Suspend</DropdownMenuItem>
+                                ) : (
+                                    <DropdownMenuItem onClick={() => handleStatusChange(user.uid, 'Active')}>Activate</DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <button className="relative flex cursor-default select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 text-destructive w-full text-left">Delete</button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This action cannot be undone. This will permanently delete the user account.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={() => handleDelete(user.uid)}>Delete</AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
                     </TableCell>
                     </TableRow>
                 ))
@@ -241,3 +243,5 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
+    

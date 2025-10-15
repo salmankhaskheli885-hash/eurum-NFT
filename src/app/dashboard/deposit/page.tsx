@@ -60,13 +60,28 @@ export default function DepositPage() {
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!user || !firestore) {
+        if (!user || !firestore || !settings) {
             toast({
                 variant: "destructive",
                 title: "Not Logged In",
                 description: "You must be logged in to make a deposit.",
             })
             return
+        }
+
+        const depositAmount = parseFloat(amount);
+        if (isNaN(depositAmount)) {
+            toast({ variant: 'destructive', title: 'Invalid Amount' });
+            return;
+        }
+
+        if (settings.minDeposit && depositAmount < settings.minDeposit) {
+            toast({ variant: 'destructive', title: `Minimum deposit is $${settings.minDeposit}` });
+            return;
+        }
+        if (settings.maxDeposit && depositAmount > settings.maxDeposit) {
+            toast({ variant: 'destructive', title: `Maximum deposit is $${settings.maxDeposit}` });
+            return;
         }
         
         try {
@@ -151,6 +166,11 @@ export default function DepositPage() {
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="amount">{t('deposit.amount')}</Label>
                     <Input id="amount" type="number" placeholder="5000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+                    {settings && (settings.minDeposit || settings.maxDeposit) && (
+                        <p className="text-xs text-muted-foreground pt-1">
+                            Deposit between ${settings.minDeposit || 0} and ${settings.maxDeposit || 'unlimited'}.
+                        </p>
+                    )}
                 </div>
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="tid-number">{t('deposit.tidNumber')}</Label>
@@ -170,3 +190,5 @@ export default function DepositPage() {
     </div>
   )
 }
+
+    

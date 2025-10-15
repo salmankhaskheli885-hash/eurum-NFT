@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -11,29 +11,44 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { addTransaction } from "@/lib/firestore"
+import { addTransaction, listenToAppSettings } from "@/lib/firestore"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { AppSettings } from "@/lib/data"
 
 export default function WithdrawPage() {
     const { t } = useTranslation()
-    const { user, loading } = useUser()
+    const { user, loading: userLoading } = useUser()
     const router = useRouter()
     const { toast } = useToast()
     const firestore = useFirestore()
+    
+    const [settings, setSettings] = useState<AppSettings | null>(null);
+    const [settingsLoading, setSettingsLoading] = useState(true);
 
     const [method, setMethod] = useState("jazzcash")
     const [accountNumber, setAccountNumber] = useState("")
     const [accountName, setAccountName] = useState("")
     const [amount, setAmount] = useState("")
 
+     useEffect(() => {
+        if (!firestore) return;
+        setSettingsLoading(true);
+        const unsubscribe = listenToAppSettings(firestore, (newSettings) => {
+            setSettings(newSettings);
+            setSettingsLoading(false);
+        });
+        return () => unsubscribe();
+    }, [firestore]);
+
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-         if (!user || !firestore) {
+         if (!user || !firestore || !settings) {
             toast({
                 variant: "destructive",
-                title: "Not Logged In",
+                title: "Not Logged In or system not ready",
                 description: "You must be logged in to make a withdrawal.",
             })
             return
@@ -42,6 +57,15 @@ export default function WithdrawPage() {
         const withdrawalAmount = parseFloat(amount);
         if (isNaN(withdrawalAmount) || withdrawalAmount <= 0) {
             toast({ variant: "destructive", title: "Invalid Amount" });
+            return;
+        }
+
+        if (settings.minWithdrawal && withdrawalAmount < settings.minWithdrawal) {
+            toast({ variant: 'destructive', title: `Minimum withdrawal is $${settings.minWithdrawal}` });
+            return;
+        }
+        if (settings.maxWithdrawal && withdrawalAmount > settings.maxWithdrawal) {
+            toast({ variant: 'destructive', title: `Maximum withdrawal is $${settings.maxWithdrawal}` });
             return;
         }
         
@@ -74,6 +98,8 @@ export default function WithdrawPage() {
             });
         }
     }
+  
+  const loading = userLoading || settingsLoading;
 
   if (loading) {
       return (
@@ -139,7 +165,12 @@ export default function WithdrawPage() {
             <div className="grid w-full items-center gap-1.5">
                 <Label htmlFor="amount">{t('withdraw.amount')}</Label>
                 <Input id="amount" type="number" placeholder="1000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
-                 <p className="text-xs text-muted-foreground pt-1">{t('withdraw.feeNotice')}</p>
+                 {settings?.withdrawalFee && <p className="text-xs text-muted-foreground pt-1">A {settings.withdrawalFee}% fee will be deducted. Funds will be transferred within 12-24 hours.</p>}
+                 {settings && (settings.minWithdrawal || settings.maxWithdrawal) && (
+                    <p className="text-xs text-muted-foreground pt-1">
+                        Withdraw between ${settings.minWithdrawal || 0} and ${settings.maxWithdrawal || 'unlimited'}.
+                    </p>
+                 )}
             </div>
             <Button type="submit" className="w-full">
                 <Landmark className="mr-2 h-4 w-4" />
@@ -151,3 +182,5 @@ export default function WithdrawPage() {
     </div>
   )
 }
+
+    

@@ -143,7 +143,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{plan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
                     <DialogDescription>
@@ -364,4 +364,5 @@ export default function AdminInvestmentsPage() {
   )
 }
 
+    
     

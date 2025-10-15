@@ -50,7 +50,11 @@ export type AppSettings = {
     adminWalletNumber: string;
     adminWalletName: string;
     adminAccountHolderName: string;
-    withdrawalFee: string;
+    withdrawalFee: number;
+    minDeposit?: number;
+    maxDeposit?: number;
+    minWithdrawal?: number;
+    maxWithdrawal?: number;
 }
 
 export type Announcement = {
@@ -64,7 +68,11 @@ export let appSettings: AppSettings = {
     adminWalletNumber: "0300-1234567",
     adminWalletName: "JazzCash",
     adminAccountHolderName: "Fynix Pro Admin",
-    withdrawalFee: "2"
+    withdrawalFee: 2,
+    minDeposit: 10,
+    maxDeposit: 10000,
+    minWithdrawal: 20,
+    maxWithdrawal: 5000,
 }
 
 // These arrays are no longer the source of truth. They are empty.
@@ -147,3 +155,5 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         referredBy: undefined
     };
 }
+
+    

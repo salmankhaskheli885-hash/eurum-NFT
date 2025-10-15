@@ -38,9 +38,11 @@ export default function AdminSettingsPage() {
     return () => unsubscribe();
   }, [firestore]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setSettings(prev => ({ ...prev, [id]: value }));
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { id, value, type } = e.target;
+    // @ts-ignore
+    const isNumber = type === 'number' && e.nativeEvent.inputType !== 'e';
+    setSettings(prev => ({ ...prev, [id]: isNumber ? (value === '' ? '' : Number(value)) : value }));
   }
 
   const handleSettingsSave = async () => {
@@ -111,9 +113,6 @@ export default function AdminSettingsPage() {
                 placeholder="e.g., JazzCash, Easypaisa"
                 disabled={loading}
               />
-               <p className="text-xs text-muted-foreground">
-                The name of the wallet service.
-              </p>
             </div>
              <div className="space-y-2">
               <Label htmlFor="adminAccountHolderName">Account Holder Name</Label>
@@ -124,9 +123,6 @@ export default function AdminSettingsPage() {
                 placeholder="e.g., John Doe"
                 disabled={loading}
               />
-               <p className="text-xs text-muted-foreground">
-                The name of the account holder.
-              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="adminWalletNumber">Admin Deposit Wallet Number</Label>
@@ -136,10 +132,51 @@ export default function AdminSettingsPage() {
                 onChange={handleInputChange}
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">
-                This is the number users will send deposits to.
-              </p>
             </div>
+             <div className="grid grid-cols-2 gap-4">
+               <div className="space-y-2">
+                <Label htmlFor="minDeposit">Min Deposit</Label>
+                <Input 
+                    id="minDeposit" 
+                    type="number"
+                    value={settings.minDeposit ?? ""} 
+                    onChange={handleInputChange}
+                    disabled={loading}
+                />
+                </div>
+                <div className="space-y-2">
+                <Label htmlFor="maxDeposit">Max Deposit</Label>
+                <Input 
+                    id="maxDeposit" 
+                    type="number"
+                    value={settings.maxDeposit ?? ""} 
+                    onChange={handleInputChange}
+                    disabled={loading}
+                />
+                </div>
+            </div>
+             <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-2">
+                    <Label htmlFor="minWithdrawal">Min Withdrawal</Label>
+                    <Input 
+                        id="minWithdrawal" 
+                        type="number"
+                        value={settings.minWithdrawal ?? ""} 
+                        onChange={handleInputChange}
+                        disabled={loading}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="maxWithdrawal">Max Withdrawal</Label>
+                    <Input 
+                        id="maxWithdrawal" 
+                        type="number"
+                        value={settings.maxWithdrawal ?? ""} 
+                        onChange={handleInputChange}
+                        disabled={loading}
+                    />
+                </div>
+             </div>
             <div className="space-y-2">
               <Label htmlFor="withdrawalFee">Withdrawal Fee (%)</Label>
               <Input 
@@ -149,9 +186,6 @@ export default function AdminSettingsPage() {
                 onChange={handleInputChange}
                 disabled={loading}
               />
-              <p className="text-xs text-muted-foreground">
-                The percentage fee deducted from all user withdrawals.
-              </p>
             </div>
             <Button onClick={handleSettingsSave} disabled={loading}>Save Payment Settings</Button>
           </CardContent>
@@ -181,3 +215,5 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
+
+    
