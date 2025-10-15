@@ -95,33 +95,33 @@ export default function DepositPage() {
         }
         
         setIsSubmitting(true);
-        try {
-            await addTransaction(firestore, {
-                userId: user.uid,
-                userName: user.displayName || 'Unknown User',
-                type: 'Deposit',
-                amount: parseFloat(amount),
-                status: 'Pending',
-                receiptFile: receiptFile, // Pass the file itself
-                details: `Deposit via ${yourNumber} with TID: ${tid}`
-            });
-
-            toast({
+        
+        // This is now an optimistic update. We don't wait for the full function to complete.
+        // The function itself will handle background upload.
+        addTransaction(firestore, {
+            userId: user.uid,
+            userName: user.displayName || 'Unknown User',
+            type: 'Deposit',
+            amount: parseFloat(amount),
+            status: 'Pending', // It starts as pending, firestore function will auto-complete it
+            receiptFile: receiptFile, // Pass the file itself
+            details: `Deposit via ${yourNumber} with TID: ${tid}`
+        }).then(() => {
+             toast({
                 title: "Deposit Request Submitted",
-                description: "Your deposit is being reviewed and will be processed shortly.",
-            })
-
-            router.push('/dashboard/transactions')
-        } catch (error: any) {
+                description: "Your deposit is being processed and will reflect in your balance shortly.",
+            });
+            router.push('/dashboard/transactions');
+        }).catch((error: any) => {
             console.error("Deposit submission error:", error);
             toast({
                 variant: "destructive",
                 title: "Submission Failed",
                 description: error.message || "Could not submit your deposit request.",
             })
-        } finally {
+        }).finally(() => {
             setIsSubmitting(false);
-        }
+        });
     }
 
   const isLoading = userLoading || settingsLoading;

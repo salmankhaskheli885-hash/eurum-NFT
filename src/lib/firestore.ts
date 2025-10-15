@@ -128,73 +128,46 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
     await updateDoc(userRef, { kycStatus: status });
 }
 
+// Separate function to handle background receipt upload
+const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof getFirestore>, transactionId: string, userId: string, receiptFile: File) => {
+    try {
+        const storage = getStorage();
+        const receiptPath = `receipts/${userId}/${transactionId}_${receiptFile.name}`;
+        const storageRef = ref(storage, receiptPath);
+        const snapshot = await uploadBytes(storageRef, receiptFile);
+        const receiptUrl = await getDownloadURL(snapshot.ref);
+
+        const transactionRef = doc(firestore, 'transactions', transactionId);
+        await updateDoc(transactionRef, { receiptUrl: receiptUrl });
+    } catch (error) {
+        console.error("Error in background receipt upload:", error);
+        // Optionally, update the transaction to a 'failed' state if upload is critical
+    }
+};
 
 export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
-  const { receiptFile, ...dataToSave } = transactionData;
+    const { receiptFile, ...dataToSave } = transactionData;
+    const finalTransactionData: Omit<Transaction, 'id'> = {
+        ...dataToSave,
+        date: new Date().toISOString(),
+        status: 'Completed' // Set to completed immediately
+    };
 
-  const transactionDocRef = doc(collection(firestore, 'transactions'));
-  
-  if (dataToSave.type === 'Deposit') {
-      dataToSave.status = 'Completed'; // Auto-complete deposits
-  } else if (dataToSave.type === 'Withdrawal') {
-      // For withdrawals, we need to check balance first.
-      const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-      const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-      const withdrawalAmount = Math.abs(dataToSave.amount);
-      const feeAmount = withdrawalAmount * (feePercentage / 100);
-      const totalDeduction = withdrawalAmount + feeAmount;
+    // Step 1: Create the transaction document immediately to get an ID
+    const transactionDocRef = await addDoc(collection(firestore, 'transactions'), finalTransactionData);
+    
+    // Step 2: Handle balance and side-effects in a separate, reliable transaction
+    await updateTransactionStatus(firestore, transactionDocRef.id, 'Completed', { ...finalTransactionData, id: transactionDocRef.id });
 
-      const userRef = doc(firestore, 'users', dataToSave.userId);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists() || userSnap.data().balance < totalDeduction) {
-          dataToSave.status = 'Failed'; // Mark as failed if balance is insufficient
-      } else {
-          dataToSave.status = 'Completed'; // Auto-complete if balance is sufficient
-      }
-  } else if (dataToSave.type === 'Investment') {
-      const userRef = doc(firestore, 'users', dataToSave.userId);
-      const userSnap = await getDoc(userRef);
-      const investmentAmount = Math.abs(dataToSave.amount);
-      if (!userSnap.exists() || userSnap.data().balance < investmentAmount) {
-          throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-      }
-      dataToSave.status = 'Completed'; // Auto-complete investments
-  }
-  
-  let receiptUrl: string | undefined = undefined;
-  if (dataToSave.type === 'Deposit' && receiptFile) {
-    try {
-      const storage = getStorage();
-      const receiptPath = `receipts/${dataToSave.userId}/${transactionDocRef.id}_${receiptFile.name}`;
-      const storageRef = ref(storage, receiptPath);
-      const snapshot = await uploadBytes(storageRef, receiptFile);
-      receiptUrl = await getDownloadURL(snapshot.ref);
-    } catch (error) {
-      console.error("Error uploading receipt:", error);
-      throw new Error("Receipt upload failed. Please try again.");
+    // Step 3: If it was a deposit with a file, start the background upload
+    if (dataToSave.type === 'Deposit' && receiptFile) {
+        uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
     }
-  }
-  
-  const finalTransactionData: Omit<Transaction, 'id'> = {
-    ...dataToSave,
-    date: new Date().toISOString(),
-    receiptUrl: receiptUrl,
-  };
-
-  await setDoc(transactionDocRef, finalTransactionData);
-  
-  // Now, run balance updates and other side-effects in a separate transaction
-  // for completed transactions.
-  if (finalTransactionData.status === 'Completed') {
-      await updateTransactionStatus(firestore, transactionDocRef.id, 'Completed', finalTransactionData);
-  } else if (finalTransactionData.status === 'Failed') {
-      // You can add logic here if something needs to happen on auto-fail.
-      // e.g. notify user of failed withdrawal due to insufficient funds.
-  }
 }
+
 
 async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>, finalTransaction: Transaction) {
     if (finalTransaction.type !== 'Investment' || !finalTransaction.investmentDetails) {
@@ -254,10 +227,9 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             transaction.update(transactionRef, { status: newStatus });
         }
         
-        if (currentTxData.status !== 'Completed' && newStatus !== 'Completed') {
-            // This transaction was already processed or is being failed.
-            // If it's a deposit failing, handle failed count.
-             if (newStatus === 'Failed' && currentTxData.type === 'Deposit') {
+        // This is now the main logic for automatic updates
+        if (newStatus !== 'Completed') {
+            if (currentTxData.type === 'Deposit') {
                 const userRef = doc(firestore, 'users', currentTxData.userId);
                 const userSnap = await transaction.get(userRef);
                 if (userSnap.exists()) {
@@ -268,7 +240,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     transaction.update(userRef, updates);
                 }
             }
-            return;
+            return; // Do not proceed with balance updates if not completed
         };
 
         const userRef = doc(firestore, 'users', currentTxData.userId);
@@ -277,25 +249,8 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 
         const user = userSnap.data() as User;
         
-        if (newStatus === 'Completed') {
-            if (currentTxData.type === 'Withdrawal') {
-                 const withdrawalAmount = Math.abs(currentTxData.amount);
-                 const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-                 const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-                 const feeAmount = withdrawalAmount * (feePercentage / 100);
-                 const finalAmount = withdrawalAmount + feeAmount;
-
-                 if (user.balance < finalAmount) {
-                     throw new Error(`Insufficient balance for withdrawal and fees. Required: $${finalAmount.toFixed(2)}`);
-                 }
-                
-                transaction.update(userRef, { 
-                    lastWithdrawalDate: new Date().toISOString(),
-                    balance: user.balance - finalAmount
-                });
-            }
-
-            if (currentTxData.type === 'Deposit') {
+        switch (currentTxData.type) {
+            case 'Deposit': {
                 const newTotalDeposits = (user.totalDeposits || 0) + currentTxData.amount;
                 const newBalance = user.balance + currentTxData.amount;
                 let newVipLevel = user.vipLevel;
@@ -336,17 +291,40 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                         });
                     }
                 }
+                break;
             }
-             if (currentTxData.type === 'Investment') {
+            case 'Withdrawal': {
+                const withdrawalAmount = Math.abs(currentTxData.amount);
+                const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+                const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                const feeAmount = withdrawalAmount * (feePercentage / 100);
+                const totalDeduction = withdrawalAmount + feeAmount;
+
+                if (user.balance < totalDeduction) {
+                    // This is a server-side check. We should fail the transaction here.
+                    const txRef = doc(firestore, 'transactions', transactionId);
+                    transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
+                    return; // Stop processing
+                }
+                
+                transaction.update(userRef, { 
+                    lastWithdrawalDate: new Date().toISOString(),
+                    balance: user.balance - totalDeduction
+                });
+                 break;
+            }
+             case 'Investment': {
                 const investmentAmount = Math.abs(currentTxData.amount);
                  if (user.balance < investmentAmount) {
-                     throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+                     const txRef = doc(firestore, 'transactions', transactionId);
+                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
+                     return; // Stop processing
                  }
                 const newBalance = user.balance - investmentAmount;
                 transaction.update(userRef, { balance: newBalance });
                 handleInvestmentPayout(firestore, currentTxData);
+                 break;
             }
-
         }
     });
 }
