@@ -33,7 +33,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
                     tx.type === 'Deposit' && 
                     tx.status !== 'Pending' &&
                     tx.assignedAgentId === agentId
-                )
+                ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
             );
             setLoading(false);
         });
@@ -80,7 +80,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
                         <TableRow>
                             <TableHead>Transaction ID</TableHead>
                             <TableHead>User</TableHead>
-                            <TableHead>Date</TableHead>
+                            <TableHead>Date & Time</TableHead>
                             <TableHead className="text-right">Amount (USD)</TableHead>
                             <TableHead className="text-center">Final Status</TableHead>
                         </TableRow>
@@ -224,7 +224,7 @@ export default function AgentDepositsPage() {
                             <TableHeader>
                             <TableRow>
                                 <TableHead>User</TableHead>
-                                <TableHead>Date</TableHead>
+                                <TableHead>Date & Time</TableHead>
                                 <TableHead className="text-right">Amount (USD)</TableHead>
                                 <TableHead className="text-center">Receipt</TableHead>
                                 <TableHead className="text-center">Actions</TableHead>
