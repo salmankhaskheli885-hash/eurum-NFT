@@ -145,7 +145,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         // 2. Check if user is a Chat Agent
         const isAgent = await isUserAChatAgent(firestore, firebaseUser.email!);
         if (isAgent) {
-             if (!settings.isAgentPanelEnabled) {
+             if (settings.isAgentPanelEnabled === false) {
                 showMaintenancePage();
                 return;
             }
@@ -154,9 +154,9 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         }
         
         // 3. Check role from Firestore and panel status
-        switch(userProfile.role) {
+        switch(intendedRole) {
             case 'partner':
-                if (!settings.isPartnerPanelEnabled) {
+                if (settings.isPartnerPanelEnabled === false) {
                    showMaintenancePage();
                    return;
                 }
@@ -164,7 +164,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
                 break;
             case 'user':
             default:
-                if (!settings.isUserPanelEnabled) {
+                if (settings.isUserPanelEnabled === false) {
                    showMaintenancePage();
                    return;
                 }
