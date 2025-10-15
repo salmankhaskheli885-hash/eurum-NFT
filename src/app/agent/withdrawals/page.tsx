@@ -7,7 +7,6 @@ import type { Transaction } from "@/lib/data"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -124,11 +123,16 @@ export default function AgentWithdrawalsPage() {
                     {loading ? (
                         [...Array(3)].map((_, i) => (
                             <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                                 <TableCell>
                                     <div className="space-y-2">
+                                        <Skeleton className="h-5 w-24" />
                                         <Skeleton className="h-4 w-32" />
-                                        <Skeleton className="h-3 w-24" />
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    <div className="space-y-2">
+                                        <Skeleton className="h-4 w-40" />
+                                        <Skeleton className="h-4 w-48" />
                                     </div>
                                 </TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
@@ -140,13 +144,16 @@ export default function AgentWithdrawalsPage() {
                             <TableRow key={withdrawal.id}>
                                 <TableCell>
                                     <div className="font-medium">{withdrawal.userName}</div>
-                                    <div className="text-xs text-muted-foreground">{new Date(withdrawal.date).toLocaleString()}</div>
+                                    <div className="text-sm text-muted-foreground">{new Date(withdrawal.date).toLocaleString()}</div>
                                 </TableCell>
                                  <TableCell>
-                                    <div className="font-mono text-sm">{withdrawal.withdrawalDetails?.accountNumber}</div>
-                                    <div className="text-xs text-muted-foreground">
-                                        {withdrawal.withdrawalDetails?.accountName} ({withdrawal.withdrawalDetails?.method})
-                                    </div>
+                                    {withdrawal.withdrawalDetails && (
+                                        <div className="text-sm space-y-1">
+                                        <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
+                                        <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
+                                        <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+                                        </div>
+                                    )}
                                 </TableCell>
                                 <TableCell className="text-right text-red-600 font-medium">
                                     {formatCurrency(Math.abs(withdrawal.amount))}

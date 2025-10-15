@@ -122,7 +122,7 @@ export default function AgentDepositsPage() {
                     {loading ? (
                         [...Array(3)].map((_, i) => (
                             <TableRow key={i}>
-                                <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-32" /></TableCell>
                                 <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                 <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                                 <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
@@ -131,8 +131,11 @@ export default function AgentDepositsPage() {
                         ))
                     ) : filteredDeposits.length > 0 ? (
                         filteredDeposits.map((deposit) => (
-                            <TableRow key={deposit.id}>
-                                <TableCell className="font-medium">{deposit.userName}</TableCell>
+                             <TableRow key={deposit.id}>
+                                <TableCell>
+                                    <div className="font-medium">{deposit.userName}</div>
+                                    <div className="text-sm text-muted-foreground">{deposit.id}</div>
+                                </TableCell>
                                 <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                 <TableCell className="text-center">
