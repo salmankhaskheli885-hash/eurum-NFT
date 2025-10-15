@@ -109,56 +109,47 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
         }
         
         const user = userSnap.data() as User;
-        
-        let amountToDeduct = transactionData.amount;
-        let finalTransactionData = { ...transactionData };
+        let amountToChange = 0; // The amount to add/subtract from balance
 
-        if (transactionData.type === 'Withdrawal') {
-            const settingsRef = doc(firestore, 'app', 'settings');
-            const settingsSnap = await getDoc(settingsRef); // Cannot use transaction.get for this as it's outside the user's data tree
-            const feePercentage = settingsSnap.exists() ? parseFloat(settingsSnap.data().withdrawalFee) : 2;
-            const feeAmount = Math.abs(transactionData.amount) * (feePercentage / 100);
-            
-            // The amount to deduct from balance is the full requested amount
-            const totalDeduction = Math.abs(transactionData.amount);
+        // DEPOSIT: Status is pending, balance change happens on admin approval.
+        if (transactionData.type === 'Deposit') {
+            amountToChange = 0; 
+        }
 
-            if (user.balance < totalDeduction) {
-                throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} to withdraw.`);
+        // WITHDRAWAL: Deduct from balance immediately. On failure, refund.
+        else if (transactionData.type === 'Withdrawal') {
+            const withdrawalAmount = Math.abs(transactionData.amount);
+            if (user.balance < withdrawalAmount) {
+                throw new Error(`Insufficient Balance. You need at least $${withdrawalAmount.toFixed(2)} to withdraw.`);
             }
+            amountToChange = -withdrawalAmount;
+        }
 
-            finalTransactionData.amount = -totalDeduction;
-            amountToDeduct = -totalDeduction; // This is what is subtracted from balance
-            
-            finalTransactionData.withdrawalDetails = {
-                ...transactionData.withdrawalDetails!,
-                fee: feeAmount
-            };
-
-        } else if (transactionData.type === 'Investment') {
+        // INVESTMENT: Deduct from balance immediately. On failure, refund.
+        else if (transactionData.type === 'Investment') {
              const investmentAmount = Math.abs(transactionData.amount);
             if (user.balance < investmentAmount) {
-                throw new Error("Insufficient Balance");
+                throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
             }
-            amountToDeduct = -investmentAmount;
-        } else if (transactionData.type === 'Deposit') {
-            // For deposits, the amount is positive and added to balance upon approval, not here.
-            amountToDeduct = 0;
-        } else {
-             amountToDeduct = transactionData.amount;
+            amountToChange = -investmentAmount;
+        }
+
+        // PAYOUT/COMMISSION: These are earnings, add to balance.
+        else {
+             amountToChange = transactionData.amount;
         }
         
-        // For non-deposit transactions, update balance immediately
-        if (transactionData.type !== 'Deposit') {
-            const newBalance = user.balance + amountToDeduct;
+        // Update balance within the transaction if there's a change
+        if (amountToChange !== 0) {
+            const newBalance = user.balance + amountToChange;
             transaction.update(userRef, { balance: newBalance });
         }
-
-
+        
+        // Create the new transaction record
         const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
-            ...finalTransactionData,
+            ...transactionData,
             date: new Date().toISOString().split('T')[0]
         };
-        
         const newDocRef = doc(collection(firestore, 'transactions'));
         transaction.set(newDocRef, newTransactionDataWithDate);
         
@@ -178,13 +169,14 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
                 setTimeout(async () => {
                     try {
                         const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
-                        userId: newTransaction.userId,
-                        userName: newTransaction.userName,
-                        type: 'Payout',
-                        amount: payoutAmount,
-                        status: 'Completed',
-                        details: `Matured investment from ${planName}`
+                            userId: newTransaction.userId,
+                            userName: newTransaction.userName,
+                            type: 'Payout',
+                            amount: payoutAmount,
+                            status: 'Completed',
+                            details: `Matured investment from ${planName}`
                         };
+                        // Use a separate transaction for the payout to ensure balance is updated correctly
                         await addTransaction(firestore, payoutTransactionData);
                     } catch(e) {
                         console.error("Failed to process automatic payout:", e);
@@ -212,7 +204,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         const oldStatus = txData.status;
 
         if (oldStatus !== 'Pending') {
-            // Avoid re-processing
             console.log("Transaction already processed.");
             return false;
         }
@@ -225,12 +216,12 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         }
         const user = userSnap.data() as User;
         
-        // Update transaction status
+        // Update transaction status first
         transaction.update(transactionRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
+            // If a DEPOSIT is completed, add funds to user's balance
             if (txData.type === 'Deposit') {
-                // Add deposit amount to user's balance
                 const newBalance = user.balance + txData.amount;
                 transaction.update(userRef, { balance: newBalance });
 
@@ -249,7 +240,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                         transaction.update(referrerRef, { balance: newReferrerBalance });
 
                         // Log commission transaction for the referrer
-                        const commissionTransaction: Omit<Transaction, 'id'> = {
+                        const commissionTransactionData: Omit<Transaction, 'id' | 'date'> = {
                             userId: referrer.uid,
                             userName: referrer.displayName || 'N/A',
                             type: 'Commission',
@@ -258,16 +249,17 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                             date: new Date().toISOString().split('T')[0],
                             details: `From ${user.displayName}'s deposit`
                         };
-                        const commissionDocRef = doc(collection(firestore, 'transactions'));
-                        transaction.set(commissionDocRef, commissionTransaction);
+                         const commissionDocRef = doc(collection(firestore, 'transactions'));
+                         transaction.set(commissionDocRef, commissionTransactionData);
                     }
                 }
             }
             // For withdrawals, balance is already deducted at request time. No action needed on completion.
+        
         } else if (newStatus === 'Failed') {
-            if (txData.type === 'Withdrawal' || txData.type === 'Investment') {
-                // Refund the user if a withdrawal or investment fails (amount is negative, so we subtract)
-                const newBalance = user.balance - txData.amount;
+            // If a WITHDRAWAL fails, refund the user (amount is negative, so we subtract to add it back)
+            if (txData.type === 'Withdrawal') {
+                const newBalance = user.balance - txData.amount; // e.g., balance - (-1000) = balance + 1000
                 transaction.update(userRef, { balance: newBalance });
             }
              // For deposits, no balance was changed, so no refund needed on failure.

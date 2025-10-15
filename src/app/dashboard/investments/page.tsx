@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 
 function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (plan: InvestmentPlan, amount: number) => void }) {
+    const { user } = useUser();
     const { t } = useTranslation()
     const [amount, setAmount] = React.useState(plan.minInvestment);
 
@@ -54,6 +55,8 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 
     const totalProfit = amount * (plan.dailyReturn / 100) * plan.durationDays;
     const totalIncome = amount + totalProfit;
+    const isAmountValid = amount >= plan.minInvestment;
+    const isBalanceSufficient = user ? user.balance >= amount : false;
 
     return (
         <Dialog>
@@ -92,6 +95,9 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                             min={plan.minInvestment}
                         />
                         <p className="text-xs text-muted-foreground">Min Investment: {formatCurrency(plan.minInvestment)}</p>
+                         {!isBalanceSufficient && isAmountValid && (
+                             <p className="text-xs text-destructive">You have insufficient balance for this amount.</p>
+                         )}
                     </div>
                     <hr/>
                     <div className="flex justify-between font-bold">
@@ -110,7 +116,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button type="submit" disabled={amount < plan.minInvestment}>
+                            <Button type="submit" disabled={!isAmountValid || !isBalanceSufficient}>
                                 {t('investments.confirmButton')}
                             </Button>
                         </AlertDialogTrigger>
@@ -162,6 +168,8 @@ export default function InvestmentsPage() {
         toast({ variant: "destructive", title: "Not Logged In" });
         return;
     }
+    
+    // Final check, though UI should prevent this.
     if (user.balance < amount) {
         toast({
             variant: "destructive",
