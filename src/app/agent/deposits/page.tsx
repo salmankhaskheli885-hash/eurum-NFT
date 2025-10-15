@@ -133,7 +133,7 @@ export default function AgentDepositsPage() {
                         filteredDeposits.map((deposit) => (
                             <TableRow key={deposit.id}>
                                 <TableCell className="font-medium">{deposit.userName}</TableCell>
-                                <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
+                                <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                 <TableCell className="text-center">
                                      {deposit.receiptUrl ? (

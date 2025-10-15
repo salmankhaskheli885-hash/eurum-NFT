@@ -210,30 +210,27 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    const transactionObject: Omit<Transaction, 'id'> = {
-        ...dataToSave,
-        date: new Date().toISOString(),
-        status: dataToSave.status || 'Pending',
-    };
-    
     // Assign agent only for pending deposits and withdrawals
-    if (transactionObject.status === 'Pending') {
+    let agentId;
+    if (dataToSave.status === 'Pending') {
         let permission: 'canApproveDeposits' | 'canApproveWithdrawals' | null = null;
-        if (transactionObject.type === 'Deposit') {
+        if (dataToSave.type === 'Deposit') {
             permission = 'canApproveDeposits';
-        } else if (transactionObject.type === 'Withdrawal') {
+        } else if (dataToSave.type === 'Withdrawal') {
             permission = 'canApproveWithdrawals';
         }
 
         if (permission) {
-             transactionObject.assignedAgentId = await assignAgent(firestore, permission) || undefined;
+             agentId = await assignAgent(firestore, permission);
         }
     }
     
-    // Remove assignedAgentId if it's null or undefined to prevent Firestore errors
-    if (transactionObject.assignedAgentId === null || transactionObject.assignedAgentId === undefined) {
-        delete transactionObject.assignedAgentId;
-    }
+    const transactionObject: Omit<Transaction, 'id'> = {
+        ...dataToSave,
+        date: new Date().toISOString(),
+        status: dataToSave.status || 'Pending',
+        assignedAgentId: agentId || undefined,
+    };
     
     const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
     const fullTransaction = { ...transactionObject, id: newTransactionRef.id } as Transaction;
