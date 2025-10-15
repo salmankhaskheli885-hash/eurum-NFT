@@ -37,17 +37,22 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         const role = isAdmin ? 'admin' : isPartner ? 'partner' : 'user';
 
         // Check for referral
-        const urlParams = new URLSearchParams(window.location.search);
-        const refId = urlParams.get('ref');
         let referredBy: string | undefined = undefined;
-
-        if (refId) {
-             const referrerQuery = query(collection(firestore, "users"), where("shortUid", "==", refId), limit(1));
-             const referrerSnap = await getDocs(referrerQuery);
-             if (!referrerSnap.empty) {
-                 referredBy = referrerSnap.docs[0].id;
-             }
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const refId = urlParams.get('ref');
+    
+            if (refId) {
+                 const referrerQuery = query(collection(firestore, "users"), where("shortUid", "==", refId), limit(1));
+                 const referrerSnap = await getDocs(referrerQuery);
+                 if (!referrerSnap.empty) {
+                     referredBy = referrerSnap.docs[0].id;
+                 }
+            }
+        } catch (e) {
+            console.error("Could not parse URL for referral", e)
         }
+
 
         const newUser: User = {
             uid: firebaseUser.uid,
@@ -136,18 +141,18 @@ export async function addTransaction(firestore: ReturnType<typeof getFirestore>,
             const today = new Date();
             today.setHours(0, 0, 0, 0);
 
-            const withdrawalQuery = query(
+            const allTransactionsQuery = query(
                 collection(firestore, 'transactions'),
                 where('userId', '==', transactionData.userId),
-                where('type', '==', 'Withdrawal'),
-                where('date', '>=', today.toISOString().split('T')[0])
+                orderBy('date', 'desc')
             );
-            const todaysWithdrawalsSnap = await getDocs(withdrawalQuery);
-            
-            const todaysWithdrawals = todaysWithdrawalsSnap.docs.filter(doc => doc.data().status !== 'Failed');
+            const allTransactionsSnap = await getDocs(allTransactionsQuery);
+            const lastWithdrawal = allTransactionsSnap.docs
+                .map(d => d.data() as Transaction)
+                .find(tx => tx.type === 'Withdrawal' && tx.status !== 'Failed');
 
-            if (!todaysWithdrawals.empty) {
-                throw new Error("You can only make one withdrawal request per day.");
+            if (lastWithdrawal && new Date(lastWithdrawal.date) > today) {
+                 throw new Error("You can only make one withdrawal request per day.");
             }
 
             // Fee calculation
