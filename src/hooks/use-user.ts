@@ -50,15 +50,16 @@ export function useUser({ viewAsUserId }: { viewAsUserId?: string | null } = {})
       if (unsubscribe) unsubscribe();
 
       if (firebaseUser) {
-        // Ensure user document exists before listening
-        await getOrCreateUser(firestore, firebaseUser);
-        
-        // Listen for real-time updates to the user's document
+        // The listener will handle the case where the document might not exist yet.
+        // It will eventually get the data once getOrCreateUser creates it on login.
         unsubscribe = listenToUser(firestore, firebaseUser.uid, (userProfile) => {
-            setUser(userProfile);
-            setLoading(false);
+            if (userProfile) {
+                setUser(userProfile);
+                setLoading(false);
+            }
+            // If userProfile is null, we keep loading until it's created.
+            // A timeout could be added here to prevent infinite loading state.
         });
-
       } else {
         setUser(null);
         setLoading(false);
