@@ -210,27 +210,28 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
+    const transactionObject: Omit<Transaction, 'id'> & { assignedAgentId?: string } = {
+        ...dataToSave,
+        date: new Date().toISOString(),
+        status: dataToSave.status || 'Pending',
+    };
+    
     // Assign agent only for pending deposits and withdrawals
-    let agentId;
-    if (dataToSave.status === 'Pending') {
+    if (transactionObject.status === 'Pending') {
         let permission: 'canApproveDeposits' | 'canApproveWithdrawals' | null = null;
-        if (dataToSave.type === 'Deposit') {
+        if (transactionObject.type === 'Deposit') {
             permission = 'canApproveDeposits';
-        } else if (dataToSave.type === 'Withdrawal') {
+        } else if (transactionObject.type === 'Withdrawal') {
             permission = 'canApproveWithdrawals';
         }
 
         if (permission) {
-             agentId = await assignAgent(firestore, permission);
+             const agentId = await assignAgent(firestore, permission);
+             if (agentId) {
+                transactionObject.assignedAgentId = agentId;
+             }
         }
     }
-    
-    const transactionObject: Omit<Transaction, 'id'> = {
-        ...dataToSave,
-        date: new Date().toISOString(),
-        status: dataToSave.status || 'Pending',
-        assignedAgentId: agentId || undefined,
-    };
     
     const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
     const fullTransaction = { ...transactionObject, id: newTransactionRef.id } as Transaction;
@@ -301,20 +302,11 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         const appSettingsDocSnap = await transaction.get(doc(firestore, 'app', 'settings'));
         const settings = appSettingsDocSnap.data() as AppSettings;
 
-        let agentRef: any = null;
-        if (txData.assignedAgentId) {
-            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
-            // You can't use getDocs in a transaction. We must assume the UID is unique and get the doc directly if we know its ID,
-            // or query outside. For simplicity, we'll perform this read outside the main transaction logic if needed,
-            // but for increment, it's better to get the ref first. We'll query outside for the ref.
-        }
-
         let referrerSnap: any = null;
         if (user.referredBy) {
             const referrerRef = doc(firestore, 'users', user.referredBy);
             referrerSnap = await transaction.get(referrerRef);
         }
-
 
         // --- WRITES SECOND ---
         transaction.update(txRef, { status: newStatus });
@@ -658,6 +650,3 @@ export function listenToMessages(firestore: ReturnType<typeof getFirestore>, roo
         callback(messages);
     });
 }
-
-
-    
