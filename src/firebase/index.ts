@@ -3,12 +3,12 @@ import { type FirebaseApp } from 'firebase/app';
 
 // This is the one and only source of truth for the Firebase config.
 export const firebaseConfig = {
-    "projectId": "earnify-7f26c",
-    "appId": "1:652865910892:web:aa38865298818c3_99b245a",
-    "apiKey": "AIzaSyDVdiPQ_CWI6KbdXjTd1-VxzsNSdMgXQFA",
-    "authDomain": "earnify-7f26c.firebaseapp.com",
-    "storageBucket": "earnify-7f26c.appspot.com",
-    "messagingSenderId": "652865910892"
+    "projectId": "fynixpro-216f9",
+    "appId": "1:807029821919:web:9e4d3a35a64c4891b799a7",
+    "apiKey": "AIzaSyD0ulSSjV6rQvsjWgRu8FPEcFzMWVafxPM",
+    "authDomain": "fynixpro-216f9.firebaseapp.com",
+    "storageBucket": "fynixpro-216f9.appspot.com",
+    "messagingSenderId": "807029821919"
 };
 
 export type { FirebaseApp };
