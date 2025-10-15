@@ -9,6 +9,15 @@ import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { useFirebaseApp } from '@/firebase/provider';
 import type { UserProfile } from '@/lib/schema';
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogFooter
+} from "@/components/ui/alert-dialog"
+import Link from 'next/link';
 
 
 function GoogleIcon(props: any) {
@@ -40,13 +49,54 @@ function GoogleIcon(props: any) {
     );
 }
 
+function RoleSelectionDialog({ open, onSelectRole }: { open: boolean, onSelectRole: (role: 'admin' | 'user' | 'partner') => void }) {
+    return (
+        <AlertDialog open={open}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Select Your Role</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You are logged in as an administrator. Please choose which panel you would like to access.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex-col sm:flex-col sm:space-x-0 gap-2">
+                    <Button onClick={() => onSelectRole('admin')} className="w-full">Go to Admin Panel</Button>
+                    <Button onClick={() => onSelectRole('user')} variant="outline" className="w-full">Go to User Panel</Button>
+                    <Button onClick={() => onSelectRole('partner')} variant="secondary" className="w-full">Go to Partner Panel</Button>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+
 export function AuthForm({ role }: { role: 'user' | 'partner' }) {
   const router = useRouter();
   const { toast } = useToast();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
+  const [showRoleDialog, setShowRoleDialog] = useState(false);
   const app = useFirebaseApp();
   
+  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner') => {
+      setShowRoleDialog(false);
+      setLoading(true);
+      toast({
+          title: "Redirecting...",
+      });
+      switch (selectedRole) {
+          case 'admin':
+              router.push('/admin');
+              break;
+          case 'user':
+              router.push('/dashboard');
+              break;
+          case 'partner':
+              router.push('/partner');
+              break;
+      }
+  };
+
   const handleGoogleSignIn = async () => {
     if (!app) {
         toast({
@@ -63,24 +113,25 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
         
-        // This is a simulated role fetching. In a real app, you'd get this from Firestore.
         const isAdmin = user.email === 'salmankhaskheli885@gmail.com';
         const isPartner = user.email === 'vitalik@fynix.pro';
         
-        let userRole: UserProfile['role'] = 'user';
-        if (isAdmin) userRole = 'admin';
-        else if (isPartner) userRole = 'partner';
-
         toast({
             title: t('login.successTitle'),
-            description: `Welcome, ${user.displayName}! Redirecting...`,
+            description: `Welcome, ${user.displayName}!`,
         });
+
+        if (isAdmin) {
+            setShowRoleDialog(true);
+            setLoading(false);
+            return;
+        }
+
+        let userRole: UserProfile['role'] = 'user';
+        if (isPartner) userRole = 'partner';
 
         // Redirect based on the determined role
         switch(userRole) {
-            case 'admin':
-                router.push('/admin');
-                break;
             case 'partner':
                 router.push('/partner');
                 break;
@@ -111,25 +162,30 @@ export function AuthForm({ role }: { role: 'user' | 'partner' }) {
         });
 
     } finally {
-        setLoading(false);
+        if (!showRoleDialog) {
+           setLoading(false);
+        }
     }
   };
 
   return (
-    <div className="space-y-4 pt-6">
-        <Button 
-            variant="outline" 
-            className="w-full h-12 text-base"
-            onClick={handleGoogleSignIn}
-            disabled={loading}
-        >
-            <GoogleIcon className="mr-2 h-6 w-6" />
-            {loading ? t('login.processing') : (role === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
-        </Button>
-      
-       <p className="px-8 text-center text-sm text-muted-foreground">
-        By clicking continue, you agree to our Terms of Service and Privacy Policy.
-      </p>
-    </div>
+    <>
+        <RoleSelectionDialog open={showRoleDialog} onSelectRole={handleRoleSelection} />
+        <div className="space-y-4 pt-6">
+            <Button 
+                variant="outline" 
+                className="w-full h-12 text-base"
+                onClick={handleGoogleSignIn}
+                disabled={loading}
+            >
+                <GoogleIcon className="mr-2 h-6 w-6" />
+                {loading ? t('login.processing') : (role === 'partner' ? t('login.buttonPartner') : t('login.googleButton'))}
+            </Button>
+        
+        <p className="px-8 text-center text-sm text-muted-foreground">
+            By clicking continue, you agree to our Terms of Service and Privacy Policy.
+        </p>
+        </div>
+    </>
   );
 }
