@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext } from 'react';
@@ -11,7 +12,7 @@ type FirebaseContextValue = {
   firestore: Firestore | null;
 };
 
-const FirebaseContext = createContext<FirebaseContextValue>({
+export const FirebaseContext = createContext<FirebaseContextValue>({
   app: null,
   auth: null,
   firestore: null,

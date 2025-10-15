@@ -6,7 +6,7 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
-import { FirebaseProvider, FirebaseContext } from '@/firebase/provider';
+import { FirebaseContext, FirebaseProvider } from '@/firebase/provider';
 
 export function FirebaseClientProvider({
   children,
@@ -38,7 +38,7 @@ export function FirebaseClientProvider({
   }
 
   return (
-    <FirebaseContext.Provider value={{ ...firebase, loading }}>
+    <FirebaseContext.Provider value={{ ...firebase, loading: false }}>
         <FirebaseProvider
             app={firebase.app}
             auth={firebase.auth as Auth}
