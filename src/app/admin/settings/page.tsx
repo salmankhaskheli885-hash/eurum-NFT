@@ -182,7 +182,7 @@ export default function AdminSettingsPage() {
               <Input 
                 id="withdrawalFee" 
                 type="number"
-                value={settings.withdrawalFee || ""} 
+                value={settings.withdrawalFee ?? ""} 
                 onChange={handleInputChange}
                 disabled={loading}
               />
@@ -215,5 +215,3 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
-
-    

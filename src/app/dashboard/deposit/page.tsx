@@ -35,7 +35,7 @@ export default function DepositPage() {
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
-    // State for deposit history, moved from the child component
+    // State for deposit history
     const [transactions, setTransactions] = useState<Transaction[]>([])
     const [historyLoading, setHistoryLoading] = useState(true)
 
@@ -139,7 +139,6 @@ export default function DepositPage() {
             setYourNumber("");
             setTid("");
             setReceiptFile(null);
-            // The history component will now update automatically due to the listener in this same component
         } catch (error: any) {
             console.error("Deposit submission error:", error);
             toast({

@@ -162,7 +162,7 @@ export default function WithdrawPage() {
                 userName: user.displayName || 'Unknown User',
                 type: 'Withdrawal',
                 amount: -withdrawalAmount, // Withdrawals are negative amounts
-                status: 'Completed',
+                status: 'Pending',
                 withdrawalDetails: {
                     accountName,
                     accountNumber,

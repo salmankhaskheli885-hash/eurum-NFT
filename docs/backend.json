@@ -147,6 +147,23 @@
         "timestamp": { "type": "string", "format": "date-time" }
       },
       "required": ["roomId", "senderId", "senderType", "text", "timestamp"]
+    },
+    "AppSettings": {
+        "title": "App Settings",
+        "description": "Global settings for the application.",
+        "type": "object",
+        "properties": {
+            "adminWalletNumber": { "type": "string" },
+            "adminWalletName": { "type": "string" },
+            "adminAccountHolderName": { "type": "string" },
+            "withdrawalFee": { "type": "number" },
+            "minDeposit": { "type": "number" },
+            "maxDeposit": { "type": "number" },
+            "minWithdrawal": { "type": "number" },
+            "maxWithdrawal": { "type": "number" },
+            "lastAssignedAgentIndex": { "type": "number", "description": "Internal counter for round-robin agent assignment." }
+        },
+        "required": ["adminWalletNumber", "adminWalletName", "adminAccountHolderName", "withdrawalFee"]
     }
   },
   "auth": {
@@ -178,6 +195,10 @@
     "/chat_rooms/{roomId}/messages/{messageId}": {
         "schema": { "$ref": "#/entities/ChatMessage" },
         "description": "Stores all messages for a specific chat room."
+    },
+    "/app/settings": {
+        "schema": { "$ref": "#/entities/AppSettings" },
+        "description": "Stores global application settings."
     }
   }
 }
