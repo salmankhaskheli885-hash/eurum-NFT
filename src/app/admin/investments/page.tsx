@@ -153,32 +153,32 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                 {plan ? 'Make changes to the investment plan.' : 'Create a new investment plan for users.'}
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="name" className="text-right">Name</Label>
-                                <Input id="name" name="name" value={formData.name} onChange={handleChange} className="col-span-3" />
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="name">Name</Label>
+                                <Input id="name" name="name" value={formData.name} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="dailyReturn" className="text-right">Daily Return %</Label>
-                                <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} className="col-span-3" />
+                            <div className="space-y-2">
+                                <Label htmlFor="dailyReturn">Daily Return %</Label>
+                                <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="durationDays" className="text-right">Duration (Days)</Label>
-                                <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} className="col-span-3" />
+                            <div className="space-y-2">
+                                <Label htmlFor="durationDays">Duration (Days)</Label>
+                                <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="minInvestment" className="text-right">Min Investment</Label>
-                                <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} className="col-span-3" />
+                            <div className="space-y-2">
+                                <Label htmlFor="minInvestment">Min Investment</Label>
+                                <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="requiredVipLevel" className="text-right">Required VIP</Label>
-                                <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} className="col-span-3" />
+                            <div className="space-y-2">
+                                <Label htmlFor="requiredVipLevel">Required VIP</Label>
+                                <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="imageSeed" className="text-right">Image Topic</Label>
-                                <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} className="col-span-3" placeholder="e.g., gold coins, crypto" />
+                            <div className="space-y-2">
+                                <Label htmlFor="imageSeed">Image Topic</Label>
+                                <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} placeholder="e.g., gold coins, crypto" />
+                                <p className="text-xs text-muted-foreground pt-1">Just type a topic for the image, or paste a full URL.</p>
                             </div>
-                            <p className="text-xs text-muted-foreground text-center col-span-4 -mt-2">Just type a topic for the image, or paste a full URL.</p>
                         </div>
                         <DialogFooter>
                             <Button type="submit" onClick={handleSubmit}>Save changes</Button>
