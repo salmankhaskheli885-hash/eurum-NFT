@@ -33,9 +33,17 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
     if (userSnap.exists()) {
         const userData = userSnap.data() as User;
         // Ensure legacy users have the new fields
+        const updates: Partial<User> = {};
         if (userData.failedDepositCount === undefined) {
-             updateDoc(userRef, { failedDepositCount: 0 });
+             updates.failedDepositCount = 0;
              userData.failedDepositCount = 0;
+        }
+         if (userData.totalDeposits === undefined) {
+            updates.totalDeposits = 0;
+            userData.totalDeposits = 0;
+        }
+        if (Object.keys(updates).length > 0) {
+            await updateDoc(userRef, updates);
         }
         return userData;
     } else {
@@ -133,25 +141,34 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 export async function addTransaction(
     firestore: ReturnType<typeof getFirestore>, 
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
-): Promise<Transaction | null> {
+): Promise<Transaction> {
     
-    // Handle receipt upload for deposits
+    // Handle receipt upload for deposits first
+    let receiptUrl: string | undefined = undefined;
     if (transactionData.type === 'Deposit' && transactionData.receiptFile) {
         const storage = getStorage();
         const receiptRef = ref(storage, `receipts/${transactionData.userId}/${Date.now()}_${transactionData.receiptFile.name}`);
         
         try {
             const snapshot = await uploadBytes(receiptRef, transactionData.receiptFile);
-            transactionData.receiptUrl = await getDownloadURL(snapshot.ref);
+            receiptUrl = await getDownloadURL(snapshot.ref);
         } catch (error) {
             console.error("Error uploading receipt:", error);
             throw new Error("Could not upload receipt image.");
         }
     }
-    // Remove the file object before saving to Firestore
+    
     const { receiptFile, ...dataToSave } = transactionData;
 
-    return await runTransaction(firestore, async (transaction) => {
+    const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
+        ...dataToSave,
+        receiptUrl: receiptUrl,
+        date: new Date().toISOString()
+    };
+    
+    const newDocRef = doc(collection(firestore, 'transactions'));
+    
+    await runTransaction(firestore, async (transaction) => {
         const userRef = doc(firestore, 'users', dataToSave.userId);
         const userSnap = await transaction.get(userRef);
 
@@ -165,7 +182,6 @@ export async function addTransaction(
         if (dataToSave.type === 'Withdrawal') {
             const withdrawalAmount = Math.abs(dataToSave.amount);
 
-            // Check daily withdrawal limit
             if (user.lastWithdrawalDate) {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -175,8 +191,6 @@ export async function addTransaction(
                 }
             }
 
-
-            // Fee calculation
             const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
             const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
             const feeAmount = withdrawalAmount * (feePercentage / 100);
@@ -187,7 +201,6 @@ export async function addTransaction(
             }
             amountToChange = -totalDeduction;
 
-            // Add fee info to withdrawal details
             if (dataToSave.withdrawalDetails) {
                  dataToSave.withdrawalDetails.fee = feeAmount;
             }
@@ -198,10 +211,6 @@ export async function addTransaction(
                 throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
             }
             amountToChange = -investmentAmount;
-        } else if (dataToSave.type === 'Deposit') {
-            amountToChange = 0;
-        } else {
-             amountToChange = dataToSave.amount;
         }
         
         if (amountToChange !== 0) {
@@ -209,63 +218,56 @@ export async function addTransaction(
             transaction.update(userRef, { balance: newBalance });
         }
         
-        const newTransactionDataWithDate: Omit<Transaction, 'id'> = {
-            ...dataToSave,
-            date: new Date().toISOString()
-        };
-        const newDocRef = doc(collection(firestore, 'transactions'));
         transaction.set(newDocRef, newTransactionDataWithDate);
-        
-        const newTransaction = { ...newTransactionDataWithDate, id: newDocRef.id } as Transaction;
-
-        if (newTransaction.type === 'Investment' && newTransaction.investmentDetails) {
-            const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = newTransaction.investmentDetails;
-            const profit = investedAmount * (dailyReturn / 100) * durationDays;
-            const payoutAmount = investedAmount + profit;
-            const maturityTimestamp = new Date(maturityDate).getTime();
-            const nowTimestamp = new Date().getTime();
-            const delay = maturityTimestamp - nowTimestamp;
-
-            if (delay > 0) {
-                // This is a simulation of a server-side scheduled function (like a Cloud Function).
-                // In a real production app, this logic should be on a server to guarantee execution.
-                setTimeout(async () => {
-                    try {
-                        const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
-                            userId: newTransaction.userId,
-                            userName: newTransaction.userName,
-                            type: 'Payout',
-                            amount: payoutAmount,
-                            status: 'Completed',
-                            details: `Matured investment from ${planName}`
-                        };
-                         // Use a transaction for the payout to ensure atomicity
-                        await runTransaction(firestore, async (payoutTx) => {
-                            const userForPayoutRef = doc(firestore, 'users', newTransaction.userId);
-                            const userForPayoutSnap = await payoutTx.get(userForPayoutRef);
-                            if (userForPayoutSnap.exists()) {
-                                const newBalance = userForPayoutSnap.data().balance + payoutAmount;
-                                payoutTx.update(userForPayoutRef, { balance: newBalance });
-
-                                const payoutDocRef = doc(collection(firestore, 'transactions'));
-                                payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
-                            }
-                        });
-                    } catch(e) {
-                        console.error("Failed to process automatic payout:", e);
-                    }
-                }, delay);
-            }
-        }
-        
-        return newTransaction;
     });
+
+    const finalTransaction: Transaction = { ...newTransactionDataWithDate, id: newDocRef.id };
+
+    // Handle automatic payout simulation after the main transaction is committed
+    if (finalTransaction.type === 'Investment' && finalTransaction.investmentDetails) {
+        const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = finalTransaction.investmentDetails;
+        const profit = investedAmount * (dailyReturn / 100) * durationDays;
+        const payoutAmount = investedAmount + profit;
+        const maturityTimestamp = new Date(maturityDate).getTime();
+        const nowTimestamp = new Date().getTime();
+        const delay = maturityTimestamp - nowTimestamp;
+
+        if (delay > 0) {
+            setTimeout(async () => {
+                try {
+                    const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
+                        userId: finalTransaction.userId,
+                        userName: finalTransaction.userName,
+                        type: 'Payout',
+                        amount: payoutAmount,
+                        status: 'Completed',
+                        details: `Matured investment from ${planName}`
+                    };
+                    await runTransaction(firestore, async (payoutTx) => {
+                        const userForPayoutRef = doc(firestore, 'users', finalTransaction.userId);
+                        const userForPayoutSnap = await payoutTx.get(userForPayoutRef);
+                        if (userForPayoutSnap.exists()) {
+                            const newBalance = userForPayoutSnap.data().balance + payoutAmount;
+                            payoutTx.update(userForPayoutRef, { balance: newBalance });
+
+                            const payoutDocRef = doc(collection(firestore, 'transactions'));
+                            payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
+                        }
+                    });
+                } catch(e) {
+                    console.error("Failed to process automatic payout:", e);
+                }
+            }, delay);
+        }
+    }
+
+    return finalTransaction;
 }
 
 
 export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed') {
     
-    return await runTransaction(firestore, async (transaction) => {
+    await runTransaction(firestore, async (transaction) => {
         const transactionRef = doc(firestore, 'transactions', transactionId);
         const transactionSnap = await transaction.get(transactionRef);
 
@@ -278,7 +280,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 
         if (oldStatus !== 'Pending') {
             console.log("Transaction already processed.");
-            return false;
+            return;
         }
 
         const userRef = doc(firestore, 'users', txData.userId);
@@ -292,7 +294,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         transaction.update(transactionRef, { status: newStatus });
 
         if (newStatus === 'Completed') {
-            // Logic for completed withdrawal: update last withdrawal date
             if (txData.type === 'Withdrawal') {
                 transaction.update(userRef, { lastWithdrawalDate: new Date().toISOString() });
             }
@@ -300,7 +301,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             if (txData.type === 'Deposit') {
                 const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
                 const newBalance = user.balance + txData.amount;
-
                 let newVipLevel = user.vipLevel;
                 let vipProgress = user.vipProgress;
 
@@ -330,7 +330,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     balance: newBalance, 
                     totalDeposits: newTotalDeposits, 
                     vipLevel: newVipLevel,
-                    vipProgress: Math.max(0, vipProgress) // Ensure progress is not negative
+                    vipProgress: Math.max(0, Math.floor(vipProgress))
                 });
 
                 if (user.referredBy) {
@@ -344,7 +344,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                         const newReferrerBalance = referrer.balance + commissionAmount;
                         transaction.update(referrerRef, { balance: newReferrerBalance });
 
-                        const commissionTransactionData: Omit<Transaction, 'id' | 'date'> = {
+                        const commissionTransactionData: Omit<Transaction, 'id'> = {
                             userId: referrer.uid,
                             userName: referrer.displayName || 'N/A',
                             type: 'Commission',
@@ -374,8 +374,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 transaction.update(userRef, updates);
             }
         }
-        
-        return true;
     });
 }
 
