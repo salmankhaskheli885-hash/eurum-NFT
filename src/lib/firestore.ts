@@ -332,14 +332,14 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 let vipProgress = user.vipProgress;
 
                 // --- Corrected VIP Level Up Logic ---
-                if (newTotalDeposits >= 500 && user.vipLevel < 3) {
+                if (user.vipLevel < 3 && newTotalDeposits >= 500) {
                     newVipLevel = 3;
                     const nextLevelThreshold = 1000; // Example for next level
                     const currentLevelThreshold = 500;
                     const progressInRange = newTotalDeposits - currentLevelThreshold;
                     const range = nextLevelThreshold - currentLevelThreshold;
                     vipProgress = Math.min(100, (progressInRange / range) * 100);
-                } else if (newTotalDeposits >= 100 && user.vipLevel < 2) {
+                } else if (user.vipLevel < 2 && newTotalDeposits >= 100) {
                     newVipLevel = 2;
                     const nextLevelThreshold = 500;
                     const currentLevelThreshold = 100;
