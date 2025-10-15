@@ -179,97 +179,114 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
 }
 
 
+// This new function handles the background upload and update.
+async function uploadReceiptAndUpdateTransaction(
+    firestore: ReturnType<typeof getFirestore>, 
+    transactionId: string, 
+    userId: string, 
+    receiptFile: File
+) {
+    try {
+        const storage = getStorage();
+        const receiptRef = ref(storage, `receipts/${userId}/${Date.now()}_${receiptFile.name}`);
+        const snapshot = await uploadBytes(receiptRef, receiptFile);
+        const receiptUrl = await getDownloadURL(snapshot.ref);
+
+        // Now update the existing transaction document with the URL.
+        const transactionRef = doc(firestore, 'transactions', transactionId);
+        await updateDoc(transactionRef, { receiptUrl: receiptUrl });
+    } catch (error) {
+        console.error("Error uploading receipt or updating transaction:", error);
+        // Optional: Update the transaction to a 'Failed' state if upload fails.
+        const transactionRef = doc(firestore, 'transactions', transactionId);
+        await updateDoc(transactionRef, { status: 'Failed', details: 'Receipt upload failed.' });
+    }
+}
+
+
 // TRANSACTION FUNCTIONS
 export async function addTransaction(
     firestore: ReturnType<typeof getFirestore>, 
     transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
-): Promise<Transaction> {
+) {
     
-    // 1. Separate the local file object from the data to be saved in Firestore
+    // Separate the local file object from the data to be saved in Firestore
     const { receiptFile, ...dataToSave } = transactionData;
     
-    // This will hold the final data to be written to Firestore.
-    let newTransactionDataWithDate: Omit<Transaction, 'id'> = {
-        ...dataToSave,
-        date: new Date().toISOString()
-    };
-    
-    // 2. Handle file upload if it exists (only for deposits)
+    const transactionDocRef = doc(collection(firestore, 'transactions'));
+
     if (dataToSave.type === 'Deposit') {
-        if (!receiptFile) {
-            throw new Error("Receipt is required for deposits.");
-        }
-        const storage = getStorage();
-        const receiptRef = ref(storage, `receipts/${dataToSave.userId}/${Date.now()}_${receiptFile.name}`);
-        const snapshot = await uploadBytes(receiptRef, receiptFile);
-        const receiptUrl = await getDownloadURL(snapshot.ref);
-        newTransactionDataWithDate.receiptUrl = receiptUrl;
-    }
-    
-    const newDocRef = doc(collection(firestore, 'transactions'));
-    
-    // 4. Run the database transaction
-    await runTransaction(firestore, async (transaction) => {
-        const userRef = doc(firestore, 'users', dataToSave.userId);
-        const userSnap = await transaction.get(userRef);
+        // For deposits, we save the transaction doc first without the URL
+        const newTransactionData: Omit<Transaction, 'id' | 'receiptUrl'> = {
+            ...dataToSave,
+            date: new Date().toISOString()
+        };
+        await setDoc(transactionDocRef, newTransactionData);
 
-        if (!userSnap.exists()) {
-            throw new Error("User not found for transaction");
+        // Then, we trigger the upload in the background. We don't wait for it.
+        if (receiptFile) {
+            uploadReceiptAndUpdateTransaction(firestore, transactionDocRef.id, dataToSave.userId, receiptFile);
         }
-        
-        const user = userSnap.data() as User;
-        
-        // 5. Handle logic specific to transaction type
-        if (dataToSave.type === 'Withdrawal') {
-            const withdrawalAmount = Math.abs(dataToSave.amount);
+    } else {
+         // For other transaction types, we use the original runTransaction logic.
+        await runTransaction(firestore, async (transaction) => {
+            const userRef = doc(firestore, 'users', dataToSave.userId);
+            const userSnap = await transaction.get(userRef);
 
-            if (user.lastWithdrawalDate) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const lastWithdrawal = new Date(user.lastWithdrawalDate);
-                if (lastWithdrawal >= today) {
-                    throw new Error("You can only make one withdrawal request per day.");
+            if (!userSnap.exists()) {
+                throw new Error("User not found for transaction");
+            }
+            
+            const user = userSnap.data() as User;
+            
+            const newTransactionDataWithDate = {
+                ...dataToSave,
+                date: new Date().toISOString(),
+            }
+
+            if (dataToSave.type === 'Withdrawal') {
+                 if (user.lastWithdrawalDate) {
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const lastWithdrawal = new Date(user.lastWithdrawalDate);
+                    if (lastWithdrawal >= today) {
+                        throw new Error("You can only make one withdrawal request per day.");
+                    }
                 }
-            }
+                const withdrawalAmount = Math.abs(dataToSave.amount);
+                const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+                const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
+                const feeAmount = withdrawalAmount * (feePercentage / 100);
+                const totalDeduction = withdrawalAmount + feeAmount;
 
-            const appSettingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
-            const feePercentage = appSettingsDoc.data()?.withdrawalFee || 0;
-            const feeAmount = withdrawalAmount * (feePercentage / 100);
-            const totalDeduction = withdrawalAmount + feeAmount;
+                if (user.balance < totalDeduction) {
+                    throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
+                }
+                const newBalance = user.balance - totalDeduction;
+                transaction.update(userRef, { balance: newBalance });
+                if(newTransactionDataWithDate.withdrawalDetails){
+                    newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
+                }
 
-            if (user.balance < totalDeduction) {
-                throw new Error(`Insufficient Balance. You need at least $${totalDeduction.toFixed(2)} (including fee) to withdraw $${withdrawalAmount}.`);
+            } else if (dataToSave.type === 'Investment') {
+                const investmentAmount = Math.abs(dataToSave.amount);
+                if (user.balance < investmentAmount) {
+                    throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
+                }
+                const newBalance = user.balance - investmentAmount;
+                transaction.update(userRef, { balance: newBalance });
+                
+                // We must handle the payout scheduling after the transaction is committed.
             }
-            const newBalance = user.balance - totalDeduction;
-            transaction.update(userRef, { balance: newBalance });
-
-            if (newTransactionDataWithDate.withdrawalDetails) {
-                 newTransactionDataWithDate.withdrawalDetails.fee = feeAmount;
-            }
-
-        } else if (dataToSave.type === 'Investment') {
-            const investmentAmount = Math.abs(dataToSave.amount);
-            if (user.balance < investmentAmount) {
-                throw new Error(`Insufficient Balance. You need at least $${investmentAmount.toFixed(2)} to invest.`);
-            }
-            const newBalance = user.balance - investmentAmount;
-            transaction.update(userRef, { balance: newBalance });
-        }
+            
+            transaction.set(transactionDocRef, newTransactionDataWithDate);
+        });
         
-        // 6. Save the new transaction document
-        transaction.set(newDocRef, newTransactionDataWithDate);
-    });
-
-    // 7. Construct the final transaction object to return
-    const finalTransaction: Transaction = { ...newTransactionDataWithDate, id: newDocRef.id };
-
-    // 8. Handle post-transaction logic, like scheduling payouts
-    if (finalTransaction.type === 'Investment') {
-        handleInvestmentPayout(firestore, finalTransaction);
+         if (dataToSave.type === 'Investment') {
+            const finalTx = await getDoc(transactionDocRef);
+            handleInvestmentPayout(firestore, {id: finalTx.id, ...finalTx.data()} as Transaction);
+        }
     }
-
-    // 9. Return the committed transaction
-    return finalTransaction;
 }
 
 
