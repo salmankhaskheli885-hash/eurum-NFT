@@ -9,6 +9,8 @@ import { useTranslation } from '@/hooks/use-translation';
 import { GoogleAuthProvider, signInWithPopup, getAuth } from 'firebase/auth';
 import { useFirebaseApp, useFirestore } from '@/firebase/provider';
 import { getOrCreateUser, isUserAChatAgent, getAppSettings } from '@/lib/firestore';
+import { type AppSettings } from '@/lib/data';
+
 import {
     AlertDialog,
     AlertDialogContent,
@@ -75,30 +77,9 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [showRoleDialog, setShowRoleDialog] = useState(false);
+  const [appSettings, setAppSettings] = useState<AppSettings | null>(null);
   const app = useFirebaseApp();
   const firestore = useFirestore();
-  
-  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner' | 'agent') => {
-      setShowRoleDialog(false);
-      setLoading(true);
-      toast({
-          title: "Redirecting...",
-      });
-      switch (selectedRole) {
-          case 'admin':
-              router.push('/admin');
-              break;
-          case 'user':
-              router.push('/dashboard');
-              break;
-          case 'partner':
-              router.push('/partner');
-              break;
-          case 'agent':
-              router.push('/agent');
-              break;
-      }
-  };
 
   const showMaintenancePage = () => {
     document.body.innerHTML = `
@@ -108,6 +89,46 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         </div>
     `;
   }
+  
+  const handleRoleSelection = (selectedRole: 'admin' | 'user' | 'partner' | 'agent') => {
+      setShowRoleDialog(false);
+      setLoading(true);
+
+      if (!appSettings) {
+          setLoading(false);
+          toast({ variant: "destructive", title: "Could not read app settings. Please try again." });
+          return;
+      }
+      
+      switch (selectedRole) {
+          case 'admin':
+              router.push('/admin');
+              break;
+          case 'user':
+              if (appSettings.isUserPanelEnabled === false) {
+                  showMaintenancePage();
+                  return;
+              }
+              router.push('/dashboard');
+              break;
+          case 'partner':
+              if (appSettings.isPartnerPanelEnabled === false) {
+                   showMaintenancePage();
+                   return;
+                }
+              router.push('/partner');
+              break;
+          case 'agent':
+              if (appSettings.isAgentPanelEnabled === false) {
+                showMaintenancePage();
+                return;
+            }
+              router.push('/agent');
+              break;
+      }
+        toast({ title: "Redirecting..." });
+  };
+
 
   const handleGoogleSignIn = async () => {
     if (!app || !firestore) {
@@ -129,6 +150,7 @@ export function AuthForm({ role: intendedRole }: { role: 'user' | 'partner' }) {
         // Get or create the user profile from Firestore to get their role
         const userProfile = await getOrCreateUser(firestore, firebaseUser, intendedRole);
         const settings = await getAppSettings(firestore);
+        setAppSettings(settings); // Save settings for role selection
         
         toast({
             title: t('login.successTitle'),
