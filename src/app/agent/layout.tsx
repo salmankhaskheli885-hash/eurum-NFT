@@ -1,8 +1,7 @@
 
 "use client"
-import Link from "next/link"
+import { Link, useLocation } from "react-router-dom"
 import React from "react"
-import { usePathname } from "next/navigation"
 import {
   MessageSquare,
   LogOut,
@@ -34,7 +33,8 @@ export default function AgentLayout({
 }: {
   children: React.ReactNode
 }) {
-  const pathname = usePathname()
+  const location = useLocation();
+  const pathname = location.pathname
   const { user: agentProfile, loading } = useUser()
 
   const menuItems = [
@@ -56,7 +56,7 @@ export default function AgentLayout({
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link href="/agent" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link to="/agent" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">Agent Panel</span>
           </Link>
@@ -65,7 +65,7 @@ export default function AgentLayout({
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <Link to={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
@@ -81,7 +81,7 @@ export default function AgentLayout({
             </SidebarMenuItem>
              {managementMenuItems.map((item) => (item.permission) && (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <Link to={item.href}>
                   <SidebarMenuButton
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
@@ -97,7 +97,7 @@ export default function AgentLayout({
             </SidebarMenuItem>
              {profileMenuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
+                <Link to={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
@@ -114,7 +114,7 @@ export default function AgentLayout({
             <div className="group-data-[state=collapsed]:hidden">
                 <LanguageSwitcher/>
             </div>
-             <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
+             <Link to="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip='Logout'>
                     <LogOut/>
                     <span>Logout</span>

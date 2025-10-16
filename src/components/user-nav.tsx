@@ -58,9 +58,6 @@ export function UserNav() {
               <AvatarImage
                 src={userAvatar.imageUrl}
                 alt={userAvatar.description}
-                width={36}
-                height={36}
-                data-ai-hint={userAvatar.imageHint}
               />
             )}
             <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>

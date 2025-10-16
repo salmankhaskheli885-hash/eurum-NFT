@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
-import { type Transaction } from "@/lib/data"
+import type { Transaction } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { Search, Eye, CheckCircle, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"

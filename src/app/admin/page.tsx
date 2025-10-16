@@ -10,7 +10,7 @@ import { type User, type Transaction, type AppSettings } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -269,25 +269,25 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-2">
-                        <Link href="/admin/deposits">
+                        <Link to="/admin/deposits">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve Deposits
                                 {pendingDeposits > 0 && <Badge className="ml-auto">{pendingDeposits}</Badge>}
                             </Button>
                         </Link>
-                        <Link href="/admin/withdrawals">
+                        <Link to="/admin/withdrawals">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve Withdrawals
                                 {pendingWithdrawals > 0 && <Badge className="ml-auto">{pendingWithdrawals}</Badge>}
                             </Button>
                         </Link>
-                        <Link href="/admin/kyc">
+                        <Link to="/admin/kyc">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve KYC
                                 {pendingKyc > 0 && <Badge className="ml-auto">{pendingKyc}</Badge>}
                             </Button>
                         </Link>
-                        <Link href="/admin/users">
+                        <Link to="/admin/users">
                             <Button variant="outline" className="w-full justify-start">
                                 Manage Users
                             </Button>
