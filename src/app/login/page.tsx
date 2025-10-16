@@ -35,14 +35,6 @@ export default function LoginPage() {
           </Link>
         </p>
 
-        <Separator />
-        
-        {/* Special Login Links */}
-        <div className='text-center space-y-2'>
-            <AuthForm intendedRole="admin" />
-            <AuthForm intendedRole="agent" />
-        </div>
-
       </div>
     </div>
   );
