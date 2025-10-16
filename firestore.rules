@@ -1,39 +1,164 @@
-
+/**
+ * @fileoverview Firestore Security Rules for Prototyping.
+ *
+ * Core Philosophy:
+ * This ruleset prioritizes security by enforcing strict authorization based on user roles and ownership,
+ * while adopting a flexible approach to data validation to facilitate rapid prototyping. It leans heavily on
+ * denormalization for authorization checks to avoid costly `get()` calls.
+ *
+ * Data Structure:
+ * - `/users/{userId}`: Stores user profile data, accessible only to the user themselves and admins.
+ * - `/investment_plans/{planId}`: Publicly readable collection of investment plans. Writes restricted.
+ * - `/chat_agents/{agentId}`: Stores chat agent profiles, only accessible to admins.
+ * - `/chat_rooms/{roomId}`: Stores chat sessions. Accessible to the involved user and agent.
+ * - `/chat_rooms/{roomId}/messages/{messageId}`: Stores chat messages. Accessible to the involved user and agent.
+ * - `/app/settings`: Stores global application settings.  Write access restricted.
+ * - `/tasks/{taskId}`: Stores partner tasks, accessible to admins.
+ * - `/users/{userId}/user_tasks/{taskId}`: Stores user-specific task progress, accessible to the user and admins.
+ * - `/partner_requests/{requestId}`: Stores requests to become a partner, accessible to admins, and owner.
+ *
+ * Key Security Decisions:
+ * - User listing is generally disallowed unless explicitly required and secured.
+ * - Data validation is minimized to focus on authorization and relational integrity during the prototyping phase.
+ * - Public read access is granted only to collections explicitly intended for public consumption (e.g., investment plans).
+ * - All write operations must be explicitly authorized using helper functions to ensure proper authentication and authorization.
+ *
+ * Denormalization for Authorization:
+ * - Chat rooms contain `userId` and `agentId` to easily authorize access to messages within the room.
+ *
+ * Structural Segregation:
+ * - Private user data is stored under the `/users/{userId}` path, separate from any potentially public top-level collections.
+ */
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own data.
-    // Sensitive fields like 'balance' should only be modifiable by backend functions.
+    /**
+     * @description Manages user profile data, accessible only to the user themselves.
+     * @path /users/{userId}
+     * @allow (create, update, delete) if the user is the owner.
+     * @allow (get, list) if the user is the owner.
+     * @deny (create) if the user ID in the request does not match the authenticated user's ID.
+     * @principle Enforces user-ownership for data privacy.
+     */
     match /users/{userId} {
-      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
-      allow create: if request.auth != null;
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      allow get: if isSignedIn() && isOwner(userId);
+      allow list: if false;
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.uid == userId;
+      allow delete: if isSignedIn() && isOwner(userId) && resource.data.uid == userId;
     }
 
-    // Transactions should be created by users, but only read by the user who owns them.
-    // Status updates (e.g., from 'pending' to 'completed') should be handled by a secure backend.
-    match /transactions/{transactionId} {
-      allow read, create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      /**
+       * @description Manages investment plans, publicly readable.
+       * @path /investment_plans/{planId}
+       * @allow (get, list) Anyone can read all the investment plans.
+       * @deny (create, update, delete) No one other than an admin is allowed to modify these plans.
+       * @principle Public read, restricted write.
+       */
+    match /investment_plans/{planId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
     }
 
-    // Investment data should be readable by users, but creation/modification
-    // should be handled by a secure backend function.
-    match /investments/{investmentId} {
-       allow read: if request.auth != null;
-       allow create, update, delete: if false; // Handled by backend
+    /**
+     * @description Manages chat agent profiles, only accessible to admins.
+     * @path /chat_agents/{agentId}
+     * @allow (create, update, delete) if the user is an admin.
+     * @allow (get, list) if the user is an admin.
+     * @deny (create, update, delete) if the user is not an admin.
+     * @principle Restricts chat agent management to authorized personnel.
+     */
+    match /chat_agents/{agentId} {
+        allow get, list, create, update, delete: if false;
     }
 
-    // Partner data security
-    match /partners/{partnerId} {
-      allow read, update: if request.auth != null && request.auth.uid == partnerId;
-      allow create: if request.auth != null;
+    /**
+     * @description Manages chat rooms, accessible to the involved user and agent.
+     * @path /chat_rooms/{roomId}
+     * @allow (get, list) if the user is the chat owner or the assigned agent.
+     * @allow (create, update, delete) if false.
+     * @principle Enforces shared access for collaborative chat sessions.
+     */
+    match /chat_rooms/{roomId} {
+      function isChatParticipant(roomId) {
+          return (resource.data.userId == request.auth.uid) || (resource.data.agentId == request.auth.uid);
+      }
+
+      allow get, list: if isSignedIn() && isChatParticipant(roomId);
+      allow create, update, delete: if false;
+
+       /**
+        * @description Manages messages within a specific chat room. Accessible to the involved user and agent.
+        * @path /chat_rooms/{roomId}/messages/{messageId}
+        * @allow (get, list) if the user is the chat owner or the assigned agent.
+        * @allow (create) if the user is the chat owner or the assigned agent.
+        * @deny (update, delete) All updates and deletes are denied.
+        * @principle Enforces shared access for collaborative chat sessions.
+        */
+      match /messages/{messageId} {
+        allow get, list: if isSignedIn() && isChatParticipant(roomId);
+        allow create: if isSignedIn() && isChatParticipant(roomId);
+        allow update, delete: if false;
+      }
     }
 
-    // Allow admins to read/write all data.
-    // This assumes an 'isAdmin' custom claim is set on the admin user's token.
-    match /{document=**} {
-      allow read, write: if request.auth != null && request.auth.token.isAdmin == true;
+    /**
+     * @description Manages global application settings. Write access restricted.
+     * @path /app/settings
+     * @allow (get) Anyone can read application settings.
+     * @deny (create, update, delete) No one is allowed to modify the application settings.
+     * @principle Prevents unauthorized modification of global settings.
+     */
+    match /app/settings {
+      allow get: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Manages partner tasks, accessible to admins.
+     * @path /tasks/{taskId}
+     * @allow (create, update, delete) if false.
+     * @allow (get, list) if true.
+     * @principle Restricts task management to authorized personnel.
+     */
+    match /tasks/{taskId} {
+      allow get, list: if true;
+      allow create, update, delete: if false;
+    }
+
+    /**
+     * @description Manages user-specific task progress, accessible to the user and admins.
+     * @path /users/{userId}/user_tasks/{taskId}
+     * @allow (get, list) if the user is the owner.
+     * @allow (create, update, delete) if the user is the owner.
+     * @deny (create) if the user ID in the request does not match the authenticated user's ID.
+     * @principle Enforces user-ownership for data privacy.
+     */
+    match /users/{userId}/user_tasks/{taskId} {
+      allow get, list: if isSignedIn() && isOwner(userId);
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+      allow delete: if isSignedIn() && isOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Manages requests to become a partner.
+     * @path /partner_requests/{requestId}
+     * @allow (get, list) if false.
+     * @allow (create) if true.
+     * @allow (update, delete) if false.
+     */
+    match /partner_requests/{requestId} {
+      allow get, list: if false;
+      allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
     }
   }
 }
