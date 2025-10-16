@@ -180,7 +180,7 @@ export default function SystemArchitecturePage() {
                                 </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                {section.features.map((feature, fIndex) => (
+                                {section.features.map((feature: any, fIndex: number) => (
                                     <TableRow key={fIndex}>
                                         <TableCell className="font-medium">{feature.name}</TableCell>
                                         <TableCell>
@@ -188,7 +188,7 @@ export default function SystemArchitecturePage() {
                                                 {feature.status || "Auto"}
                                             </Badge>
                                         </TableCell>
-                                        <TableCell>{feature.description || feature.use}</TableCell>
+                                        <TableCell>{feature.logic || feature.description || feature.use}</TableCell>
                                     </TableRow>
                                 ))}
                                 </TableBody>
@@ -252,5 +252,3 @@ export default function SystemArchitecturePage() {
     </div>
   )
 }
-
-    

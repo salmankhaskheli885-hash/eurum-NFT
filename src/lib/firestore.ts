@@ -27,6 +27,7 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage, Task, UserTask, PartnerRequest } from './data';
+import { UserProfile } from './schema';
 import { updateProfile } from 'firebase/auth';
 
 // USER FUNCTIONS
@@ -559,7 +560,7 @@ export function listenToAllChatAgents(firestore: ReturnType<typeof getFirestore>
 
 
 // CHAT SYSTEM FUNCTIONS
-export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirestore>, user: User): Promise<ChatRoom> {
+export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirestore>, user: UserProfile): Promise<ChatRoom> {
     const roomsRef = collection(firestore, 'chat_rooms');
     const q = query(roomsRef, where("userId", "==", user.uid), limit(1));
     
@@ -715,3 +716,5 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
         requestDate: new Date().toISOString()
     });
 }
+
+export { type ChatMessage };

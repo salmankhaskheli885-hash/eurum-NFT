@@ -3,7 +3,7 @@ export type UserProfile = {
   uid: string;
   email: string | null;
   displayName: string | null;
-  role: 'user' | 'partner' | 'admin';
+  role: 'user' | 'partner' | 'admin' | 'agent';
   shortUid: string;
   balance: number;
   currency: string;

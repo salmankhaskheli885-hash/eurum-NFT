@@ -13,6 +13,7 @@ import { useUser } from '@/hooks/use-user'
 import { useFirestore } from '@/firebase/provider'
 import { getOrCreateChatRoom, listenToMessages, sendMessage, type ChatMessage } from '@/lib/firestore'
 import { cn } from '@/lib/utils'
+import { UserProfile } from '@/lib/schema'
 
 export function LiveChat() {
     const { t } = useTranslation()
@@ -30,7 +31,7 @@ export function LiveChat() {
         if (!isOpen || !firestore || !user) return;
 
         const initChat = async () => {
-            const room = await getOrCreateChatRoom(firestore, user);
+            const room = await getOrCreateChatRoom(firestore, user as UserProfile);
             setRoomId(room.id);
         }
         initChat();
