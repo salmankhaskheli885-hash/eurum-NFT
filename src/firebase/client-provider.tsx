@@ -23,7 +23,7 @@ export function FirebaseClientProvider({
     // This function ensures Firebase is initialized only on the client side.
     const init = () => {
       const firebaseInstance = initializeFirebase();
-      setFirebase(firebaseInstance);
+      setFirebase(firebaseInstance as FirebaseContextValue);
     };
 
     // Check if running on the client and Firebase is not already initialized

@@ -8,13 +8,14 @@ import type { Firestore } from 'firebase/firestore';
 
 // This defines the shape of the context value.
 export type FirebaseContextValue = {
-  app: FirebaseApp | null;
-  auth: Auth | null;
-  firestore: Firestore | null;
+  app: FirebaseApp;
+  auth: Auth;
+  firestore: Firestore;
 };
 
-// Create the context with an initial undefined value.
-export const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
+// Create the context with an initial null value.
+// It will be populated by the FirebaseClientProvider.
+export const FirebaseContext = createContext<FirebaseContextValue | null>(null);
 
 type FirebaseProviderProps = {
   children: React.ReactNode;
@@ -29,10 +30,6 @@ export function FirebaseProvider({
   children,
   value,
 }: FirebaseProviderProps) {
-  if (!value.app || !value.auth || !value.firestore) {
-    return <>{children}</>;
-  }
-  
   return (
       <FirebaseContext.Provider value={value}>
           {children}
@@ -44,24 +41,24 @@ export function FirebaseProvider({
 // These are the custom hooks that components will use to access Firebase services.
 export const useFirebaseApp = () => {
   const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useFirebaseApp must be used within a FirebaseProvider');
+  if (context === undefined || context === null) {
+    throw new Error('useFirebaseApp must be used within a FirebaseClientProvider');
   }
   return context.app;
 };
 
 export const useAuth = () => {
   const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within a FirebaseProvider');
+  if (context === undefined || context === null) {
+    throw new Error('useAuth must be used within a FirebaseClientProvider');
   }
   return context.auth;
 };
 
 export const useFirestore = () => {
   const context = useContext(FirebaseContext);
-  if (context === undefined) {
-    throw new Error('useFirestore must be used within a FirebaseProvider');
+  if (context === undefined || context === null) {
+    throw new Error('useFirestore must be used within a FirebaseClientProvider');
   }
   return context.firestore;
 };
