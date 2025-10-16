@@ -1,3 +1,4 @@
+
 // NOTE: This is a public-facing configuration object.
 // No sensitive data should be stored here.
 export const firebaseConfig = {

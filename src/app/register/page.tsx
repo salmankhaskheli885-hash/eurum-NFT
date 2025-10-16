@@ -1,8 +1,9 @@
+
 "use client"
 
 import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from 'next/link';
 
 export default function RegisterPage() {
@@ -27,7 +28,7 @@ export default function RegisterPage() {
             </TabsList>
         </Tabs>
         
-        <AuthForm view='register' intendedRole={role} />
+        <AuthForm intendedRole={role} />
 
         <p className="px-8 text-center text-sm text-muted-foreground">
           By clicking continue, you agree to our{' '}

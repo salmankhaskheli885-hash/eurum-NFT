@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -11,11 +12,10 @@ import { getOrCreateUser } from "@/lib/firestore"
 import { Loader2 } from "lucide-react"
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-  view: 'login' | 'register';
   intendedRole: 'user' | 'partner';
 }
 
-export function AuthForm({ className, view, intendedRole, ...props }: AuthFormProps) {
+export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
   const router = useRouter()
