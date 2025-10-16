@@ -50,7 +50,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { MoreHorizontal, PlusCircle, Trash2 } from "lucide-react"
 import type { Task } from "@/lib/data"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
