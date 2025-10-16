@@ -2,7 +2,7 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, Link } from 'react-router-dom';
 import {
   Card,
   CardContent,
@@ -13,7 +13,6 @@ import {
 import { Button } from "@/components/ui/button"
 import { type Transaction, type Announcement as AnnouncementType } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
-import Link from "next/link"
 import { Progress } from "@/components/ui/progress"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
@@ -56,7 +55,7 @@ function Announcement() {
 
 function DashboardContent() {
   const { t } = useTranslation()
-  const searchParams = useSearchParams()
+  const [searchParams] = useSearchParams()
   const firestore = useFirestore()
   const viewAsUserId = searchParams.get('userId'); 
 
@@ -168,7 +167,7 @@ function DashboardContent() {
         <Alert variant="destructive">
           <AlertTitle>Admin View</AlertTitle>
           <AlertDescription>
-            You are viewing the dashboard as **{user.displayName}** (UID: {user.uid}). <a href="/admin/users" className="underline font-bold">Return to Admin Panel.</a>
+            You are viewing the dashboard as **{user.displayName}** (UID: {user.uid}). <Link to="/admin/users" className="underline font-bold">Return to Admin Panel.</Link>
           </AlertDescription>
         </Alert>
       )}
@@ -183,7 +182,7 @@ function DashboardContent() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/dashboard/investments">{t('dashboard.viewInvestments')}</Link>
+              <Link to="/dashboard/investments">{t('dashboard.viewInvestments')}</Link>
             </Button>
           </CardContent>
         </Card>

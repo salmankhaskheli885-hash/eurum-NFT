@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import {
   Table,
   TableBody,
@@ -180,7 +180,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                         <div className="flex justify-end gap-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link href={`/admin/users/${user.uid}`} className="flex items-center">
+                                <Link to={`/admin/users/${user.uid}`} className="flex items-center">
                                     <Eye className="mr-2 h-4 w-4"/>
                                     Details
                                 </Link>
@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem asChild>
-                                    <Link href={`/dashboard?userId=${user.uid}`} target="_blank">View as User</Link>
+                                    <Link to={`/dashboard?userId=${user.uid}`} target="_blank">View as User</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuSub>

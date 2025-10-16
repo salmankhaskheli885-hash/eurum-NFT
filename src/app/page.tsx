@@ -1,7 +1,8 @@
 
-import { redirect } from 'next/navigation';
+
+import { Navigate } from 'react-router-dom';
 
 export default function Home() {
   // Redirect to the login page instead of the dashboard.
-  redirect('/login');
+  return <Navigate to="/login" />;
 }

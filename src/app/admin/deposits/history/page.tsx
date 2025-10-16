@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from "next/link"
+import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 
 export default function AdminDepositsHistoryPage() {
@@ -115,10 +115,10 @@ export default function AdminDepositsHistoryPage() {
                     <TableCell className="text-center">
                         {deposit.receiptUrl ? (
                             <Button variant="outline" size="sm" asChild>
-                                <Link href={deposit.receiptUrl} target="_blank">
+                                <a href={deposit.receiptUrl} target="_blank" rel="noopener noreferrer">
                                     <Eye className="mr-2 h-4 w-4"/>
                                     View Receipt
-                                </Link>
+                                </a>
                             </Button>
                         ) : (
                             <Badge variant="secondary">No Receipt</Badge>

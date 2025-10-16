@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -107,7 +107,7 @@ function WithdrawalHistory() {
 export default function WithdrawPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
-    const router = useRouter()
+    const navigate = useNavigate()
     const { toast } = useToast()
     const firestore = useFirestore()
     

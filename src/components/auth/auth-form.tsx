@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { getOrCreateUser } from "@/lib/firestore"
 import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
 import {
@@ -26,7 +26,7 @@ interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
-  const router = useRouter()
+  const navigate = useNavigate()
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -40,20 +40,20 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
 
   const handleAdminNavigation = (path: string) => {
     setShowAdminPanelDialog(false);
-    router.push(path);
+    navigate(path);
   }
 
   const handleNavigation = (user: UserProfile) => {
     switch (user.role) {
         case 'agent':
-            router.push('/agent');
+            navigate('/agent');
             break;
         case 'partner':
-            router.push('/partner');
+            navigate('/partner');
             break;
         case 'user':
         default:
-            router.push('/dashboard');
+            navigate('/dashboard');
             break;
     }
   }

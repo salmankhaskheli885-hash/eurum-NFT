@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '@/hooks/use-translation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -33,7 +33,7 @@ export default function LoginPage() {
                 <p className="mt-6 px-8 text-center text-sm text-muted-foreground">
                 {t('login.noAccount')}{' '}
                 <Link
-                    href="/register"
+                    to="/register"
                     className="underline underline-offset-4 hover:text-primary"
                 >
                     {t('login.signUpLink')}
@@ -54,7 +54,7 @@ export default function LoginPage() {
                  <p className="mt-6 px-8 text-center text-sm text-muted-foreground">
                     {t('login.noAccountPartner')}{' '}
                     <Link
-                        href="/register"
+                        to="/register"
                         className="underline underline-offset-4 hover:text-primary"
                     >
                         {t('login.signUpLink')}

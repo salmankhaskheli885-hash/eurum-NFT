@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Eye, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
 import { useUser } from "@/hooks/use-user"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -252,10 +251,10 @@ export default function AgentDepositsPage() {
                                         <TableCell className="text-center">
                                             {deposit.receiptUrl ? (
                                                 <Button variant="outline" size="sm" asChild>
-                                                    <Link href={deposit.receiptUrl} target="_blank">
+                                                    <a href={deposit.receiptUrl} target="_blank" rel="noopener noreferrer">
                                                         <Eye className="mr-2 h-4 w-4"/>
                                                         View Receipt
-                                                    </Link>
+                                                    </a>
                                                 </Button>
                                             ) : (
                                                 <Badge variant="secondary">No Receipt</Badge>

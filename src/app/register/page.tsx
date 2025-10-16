@@ -3,7 +3,7 @@
 
 import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
-import Link from 'next/link';
+import { Link } from 'react-router-dom';
 
 export default function RegisterPage() {
 
@@ -24,7 +24,7 @@ export default function RegisterPage() {
         <p className="px-8 text-center text-sm text-muted-foreground">
           Already have an account?{' '}
           <Link
-            href="/login"
+            to="/login"
             className="underline underline-offset-4 hover:text-primary"
           >
             Sign In

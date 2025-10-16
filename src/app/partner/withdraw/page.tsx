@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function WithdrawPage() {
     const { t } = useTranslation()
     const { user, loading } = useUser()
-    const router = useRouter()
+    const navigate = useNavigate()
     const { toast } = useToast()
     const firestore = useFirestore()
 
@@ -64,7 +64,7 @@ export default function WithdrawPage() {
                 description: t('withdraw.successDescription'),
             })
 
-            router.push('/partner/transactions')
+            navigate('/partner/transactions')
 
         } catch (error: any) {
              toast({

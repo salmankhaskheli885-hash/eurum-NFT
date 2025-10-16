@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -20,7 +20,7 @@ export default function DepositPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
     const { toast } = useToast()
-    const router = useRouter()
+    const navigate = useNavigate()
     const firestore = useFirestore()
 
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -83,7 +83,7 @@ export default function DepositPage() {
                 description: "Your deposit is being reviewed and will be processed shortly.",
             })
 
-            router.push('/partner/transactions')
+            navigate('/partner/transactions')
         } catch (error) {
             toast({
                 variant: "destructive",

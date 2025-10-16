@@ -1,7 +1,7 @@
 
 "use client"
 
-import Link from "next/link"
+import { Link, useNavigate } from "react-router-dom"
 import Image from "next/image"
 import * as React from "react"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
@@ -21,7 +21,6 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/firebase/provider"
 import { signOut } from "firebase/auth"
-import { useRouter } from "next/navigation"
 import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -30,13 +29,13 @@ export function UserNav() {
   const { t } = useTranslation()
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
   const auth = useAuth()
-  const router = useRouter()
+  const navigate = useNavigate()
   const { user, loading } = useUser()
 
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth)
-    router.push('/login')
+    navigate('/login')
   }
 
   if (loading) {
@@ -46,7 +45,7 @@ export function UserNav() {
   if (!user) {
     return (
        <Button asChild>
-        <Link href="/login">Login</Link>
+        <Link to="/login">Login</Link>
       </Button>
     )
   }
@@ -80,13 +79,13 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link href="/dashboard/profile" passHref>
+          <Link to="/dashboard/profile">
             <DropdownMenuItem>
               <UserIcon className="mr-2 h-4 w-4" />
               <span>{t('nav.profile')}</span>
             </DropdownMenuItem>
           </Link>
-           <Link href="/dashboard/settings" passHref>
+           <Link to="/dashboard/settings">
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>{t('nav.settings')}</span>
