@@ -7,18 +7,17 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { getOrCreateUser } from "@/lib/firestore"
 import { Loader2 } from "lucide-react"
 
-interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-  intendedRole: 'user' | 'partner';
-}
+interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
+export function AuthForm({ className, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
@@ -48,7 +47,7 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      const userProfile = await getOrCreateUser(firestore, result.user, intendedRole);
+      const userProfile = await getOrCreateUser(firestore, result.user, 'user');
       
       toast({ title: "Sign in successful!" });
       handleNavigation(userProfile.role);

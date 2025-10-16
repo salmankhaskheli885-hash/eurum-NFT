@@ -3,11 +3,9 @@
 
 import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import Link from 'next/link';
 
 export default function RegisterPage() {
-    const [role, setRole] = React.useState<'user' | 'partner'>('user');
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center">
@@ -20,25 +18,17 @@ export default function RegisterPage() {
              Sign up with Google to get started
           </p>
         </div>
-
-        <Tabs defaultValue="user" onValueChange={(value) => setRole(value as 'user' | 'partner')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="user">As a User</TabsTrigger>
-                <TabsTrigger value="partner">As a Partner</TabsTrigger>
-            </TabsList>
-        </Tabs>
         
-        <AuthForm intendedRole={role} />
+        <AuthForm />
 
         <p className="px-8 text-center text-sm text-muted-foreground">
-          By clicking continue, you agree to our{' '}
+          Already have an account?{' '}
           <Link
-            href="/terms"
+            href="/login"
             className="underline underline-offset-4 hover:text-primary"
           >
-            Terms of Service
+            Sign In
           </Link>
-          .
         </p>
 
       </div>
