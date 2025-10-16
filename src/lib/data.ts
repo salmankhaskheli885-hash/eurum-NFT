@@ -117,6 +117,36 @@ export type ChatMessage = {
     timestamp: string; // ISO 8601
 }
 
+export type Task = {
+  id: string;
+  title: string;
+  description: string;
+  type: 'referral_deposit';
+  targetCount: number;
+  minDeposit: number;
+  rewardAmount: number;
+  isActive: boolean;
+};
+
+export type UserTask = {
+  id: string;
+  userId: string;
+  taskId: string;
+  progress: number;
+  isCompleted: boolean;
+  isClaimed: boolean;
+  qualifiedReferrals: string[];
+};
+
+export type PartnerRequest = {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  status: 'pending' | 'approved' | 'rejected';
+  requestDate: string;
+};
+
 
 // These are now just default values, the live values will be in Firestore.
 export let appSettings: AppSettings = {

@@ -2,7 +2,6 @@
 "use client"
 
 import * as React from "react"
-import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -279,11 +278,10 @@ export default function InvestmentsPage() {
             <Card key={plan.id} className={`flex flex-col ${isVipLocked || isManuallyLocked ? 'bg-muted/50 border-dashed' : ''}`}>
               <CardHeader>
                 <div className="relative h-40 w-full mb-4">
-                    <Image 
+                    <img 
                         src={plan.imageUrl} 
                         alt={plan.name}
-                        fill
-                        className="rounded-t-lg object-cover"
+                        className="rounded-t-lg object-cover w-full h-full"
                         data-ai-hint="investment product"
                      />
                 </div>

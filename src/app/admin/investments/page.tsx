@@ -54,7 +54,6 @@ import type { InvestmentPlan } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import Image from "next/image"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllInvestmentPlans, addInvestmentPlan, updateInvestmentPlan, deleteInvestmentPlan } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -338,7 +337,7 @@ export default function AdminInvestmentsPage() {
                 filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
                     <TableCell>
-                        <Image 
+                        <img 
                             src={plan.imageUrl} 
                             alt={plan.name} 
                             width={40} 
@@ -408,5 +407,3 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
-
-    

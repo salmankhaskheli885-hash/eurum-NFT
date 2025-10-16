@@ -2,7 +2,6 @@
 "use client"
 
 import { Link, useNavigate } from "react-router-dom"
-import Image from "next/image"
 import * as React from "react"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { LogOut as LogOutIcon, User as UserIcon, Settings } from "lucide-react"
