@@ -13,19 +13,17 @@ export default function RegisterPage() {
             Create an Account
           </h1>
           <p className="text-sm text-muted-foreground">
-             Enter your details below to create your account
+             Enter your phone number to get started
           </p>
         </div>
-        <AuthForm view='register' />
+        {/* Using login view for phone auth, as it serves both login and register */}
+        <AuthForm view='login' /> 
         <p className="px-8 text-center text-sm text-muted-foreground">
-          <Link
-            href="/login"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Already have an account? Sign In
-          </Link>
+          By signing up, you agree to our Terms of Service.
         </p>
       </div>
     </div>
   );
 }
+
+    

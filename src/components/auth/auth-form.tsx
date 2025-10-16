@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth"
+import { RecaptchaVerifier, signInWithPhoneNumber, type ConfirmationResult } from "firebase/auth"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -18,6 +18,14 @@ interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
     view: 'login' | 'register'
 }
 
+declare global {
+    interface Window {
+        recaptchaVerifier?: RecaptchaVerifier;
+        confirmationResult?: ConfirmationResult;
+    }
+}
+
+
 export function AuthForm({ className, view, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
@@ -25,9 +33,9 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [name, setName] = React.useState('') // For Full Name on register
-  const [username, setUsername] = React.useState('') // For the part before @fynix.com
-  const [password, setPassword] = React.useState('')
+  const [phoneNumber, setPhoneNumber] = React.useState('');
+  const [otp, setOtp] = React.useState('');
+  const [isOtpSent, setIsOtpSent] = React.useState(false);
 
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
     switch (role) {
@@ -45,117 +53,129 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
             break;
     }
   }
-  
-  const constructEmail = (user: string) => `${user}@fynix.com`;
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const setupRecaptcha = () => {
+    if (!auth) return;
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response: any) => {
+          // reCAPTCHA solved, allow signInWithPhoneNumber.
+        },
+        'expired-callback': () => {
+          // Response expired. Ask user to solve reCAPTCHA again.
+        }
+      });
+    }
+  }
+
+  const onSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore || !username) return;
+    if (!auth || !firestore || !phoneNumber) return;
     setIsLoading(true);
-    const email = constructEmail(username);
+    setupRecaptcha();
+
+    const appVerifier = window.recaptchaVerifier!;
+    // Format phone number to E.164
+    const formattedPhoneNumber = `+${phoneNumber.replace(/\D/g, '')}`;
+
     try {
-        const result = await signInWithEmailAndPassword(auth, email, password);
-        const userProfile = await getOrCreateUser(firestore, result.user);
-        toast({ title: "Sign in successful!" });
-        handleNavigation(userProfile.role);
+        const confirmationResult = await signInWithPhoneNumber(auth, formattedPhoneNumber, appVerifier);
+        window.confirmationResult = confirmationResult;
+        setIsOtpSent(true);
+        toast({ title: "OTP Sent!", description: `An OTP has been sent to ${formattedPhoneNumber}` });
     } catch (error: any) {
+        console.error("SMS not sent error", error);
         toast({
             variant: "destructive",
-            title: "Sign-In Failed",
-            description: "Invalid username or password.",
+            title: "Failed to send OTP",
+            description: error.message,
+        });
+        window.recaptchaVerifier?.render().then((widgetId) => {
+            if(window.grecaptcha){
+                 window.grecaptcha.reset(widgetId);
+            }
         });
     } finally {
         setIsLoading(false);
     }
   }
   
-  const handleRegister = async (e: React.FormEvent) => {
+  const onVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore || !username || !name) return;
+    if (!otp || !window.confirmationResult || !firestore) return;
     setIsLoading(true);
-    const email = constructEmail(username);
+
     try {
-        const result = await createUserWithEmailAndPassword(auth, email, password);
-        // We pass the `name` (Full Name) from the form to create the user profile
-        const userProfile = await getOrCreateUser(firestore, result.user, 'user', name);
-        toast({ title: "Registration successful!" });
+        const result = await window.confirmationResult.confirm(otp);
+        const userProfile = await getOrCreateUser(firestore, result.user, 'user', `User ${result.user.uid.substring(0,5)}`);
+        toast({ title: "Sign in successful!" });
         handleNavigation(userProfile.role);
+
     } catch (error: any) {
          toast({
             variant: "destructive",
-            title: "Registration Failed",
-            description: error.message.includes('email-already-in-use') ? 'This username is already taken.' : error.message,
+            title: "Sign-In Failed",
+            description: "The OTP is incorrect or has expired.",
         });
     } finally {
         setIsLoading(false);
     }
   }
 
-  const handleSubmit = view === 'login' ? handleLogin : handleRegister;
-
   return (
     <div className={cn("grid gap-6", className)} {...props}>
-      <form onSubmit={handleSubmit}>
-        <div className="grid gap-4">
-          {view === 'register' && (
+      {!isOtpSent ? (
+        <form onSubmit={onSendOtp}>
+          <div className="grid gap-4">
             <div className="grid gap-1">
-                <Label htmlFor="name">Full Name</Label>
-                <Input
-                    id="name"
-                    placeholder="John Doe"
-                    type="text"
-                    autoCapitalize="words"
-                    autoComplete="name"
-                    autoCorrect="off"
-                    disabled={isLoading}
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                />
-            </div>
-          )}
-          <div className="grid gap-1">
-            <Label htmlFor="username">Username</Label>
-            <div className="relative">
-                <Input
-                id="username"
-                placeholder="salman"
-                type="text"
-                autoCapitalize="none"
-                autoComplete="username"
-                autoCorrect="off"
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                placeholder="923001234567"
+                type="tel"
+                autoComplete="tel"
                 disabled={isLoading}
-                value={username}
-                onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value)}
                 required
-                className="pr-24"
-                />
-                 <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
-                    @fynix.com
-                </span>
+              />
             </div>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Send OTP
+            </Button>
           </div>
-          <div className="grid gap-1">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              placeholder="••••••••"
-              type="password"
-              autoComplete={view === 'login' ? 'current-password' : 'new-password'}
-              disabled={isLoading}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+        </form>
+      ) : (
+        <form onSubmit={onVerifyOtp}>
+          <div className="grid gap-4">
+            <div className="grid gap-1">
+              <Label htmlFor="otp">Enter OTP</Label>
+              <Input
+                id="otp"
+                placeholder="123456"
+                type="text"
+                autoComplete="one-time-code"
+                disabled={isLoading}
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+              />
+            </div>
+            <Button disabled={isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verify OTP & Login
+            </Button>
+             <Button variant="link" size="sm" onClick={() => setIsOtpSent(false)} disabled={isLoading}>
+                Back to phone number
+            </Button>
           </div>
-          <Button disabled={isLoading}>
-            {isLoading && (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            )}
-            {view === 'login' ? 'Sign In' : 'Sign Up'}
-          </Button>
-        </div>
-      </form>
+        </form>
+      )}
+      <div id="recaptcha-container"></div>
     </div>
   )
 }
+
+    

@@ -13,19 +13,13 @@ export default function LoginPage() {
             Sign In To Your Account
           </h1>
           <p className="text-sm text-muted-foreground">
-             Enter your username and password to access your account
+             Enter your phone number to receive a login code
           </p>
         </div>
         <AuthForm view='login' />
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          <Link
-            href="/register"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Don&apos;t have an account? Sign Up
-          </Link>
-        </p>
       </div>
     </div>
   );
 }
+
+    
