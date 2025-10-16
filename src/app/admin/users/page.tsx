@@ -47,7 +47,7 @@ import { MoreHorizontal, Search, Eye } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { Input } from "@/components/ui/input"
 import type { User } from "@/lib/data"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllUsers, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -247,3 +247,5 @@ export default function AdminUsersPage() {
     </div>
   )
 }
+
+    

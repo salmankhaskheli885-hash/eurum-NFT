@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useUser } from "@/hooks/use-user"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -304,3 +304,5 @@ export default function AgentWithdrawalsPage() {
         </div>
     )
 }
+
+    

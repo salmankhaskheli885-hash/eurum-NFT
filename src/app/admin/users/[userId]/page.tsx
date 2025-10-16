@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation"
 import { useFirestore } from "@/firebase/provider"
 import { listenToUser, updateUser, listenToUserTransactions } from "@/lib/firestore"
 import type { User, Transaction } from "@/lib/data"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -270,3 +270,5 @@ export default function AdminUserDetailsPage() {
         </div>
     )
 }
+
+    

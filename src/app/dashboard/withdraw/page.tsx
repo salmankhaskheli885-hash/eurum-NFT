@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { addTransaction, listenToAppSettings, listenToUserTransactions } from "@/lib/firestore"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
@@ -250,3 +250,5 @@ export default function WithdrawPage() {
     </div>
   )
 }
+
+    

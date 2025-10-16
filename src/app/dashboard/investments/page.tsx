@@ -34,7 +34,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
 import { Lock, Ban } from "lucide-react"
@@ -341,3 +341,5 @@ export default function InvestmentsPage() {
     </div>
   )
 }
+
+    

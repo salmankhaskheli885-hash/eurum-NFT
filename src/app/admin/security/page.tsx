@@ -20,7 +20,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { useTranslation } from "@/hooks/use-translation"
 import { ShieldAlert, UserCog } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
@@ -164,3 +164,5 @@ export default function AdminSecurityPage() {
     </div>
   )
 }
+
+    

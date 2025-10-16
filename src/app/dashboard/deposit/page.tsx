@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
 import { Copy, Loader2 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { type AppSettings, type Transaction } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
@@ -292,3 +292,5 @@ export default function DepositPage() {
     </div>
   )
 }
+
+    

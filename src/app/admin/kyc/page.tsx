@@ -3,7 +3,7 @@
 import * as React from "react"
 import { useFirestore } from "@/firebase/provider"
 import type { User } from "@/lib/data"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { listenToAllUsers, updateKycStatus } from "@/lib/firestore"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -199,3 +199,5 @@ export default function AdminKycPage() {
         </div>
     )
 }
+
+    

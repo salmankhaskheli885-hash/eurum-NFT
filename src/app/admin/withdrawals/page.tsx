@@ -25,7 +25,7 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
@@ -177,3 +177,5 @@ export default function AdminWithdrawalsPage() {
     </div>
   )
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -6,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Textarea } from "@/components/ui/textarea"
@@ -208,3 +209,5 @@ export default function SettingsPage() {
         </div>
     )
 }
+
+    

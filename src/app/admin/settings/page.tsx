@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Textarea } from "@/components/ui/textarea"
 import type { AppSettings } from "@/lib/data"
@@ -215,3 +215,5 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
+
+    
