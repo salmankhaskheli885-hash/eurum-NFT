@@ -7,17 +7,18 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
-import { useRouter, useSearchParams } from "next/navigation"
-import { getOrCreateUser } from "@/lib/firestore"
+import { useRouter } from "next/navigation"
+import { getOrCreateUser, isUserAChatAgent } from "@/lib/firestore"
 import { Loader2 } from "lucide-react"
 
-interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {}
+interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
+    intendedRole: 'user' | 'admin' | 'agent';
+}
 
-export function AuthForm({ className, ...props }: AuthFormProps) {
+export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
   const router = useRouter()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
@@ -25,7 +26,8 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
     switch (role) {
         case 'admin':
-            router.push('/admin');
+            // Redirect admins to a new panel selection screen
+            router.push('/admin/select-panel');
             break;
         case 'agent':
             router.push('/agent');
@@ -47,13 +49,27 @@ export function AuthForm({ className, ...props }: AuthFormProps) {
 
     try {
       const result = await signInWithPopup(auth, provider);
-      const userProfile = await getOrCreateUser(firestore, result.user, 'user');
+      const userProfile = await getOrCreateUser(firestore, result.user);
       
+      // Role-based access control
+      if (intendedRole === 'admin' && userProfile.role !== 'admin') {
+        throw new Error("You do not have admin privileges.");
+      }
+      
+      if (intendedRole === 'agent') {
+        const isAgent = await isUserAChatAgent(firestore, userProfile.email!);
+        if (!isAgent) {
+            throw new Error("You are not registered as a chat agent.");
+        }
+      }
+
       toast({ title: "Sign in successful!" });
       handleNavigation(userProfile.role);
 
     } catch (error: any) {
       console.error("Google Sign-In Error:", error);
+      // Log user out if role check fails
+      await auth.signOut();
       toast({
         variant: "destructive",
         title: "Sign-In Failed",
