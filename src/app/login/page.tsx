@@ -13,7 +13,7 @@ export default function LoginPage() {
             Sign In To Your Account
           </h1>
           <p className="text-sm text-muted-foreground">
-             Enter your email and password to access your account
+             Enter your username and password to access your account
           </p>
         </div>
         <AuthForm view='login' />

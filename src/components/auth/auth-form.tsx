@@ -25,8 +25,8 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
-  const [name, setName] = React.useState('')
-  const [email, setEmail] = React.useState('')
+  const [name, setName] = React.useState('') // For Full Name on register
+  const [username, setUsername] = React.useState('') // For the part before @fynix.com
   const [password, setPassword] = React.useState('')
 
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
@@ -45,11 +45,14 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
             break;
     }
   }
+  
+  const constructEmail = (user: string) => `${user}@fynix.com`;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) return;
+    if (!auth || !firestore || !username) return;
     setIsLoading(true);
+    const email = constructEmail(username);
     try {
         const result = await signInWithEmailAndPassword(auth, email, password);
         const userProfile = await getOrCreateUser(firestore, result.user);
@@ -59,7 +62,7 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
         toast({
             variant: "destructive",
             title: "Sign-In Failed",
-            description: error.message,
+            description: "Invalid username or password.",
         });
     } finally {
         setIsLoading(false);
@@ -68,11 +71,12 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
   
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth || !firestore) return;
+    if (!auth || !firestore || !username || !name) return;
     setIsLoading(true);
+    const email = constructEmail(username);
     try {
         const result = await createUserWithEmailAndPassword(auth, email, password);
-        // We pass the name from the form to create the user profile
+        // We pass the `name` (Full Name) from the form to create the user profile
         const userProfile = await getOrCreateUser(firestore, result.user, 'user', name);
         toast({ title: "Registration successful!" });
         handleNavigation(userProfile.role);
@@ -80,7 +84,7 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
          toast({
             variant: "destructive",
             title: "Registration Failed",
-            description: error.message,
+            description: error.message.includes('email-already-in-use') ? 'This username is already taken.' : error.message,
         });
     } finally {
         setIsLoading(false);
@@ -111,19 +115,25 @@ export function AuthForm({ className, view, ...props }: AuthFormProps) {
             </div>
           )}
           <div className="grid gap-1">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              placeholder="name@example.com"
-              type="email"
-              autoCapitalize="none"
-              autoComplete="email"
-              autoCorrect="off"
-              disabled={isLoading}
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+                <Input
+                id="username"
+                placeholder="salman"
+                type="text"
+                autoCapitalize="none"
+                autoComplete="username"
+                autoCorrect="off"
+                disabled={isLoading}
+                value={username}
+                onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+                required
+                className="pr-24"
+                />
+                 <span className="absolute inset-y-0 right-0 flex items-center pr-3 text-sm text-muted-foreground">
+                    @fynix.com
+                </span>
+            </div>
           </div>
           <div className="grid gap-1">
             <Label htmlFor="password">Password</Label>
