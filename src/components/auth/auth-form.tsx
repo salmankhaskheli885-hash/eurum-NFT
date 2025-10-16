@@ -5,9 +5,9 @@ import * as React from "react"
 import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { getOrCreateUser } from "@/lib/firestore"
 import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
 import {
@@ -26,7 +26,7 @@ interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const auth = useAuth()
   const firestore = useFirestore()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false);
@@ -40,20 +40,20 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
 
   const handleAdminNavigation = (path: string) => {
     setShowAdminPanelDialog(false);
-    navigate(path);
+    router.push(path);
   }
 
   const handleNavigation = (user: UserProfile) => {
     switch (user.role) {
         case 'agent':
-            navigate('/agent');
+            router.push('/agent');
             break;
         case 'partner':
-            navigate('/partner');
+            router.push('/partner');
             break;
         case 'user':
         default:
-            navigate('/dashboard');
+            router.push('/dashboard');
             break;
     }
   }

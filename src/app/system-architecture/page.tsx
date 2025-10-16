@@ -1,19 +1,19 @@
 
 "use client"
-import { Badge } from "../../components/ui/badge"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "../../components/ui/card"
+} from "@/components/ui/card"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "../../components/ui/accordion"
+} from "@/components/ui/accordion"
 import {
   Table,
   TableBody,
@@ -21,7 +21,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "../../components/ui/table"
+} from "@/components/ui/table"
 import { CheckCircle2, Cpu, FileCog, ShieldCheck, UserCheck, Bot, Languages, RadioTower, BarChart, Users } from 'lucide-react'
 
 const sections = [

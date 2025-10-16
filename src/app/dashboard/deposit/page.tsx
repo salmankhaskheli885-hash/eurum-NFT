@@ -1,15 +1,15 @@
 
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Copy, Camera, Loader2 } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Copy, Loader2 } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 import { type AppSettings, type Transaction } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
@@ -22,7 +22,7 @@ export default function DepositPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
     const { toast } = useToast()
-    const navigate = useNavigate()
+    const router = useRouter()
     const firestore = useFirestore()
 
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -240,9 +240,8 @@ export default function DepositPage() {
                     {isSubmitting ? (
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
-                        <Camera className="mr-2 h-4 w-4" />
+                        t('deposit.submitButton')
                     )}
-                    {isSubmitting ? 'Submitting...' : t('deposit.submitButton')}
                 </Button>
             </form>
         </CardContent>
@@ -293,5 +292,3 @@ export default function DepositPage() {
     </div>
   )
 }
-
-    

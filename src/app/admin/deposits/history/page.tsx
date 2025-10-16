@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 
 export default function AdminDepositsHistoryPage() {

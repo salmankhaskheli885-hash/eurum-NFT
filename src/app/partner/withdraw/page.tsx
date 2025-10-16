@@ -2,7 +2,7 @@
 "use client"
 
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { useTranslation } from "@/hooks/use-translation"
 import { Landmark } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { addTransaction } from "@/lib/firestore"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
@@ -19,7 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 export default function WithdrawPage() {
     const { t } = useTranslation()
     const { user, loading } = useUser()
-    const navigate = useNavigate()
+    const router = useRouter()
     const { toast } = useToast()
     const firestore = useFirestore()
 
@@ -64,7 +64,7 @@ export default function WithdrawPage() {
                 description: t('withdraw.successDescription'),
             })
 
-            navigate('/partner/transactions')
+            router.push('/partner/transactions')
 
         } catch (error: any) {
              toast({

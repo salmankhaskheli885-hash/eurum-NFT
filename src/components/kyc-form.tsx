@@ -17,7 +17,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Clock, FileUp, Info, XCircle } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { useFirestore } from "@/firebase/provider"
 import { submitKyc } from "@/lib/firestore"
 import type { UserProfile } from "@/lib/schema"
@@ -162,5 +162,3 @@ export default function KycForm({ user }: { user: UserProfile }) {
     </div>
   )
 }
-
-    

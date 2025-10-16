@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { useUser } from "@/hooks/use-user"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -58,7 +58,7 @@ function WithdrawalHistory({ agentId }: { agentId: string }) {
     }
     
     const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
     }
 
     return (
@@ -83,7 +83,7 @@ function WithdrawalHistory({ agentId }: { agentId: string }) {
                         <TableRow>
                             <TableHead>User</TableHead>
                             <TableHead>Date & Time</TableHead>
-                            <TableHead className="text-right">Amount (USD)</TableHead>
+                            <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Final Status</TableHead>
                         </TableRow>
                     </TableHeader>
@@ -171,7 +171,7 @@ export default function AgentWithdrawalsPage() {
     }
     
     const formatCurrency = (val: number) => {
-        return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+        return new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
     }
 
     const filteredWithdrawals = React.useMemo(() => {

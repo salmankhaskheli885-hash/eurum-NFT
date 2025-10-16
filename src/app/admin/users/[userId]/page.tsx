@@ -1,11 +1,11 @@
 
 "use client"
 import * as React from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useRouter } from "next/navigation"
 import { useFirestore } from "@/firebase/provider"
 import { listenToUser, updateUser, listenToUserTransactions } from "@/lib/firestore"
 import type { User, Transaction } from "@/lib/data"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +18,7 @@ import { ArrowLeft } from "lucide-react"
 
 export default function AdminUserDetailsPage() {
     const params = useParams()
-    const navigate = useNavigate()
+    const router = useRouter()
     const firestore = useFirestore()
     const { toast } = useToast()
 
@@ -132,13 +132,13 @@ export default function AdminUserDetailsPage() {
     }
 
     if (!user) {
-        return <div>User not found. <Button onClick={() => navigate(-1)}>Go Back</Button></div>
+        return <div>User not found. <Button onClick={() => router.back()}>Go Back</Button></div>
     }
 
     return (
         <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => navigate(-1)}>
+                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => router.back()}>
                     <ArrowLeft className="h-4 w-4" />
                     <span className="sr-only">Back</span>
                 </Button>

@@ -1,6 +1,7 @@
 
 "use client"
-import { Link, useLocation } from "react-router-dom"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -9,11 +10,9 @@ import {
   Share2,
   TrendingUp,
   User,
-  Users,
-  Shield,
+  UserCheck,
   History,
   Settings,
-  UserCheck,
 } from "lucide-react"
 
 import {
@@ -39,8 +38,7 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  const location = useLocation();
-  const pathname = location.pathname;
+  const pathname = usePathname()
   const { t } = useTranslation()
 
   const isPartner = pathname.startsWith('/partner');
@@ -74,7 +72,7 @@ export default function DashboardLayout({
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link to={isPartner ? "/partner" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link href={isPartner ? "/partner" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">{t('appName')}</span>
           </Link>
@@ -83,7 +81,7 @@ export default function DashboardLayout({
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link to={item.href}>
+                <Link href={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href}
                     tooltip={item.label}
@@ -100,7 +98,7 @@ export default function DashboardLayout({
             <div className="group-data-[state=collapsed]:hidden">
                 <LanguageSwitcher/>
             </div>
-             <Link to="/login" className="w-full group-data-[state=collapsed]:w-auto">
+             <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip={t('nav.logout')}>
                     <LogOut/>
                     <span>{t('nav.logout')}</span>

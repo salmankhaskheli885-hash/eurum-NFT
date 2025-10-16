@@ -2,14 +2,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Copy, Camera } from "lucide-react"
-import { useToast } from "@/hooks/use-toast"
+import { Copy } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 import { type AppSettings } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
@@ -20,7 +20,7 @@ export default function DepositPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
     const { toast } = useToast()
-    const navigate = useNavigate()
+    const router = useRouter()
     const firestore = useFirestore()
 
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -83,7 +83,7 @@ export default function DepositPage() {
                 description: "Your deposit is being reviewed and will be processed shortly.",
             })
 
-            navigate('/partner/transactions')
+            router.push('/partner/transactions')
         } catch (error) {
             toast({
                 variant: "destructive",
@@ -161,7 +161,6 @@ export default function DepositPage() {
                     <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files ? e.target.files[0] : null)} />
                 </div>
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                    <Camera className="mr-2 h-4 w-4" />
                     {t('deposit.submitButton')}
                 </Button>
             </form>

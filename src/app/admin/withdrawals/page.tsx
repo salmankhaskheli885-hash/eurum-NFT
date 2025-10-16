@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
 import { Search, CheckCircle, XCircle } from "lucide-react"
@@ -26,7 +25,7 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
@@ -57,18 +56,10 @@ export default function AdminWithdrawalsPage() {
       );
     });
   }, [searchTerm, transactions]);
-
-   const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
-  }
   
   const formatCurrency = (val: number | undefined) => {
     if (val === undefined) return 'N/A';
-    return new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(val);
+    return new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
   }
 
   const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
@@ -186,5 +177,3 @@ export default function AdminWithdrawalsPage() {
     </div>
   )
 }
-
-    

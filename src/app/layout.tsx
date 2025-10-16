@@ -1,12 +1,13 @@
-import React from 'react';
+import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/context/language-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
-// This component is not a layout anymore in CRA, but a wrapper.
-// We are keeping the providers here.
-// The actual routing logic is now in src/App.tsx
+export const metadata: Metadata = {
+  title: 'Fynix Pro',
+  description: 'The next generation investment platform.',
+};
 
 export default function RootLayout({
   children,

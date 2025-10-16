@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Label } from "@/components/ui/label"
@@ -122,9 +123,6 @@ export default function ProfilePage() {
                             <AvatarImage
                                 src={userAvatar.imageUrl}
                                 alt={userAvatar.description}
-                                width={96}
-                                height={96}
-                                data-ai-hint={userAvatar.imageHint}
                             />
                             )}
                             <AvatarFallback className="text-3xl">{user.displayName?.charAt(0)}</AvatarFallback>

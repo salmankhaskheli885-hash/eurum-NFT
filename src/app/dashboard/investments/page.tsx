@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -33,10 +34,10 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import type { InvestmentPlan } from "@/lib/data"
 import { useTranslation } from "@/hooks/use-translation"
-import { Lock, Info, Ban } from "lucide-react"
+import { Lock, Ban } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -278,10 +279,11 @@ export default function InvestmentsPage() {
             <Card key={plan.id} className={`flex flex-col ${isVipLocked || isManuallyLocked ? 'bg-muted/50 border-dashed' : ''}`}>
               <CardHeader>
                 <div className="relative h-40 w-full mb-4">
-                    <img 
+                    <Image 
                         src={plan.imageUrl} 
                         alt={plan.name}
-                        className="rounded-t-lg object-cover w-full h-full"
+                        fill
+                        className="rounded-t-lg object-cover"
                         data-ai-hint="investment product"
                      />
                 </div>

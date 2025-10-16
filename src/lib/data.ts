@@ -12,6 +12,11 @@ export type User = UserProfile & {
   totalDeposits?: number;
   lastWithdrawalDate?: string;
   failedDepositCount?: number;
+  // User profile fields that are not in the schema
+  mobileNumber?: string;
+  cnicFrontUrl?: string;
+  cnicBackUrl?: string;
+  selfieUrl?: string;
 };
 
 export type Transaction = {

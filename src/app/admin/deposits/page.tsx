@@ -21,13 +21,12 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import type { Transaction } from "@/lib/data"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { Search, Eye, CheckCircle, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Link } from "react-router-dom"
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()

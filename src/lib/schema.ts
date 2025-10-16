@@ -13,4 +13,6 @@ export type UserProfile = {
   referralLink: string;
   referredBy?: string; // UID of the user who referred this user
   failedDepositCount?: number;
+  canApproveDeposits?: boolean;
+  canApproveWithdrawals?: boolean;
 };

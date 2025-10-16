@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import {
   Table,
   TableBody,
@@ -47,7 +47,7 @@ import { MoreHorizontal, Search, Eye } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import { Input } from "@/components/ui/input"
 import type { User } from "@/lib/data"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllUsers, updateUser as updateUserInDb, deleteUser as deleteUserInDb } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -180,7 +180,7 @@ export default function AdminUsersPage() {
                     <TableCell>
                         <div className="flex justify-end gap-2">
                             <Button asChild variant="outline" size="sm">
-                                <Link to={`/admin/users/${user.uid}`} className="flex items-center">
+                                <Link href={`/admin/users/${user.uid}`} className="flex items-center">
                                     <Eye className="mr-2 h-4 w-4"/>
                                     Details
                                 </Link>
@@ -195,7 +195,7 @@ export default function AdminUsersPage() {
                             <DropdownMenuContent align="end">
                                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
                                 <DropdownMenuItem asChild>
-                                    <Link to={`/dashboard?userId=${user.uid}`} target="_blank">View as User</Link>
+                                    <Link href={`/dashboard?userId=${user.uid}`} target="_blank">View as User</Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuSub>

@@ -1,7 +1,7 @@
 
 "use client"
 
-import { Link, useNavigate } from "react-router-dom"
+import Link from "next/link"
 import * as React from "react"
 import { PlaceHolderImages } from "@/lib/placeholder-images"
 import { LogOut as LogOutIcon, User as UserIcon, Settings } from "lucide-react"
@@ -22,19 +22,20 @@ import { useAuth } from "@/firebase/provider"
 import { signOut } from "firebase/auth"
 import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useRouter } from "next/navigation"
 
 
 export function UserNav() {
   const { t } = useTranslation()
   const userAvatar = PlaceHolderImages.find(p => p.id === 'user-avatar');
   const auth = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { user, loading } = useUser()
 
   const handleLogout = async () => {
     if (!auth) return;
     await signOut(auth)
-    navigate('/login')
+    router.push('/login')
   }
 
   if (loading) {
@@ -44,7 +45,7 @@ export function UserNav() {
   if (!user) {
     return (
        <Button asChild>
-        <Link to="/login">Login</Link>
+        <Link href="/login">Login</Link>
       </Button>
     )
   }
@@ -75,13 +76,13 @@ export function UserNav() {
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <Link to="/dashboard/profile">
+          <Link href="/dashboard/profile">
             <DropdownMenuItem>
               <UserIcon className="mr-2 h-4 w-4" />
               <span>{t('nav.profile')}</span>
             </DropdownMenuItem>
           </Link>
-           <Link to="/dashboard/settings">
+           <Link href="/dashboard/settings">
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
               <span>{t('nav.settings')}</span>

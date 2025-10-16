@@ -2,7 +2,8 @@
 "use client"
 
 import { Suspense, useEffect, useState } from "react"
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams } from "next/navigation"
+import Link from "next/link"
 import {
   Card,
   CardContent,
@@ -55,7 +56,7 @@ function Announcement() {
 
 function DashboardContent() {
   const { t } = useTranslation()
-  const [searchParams] = useSearchParams()
+  const searchParams = useSearchParams()
   const firestore = useFirestore()
   const viewAsUserId = searchParams.get('userId'); 
 
@@ -167,7 +168,7 @@ function DashboardContent() {
         <Alert variant="destructive">
           <AlertTitle>Admin View</AlertTitle>
           <AlertDescription>
-            You are viewing the dashboard as **{user.displayName}** (UID: {user.uid}). <Link to="/admin/users" className="underline font-bold">Return to Admin Panel.</Link>
+            You are viewing the dashboard as **{user.displayName}** (UID: {user.uid}). <Link href="/admin/users" className="underline font-bold">Return to Admin Panel.</Link>
           </AlertDescription>
         </Alert>
       )}
@@ -182,7 +183,7 @@ function DashboardContent() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link to="/dashboard/investments">{t('dashboard.viewInvestments')}</Link>
+              <Link href="/dashboard/investments">{t('dashboard.viewInvestments')}</Link>
             </Button>
           </CardContent>
         </Card>

@@ -2,6 +2,7 @@
 "use client"
 
 import * as React from "react"
+import Image from "next/image"
 import {
   Table,
   TableBody,
@@ -51,7 +52,7 @@ import { Button } from "@/components/ui/button"
 import { MoreHorizontal, PlusCircle, Search } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import type { InvestmentPlan } from "@/lib/data"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
@@ -337,7 +338,7 @@ export default function AdminInvestmentsPage() {
                 filteredPlans.map((plan) => (
                 <TableRow key={plan.id}>
                     <TableCell>
-                        <img 
+                        <Image 
                             src={plan.imageUrl} 
                             alt={plan.name} 
                             width={40} 

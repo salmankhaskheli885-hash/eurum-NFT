@@ -10,11 +10,11 @@ import { type User, type Transaction, type AppSettings } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { Link } from "react-router-dom"
+import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/hooks/use-toast"
+import { useToast } from "@/components/ui/use-toast"
 
 function PanelControlCard() {
     const firestore = useFirestore();
@@ -269,25 +269,25 @@ export default function AdminDashboardPage() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-col gap-2">
-                        <Link to="/admin/deposits">
+                        <Link href="/admin/deposits">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve Deposits
                                 {pendingDeposits > 0 && <Badge className="ml-auto">{pendingDeposits}</Badge>}
                             </Button>
                         </Link>
-                        <Link to="/admin/withdrawals">
+                        <Link href="/admin/withdrawals">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve Withdrawals
                                 {pendingWithdrawals > 0 && <Badge className="ml-auto">{pendingWithdrawals}</Badge>}
                             </Button>
                         </Link>
-                        <Link to="/admin/kyc">
+                        <Link href="/admin/kyc">
                             <Button variant="outline" className="w-full justify-start">
                                 Approve KYC
                                 {pendingKyc > 0 && <Badge className="ml-auto">{pendingKyc}</Badge>}
                             </Button>
                         </Link>
-                        <Link to="/admin/users">
+                        <Link href="/admin/users">
                             <Button variant="outline" className="w-full justify-start">
                                 Manage Users
                             </Button>

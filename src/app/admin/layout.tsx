@@ -1,6 +1,7 @@
 
 "use client"
-import { Link, useLocation } from "react-router-dom"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 import React from "react"
 import {
   LayoutDashboard,
@@ -48,8 +49,7 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode
 }) {
-  const location = useLocation()
-  const pathname = location.pathname;
+  const pathname = usePathname()
   const { t } = useTranslation()
   const firestore = useFirestore()
 
@@ -116,7 +116,7 @@ export default function AdminLayout({
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link to="/admin" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link href="/admin" className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">{t('admin.title')}</span>
           </Link>
@@ -125,7 +125,7 @@ export default function AdminLayout({
           <SidebarMenu>
             {menuItems.map((item) => (
               <SidebarMenuItem key={item.href}>
-                <Link to={item.href}>
+                <Link href={item.href}>
                   <SidebarMenuButton
                     isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href) && !item.subItems)}
                     tooltip={item.label}
@@ -141,7 +141,7 @@ export default function AdminLayout({
                   <SidebarMenuSub>
                     {item.subItems.map(subItem => (
                       <SidebarMenuSubItem key={subItem.href}>
-                        <Link to={subItem.href}>
+                        <Link href={subItem.href}>
                            <SidebarMenuSubButton isActive={pathname === subItem.href}>
                               <History />
                               <span>{subItem.label}</span>
@@ -158,7 +158,7 @@ export default function AdminLayout({
             </SidebarMenuItem>
             {viewMenuItems.map((item) => (
                <SidebarMenuItem key={item.href} className="group-data-[state=collapsed]:hidden">
-                <Link to={item.href} target="_blank">
+                <Link href={item.href} target="_blank">
                   <SidebarMenuButton
                     tooltip={item.label}
                   >
@@ -174,7 +174,7 @@ export default function AdminLayout({
             <div className="group-data-[state=collapsed]:hidden">
                 <LanguageSwitcher/>
             </div>
-             <Link to="/login" className="w-full group-data-[state=collapsed]:w-auto">
+             <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip={t('nav.logout')}>
                     <LogOut/>
                     <span>{t('nav.logout')}</span>

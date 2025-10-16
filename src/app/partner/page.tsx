@@ -54,7 +54,7 @@ export default function PartnerDashboardPage() {
   const formatCurrency = (amount: number, compact = true) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
-      currency: "USD",
+      currency: "PKR",
       notation: compact ? "compact" : "standard"
     }).format(amount)
   }

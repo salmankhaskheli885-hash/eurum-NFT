@@ -10,17 +10,18 @@ import {
 } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Shield, User, Handshake, MessageSquare } from "lucide-react"
-import { Link, useNavigate } from "react-router-dom"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useUser } from "@/hooks/use-user"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SelectPanelPage() {
     const { user, loading } = useUser();
-    const navigate = useNavigate();
+    const router = useRouter();
 
     // Redirect non-admins away from this page
     if (!loading && user?.role !== 'admin') {
-        navigate('/dashboard');
+        router.push('/dashboard');
         return (
              <div className="flex min-h-screen flex-col items-center justify-center">
                 <p>Redirecting...</p>
@@ -57,25 +58,25 @@ export default function SelectPanelPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <Link to="/admin">
+                    <Link href="/admin">
                         <Button className="w-full h-14 text-lg justify-between" size="lg">
                             Go to Admin Panel
                             <Shield className="h-6 w-6" />
                         </Button>
                     </Link>
-                     <Link to="/dashboard" target="_blank">
+                     <Link href="/dashboard" target="_blank">
                         <Button variant="outline" className="w-full h-12 justify-between">
                             View User Panel
                             <User className="h-5 w-5" />
                         </Button>
                     </Link>
-                    <Link to="/partner" target="_blank">
+                    <Link href="/partner" target="_blank">
                         <Button variant="outline" className="w-full h-12 justify-between">
                            View Partner Panel
                             <Handshake className="h-5 w-5" />
                         </Button>
                     </Link>
-                    <Link to="/agent" target="_blank">
+                    <Link href="/agent" target="_blank">
                         <Button variant="outline" className="w-full h-12 justify-between">
                            View Agent Panel
                             <MessageSquare className="h-5 w-5" />
