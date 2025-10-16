@@ -14,7 +14,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 
 function PanelControlCard() {
     const firestore = useFirestore();
@@ -301,3 +301,5 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
+
+    
