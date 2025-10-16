@@ -5,7 +5,6 @@ import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
 import Link from 'next/link';
 import { useTranslation } from '@/hooks/use-translation';
-import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -22,7 +21,6 @@ export default function LoginPage() {
           </p>
         </div>
         
-        {/* Default User/Partner Login */}
         <AuthForm intendedRole="user" />
 
         <p className="mt-6 px-8 text-center text-sm text-muted-foreground">
@@ -34,7 +32,6 @@ export default function LoginPage() {
             {t('login.signUpLink')}
           </Link>
         </p>
-
       </div>
     </div>
   );
