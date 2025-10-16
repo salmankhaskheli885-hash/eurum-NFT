@@ -1,179 +1,197 @@
 /**
- * @file Firestore Security Rules
- * @description This ruleset enforces a strict user-ownership model for user profiles and related data,
- * with public read access to investment plans and restricted access to admin and agent-related collections.
+ * @fileOverview Firestore Security Rules for the application.
  *
- * @data_structure
- * - /users/{userId}: User profiles, accessible only to the owning user.
- * - /investment_plans/{planId}: Publicly readable investment plans.
- * - /chat_agents/{agentId}: Chat agent profiles, only accessible by authenticated users.
- * - /chat_rooms/{roomId}: Chat rooms between users and agents, access controlled by participation.
- * - /chat_rooms/{roomId}/messages/{messageId}: Chat messages within rooms, access controlled by room participation.
- * - /app/settings: Application-wide settings.
- * - /tasks/{taskId}: Admin-created tasks for partners, only accessible by authenticated users.
- * - /users/{userId}/user_tasks/{taskId}: User-specific task progress, accessible only to the owning user.
- * - /partner_requests/{requestId}: Requests to become a partner, only accessible by authenticated users.
+ * Core Philosophy:
+ * This ruleset enforces a combination of user-ownership, role-based access, and public-read/owner-write patterns.
+ * User profiles are strictly owned by the authenticated user. Investment plans are publicly readable, but only admins can manage them.
+ * Chat agents have their own documents. Chat rooms and messages are secured based on user and agent participation. Application settings
+ * are restricted to admins. Tasks are public read and admin write, while user-task progress is user-owned. Partner requests can be created by any user.
  *
- * @key_security_decisions
- * - User profiles are strictly private, accessible only to the owning user.
+ * Data Structure:
+ * - /users/{userId}: User profiles, owned by the user.
+ * - /investment_plans/{planId}: Public investment plans managed by admins.
+ * - /chat_agents/{agentId}: Chat agent profiles, likely managed by admins.
+ * - /chat_rooms/{roomId}: Chat rooms between users and agents.
+ * - /chat_rooms/{roomId}/messages/{messageId}: Chat messages within a room.
+ * - /app/settings: Global application settings (single document).
+ * - /tasks/{taskId}: Tasks for partners, managed by admins.
+ * - /users/{userId}/user_tasks/{taskId}: User-specific task progress.
+ * - /partner_requests/{requestId}: User requests to become partners.
+ *
+ * Key Security Decisions:
+ * - User listing is disallowed to protect privacy.
  * - Investment plans are publicly readable to facilitate discovery.
- * - Chat agents and application settings are only accessible to authenticated users.
- * - Listing of chat agents, tasks, settings, and partner requests is disabled.
- * - Data validation is limited to ownership and relational integrity checks in this prototype phase.
+ * - Strict ownership is enforced for user profiles and user-specific data.
+ * - Role-based access is not yet implemented; all admin roles are placeholder.
+ * - Open writes are forbidden; every write operation requires authorization.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Enforces user-ownership for user profiles.
+     * @description Secure user profiles. Users can only read/write their own profile.
      * @path /users/{userId}
-     * @allow (create) User with UID 'user123' creates their profile.
-     * @allow (get) User with UID 'user123' reads their profile.
-     * @deny (update) User with UID 'user456' tries to update user 'user123' profile.
-     * @deny (delete) User with UID 'user456' tries to delete user 'user123' profile.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data.
+     * @allow (create) User with UID 'user_abc' can create /users/user_abc.
+     * @allow (get) User with UID 'user_abc' can read their own profile /users/user_abc.
+     * @allow (update) User with UID 'user_abc' can update their own profile /users/user_abc.
+     * @allow (delete) User with UID 'user_abc' can delete their own profile /users/user_abc.
+     * @deny (create) User with UID 'user_xyz' cannot create /users/user_abc.
+     * @deny (get) User with UID 'user_xyz' cannot read /users/user_abc.
+     * @deny (update) User with UID 'user_xyz' cannot update /users/user_abc.
+     * @deny (delete) User with UID 'user_xyz' cannot delete /users/user_abc.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Allows public read access to investment plans, but restricts writes.
+     * @description Secure investment plans. Publicly readable, but only admins can write.
      * @path /investment_plans/{planId}
      * @allow (get) Any user can read an investment plan.
-     * @deny (create) Any user cannot create an investment plan.
-     * @principle Allows public read access while restricting writes to authorized users.
+     * @allow (list) Any user can list investment plans.
+     * @deny (create) Non-admin user cannot create an investment plan.
+     * @deny (update) Non-admin user cannot update an investment plan.
+     * @deny (delete) Non-admin user cannot delete an investment plan.
+     * @principle Public read, admin-only write access.
      */
     match /investment_plans/{planId} {
-      allow get: if true;
-      allow list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check once implemented.
     }
 
     /**
-     * @description Restricts access to chat agents to authenticated users.
+     * @description Secure chat agents.  Likely managed by admins, but no roles are yet defined.
      * @path /chat_agents/{agentId}
-     * @allow (get) Authenticated user can get a chat agent
-     * @deny (create) Any user cannot create an agent
-     * @principle Restricts access to authenticated users
+     * @deny (get) No one can get a chat agent document.
+     * @deny (list) No one can list all chat agent documents.
+     * @deny (create) No one can create a chat agent document.
+     * @deny (update) No one can update a chat agent document.
+     * @deny (delete) No one can delete a chat agent document.
+     * @principle Strict access control.  Requires admin role implementation.
      */
     match /chat_agents/{agentId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
+      allow get, list: if false;
+      allow create, update, delete: if false; // TODO: Add admin role check once implemented.
+    }
 
-      allow get: if isSignedIn();
+    /**
+     * @description Secure chat rooms.  Restrict access to participants.
+     * @path /chat_rooms/{roomId}
+     * @allow (get) User 'user_abc' can get chat room 'room_123' if they are participating.
+     * @allow (list) No one can list all chat rooms.
+     * @allow (create) No one can create a chat room.
+     * @allow (update) User 'user_abc' can update chat room 'room_123' if they are participating.
+     * @allow (delete) No one can delete a chat room.
+     * @principle Shared access with specific users.
+     */
+    match /chat_rooms/{roomId} {
+      allow get: if request.auth.uid == resource.data.userId || request.auth.uid == resource.data.agentId;
       allow list: if false;
       allow create: if false;
-      allow update: if false;
+      allow update: if isParticipant(resource.data.userId, resource.data.agentId) && resource != null;
       allow delete: if false;
     }
 
     /**
-     * @description Manages access to chat rooms based on user participation.
-     * @path /chat_rooms/{roomId}
-     */
-    match /chat_rooms/{roomId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
-    }
-
-    /**
-     * @description Manages access to chat messages within a specific chat room.
+     * @description Secure chat messages within a chat room. Restrict access to participants in the room.
      * @path /chat_rooms/{roomId}/messages/{messageId}
+     * @allow (get) User 'user_abc' can read message 'msg_456' in room 'room_123' if they are a participant.
+     * @allow (list) User 'user_abc' can list messages in room 'room_123' if they are a participant.
+     * @allow (create) User 'user_abc' can create a message in room 'room_123' if they are a participant.
+     * @deny (update) No one can update a chat message.
+     * @deny (delete) No one can delete a chat message.
+     * @principle Shared access with specific users, inherited from the parent document.
      */
     match /chat_rooms/{roomId}/messages/{messageId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+        allow get, list: if get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.agentId == request.auth.uid;
+        allow create: if get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.agentId == request.auth.uid;
+        allow update, delete: if false;
     }
 
     /**
-     * @description Restricts access to application settings.
+     * @description Secure global application settings. Only admins can read/write.
      * @path /app/settings
+     * @deny (get) No one can get the settings.
+     * @deny (list) No one can list settings.
+     * @deny (create) No one can create settings.
+     * @deny (update) No one can update settings.
+     * @deny (delete) No one can delete settings.
+     * @principle Role-based access control for sensitive configurations.
      */
     match /app/settings {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+      allow get, list: if false; // TODO: Add admin role check once implemented.
+      allow create, update, delete: if false; // TODO: Add admin role check once implemented.
     }
 
     /**
-     * @description Restricts access to tasks to authenticated users.
+     * @description Secure tasks for partners. Publicly readable, but only admins can write.
      * @path /tasks/{taskId}
+     * @allow (get) Any user can read a task.
+     * @allow (list) Any user can list all tasks.
+     * @deny (create) No one can create a task.
+     * @deny (update) No one can update a task.
+     * @deny (delete) No one can delete a task.
+     * @principle Public read, admin-only write access.
      */
     match /tasks/{taskId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Add admin role check once implemented.
     }
 
     /**
-     * @description Enforces user-ownership for user task progress.
+     * @description Secure user-specific task progress. Users can only read/write their own progress.
      * @path /users/{userId}/user_tasks/{taskId}
+     * @allow (get) User with UID 'user_abc' can get /users/user_abc/user_tasks/task_123.
+     * @allow (list) User with UID 'user_abc' can list their own tasks.
+     * @allow (create) User with UID 'user_abc' can create /users/user_abc/user_tasks/task_123.
+     * @allow (update) User with UID 'user_abc' can update /users/user_abc/user_tasks/task_123.
+     * @allow (delete) User with UID 'user_abc' can delete /users/user_abc/user_tasks/task_123.
+     * @deny (get) User with UID 'user_xyz' cannot get /users/user_abc/user_tasks/task_123.
+     * @deny (create) User with UID 'user_xyz' cannot create /users/user_abc/user_tasks/task_123.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/user_tasks/{taskId} {
-      function isOwner(userId) {
-        return request.auth != null && request.auth.uid == userId;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Restricts access to partner requests to authenticated users.
+     * @description Secure partner requests. Users can create requests.
      * @path /partner_requests/{requestId}
+     * @allow (create) User can create a partner request.
+     * @deny (get) No one can get partner requests.
+     * @deny (list) No one can list partner requests.
+     * @deny (update) No one can update a partner request.
+     * @deny (delete) No one can delete a partner request.
      */
     match /partner_requests/{requestId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        allow get: if isSignedIn();
-        allow list: if false;
-        allow create: if false;
-        allow update: if false;
-        allow delete: if false;
+      allow create: if isSignedIn();
+      allow get, list, update, delete: if false; // TODO: Add admin/owner access control once requirements are clear
     }
+  }
+
+  // Helper Functions
+  function isSignedIn() {
+    return request.auth != null;
+  }
+
+  function isOwner(userId) {
+    return request.auth.uid == userId;
+  }
+
+  function isExistingOwner(userId) {
+    return isOwner(userId) && resource != null;
+  }
+
+  function isParticipant(userId, agentId) {
+        return request.auth.uid == userId || request.auth.uid == agentId;
   }
 }
