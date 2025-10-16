@@ -1,12 +1,13 @@
 
 "use client"
 import * as React from "react"
+import Image from 'next/image'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Send, Bot } from "lucide-react"
+import { Send, Bot, Paperclip, Loader2 } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
 import { listenToChatRooms, listenToMessages, sendMessage, type ChatRoom, type ChatMessage } from "@/lib/firestore"
@@ -71,7 +72,11 @@ function ChatRoomList({ rooms, onSelectRoom, selectedRoomId, loading }: { rooms:
 function ChatWindow({ room, messages, agentId, loading }: { room: ChatRoom, messages: ChatMessage[], agentId: string, loading: boolean }) {
     const firestore = useFirestore();
     const [input, setInput] = React.useState('');
+    const [imageFile, setImageFile] = React.useState<File | null>(null);
+    const [isSending, setIsSending] = React.useState(false);
     const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
 
     React.useEffect(() => {
         // Scroll to bottom when messages change
@@ -82,13 +87,26 @@ function ChatWindow({ room, messages, agentId, loading }: { room: ChatRoom, mess
 
 
     const handleSend = async () => {
-        if (!firestore || !input.trim()) return;
+        if ((!input.trim() && !imageFile) || !firestore) return;
         
+        setIsSending(true);
         try {
-            await sendMessage(firestore, room.id, agentId, 'agent', input.trim());
+            await sendMessage(firestore, room.id, agentId, 'agent', input.trim(), imageFile || undefined);
             setInput('');
+            setImageFile(null);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
         } catch (error) {
             console.error("Failed to send message:", error);
+        } finally {
+            setIsSending(false);
+        }
+    };
+
+     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            setImageFile(event.target.files[0]);
         }
     };
     
@@ -110,10 +128,15 @@ function ChatWindow({ room, messages, agentId, loading }: { room: ChatRoom, mess
                         ) : messages.map((msg, index) => (
                              <div key={index} className={cn("flex", msg.senderType === 'agent' ? 'justify-end' : 'justify-start')}>
                                 <div className={cn(
-                                    "max-w-xs rounded-lg px-4 py-2",
+                                    "max-w-xs rounded-lg px-3 py-2",
                                     msg.senderType === 'agent' ? "bg-primary text-primary-foreground" : "bg-muted"
                                 )}>
-                                    <p className="text-sm">{msg.text}</p>
+                                    {msg.imageUrl && (
+                                        <a href={msg.imageUrl} target="_blank" rel="noopener noreferrer">
+                                            <Image src={msg.imageUrl} alt="Chat image" width={200} height={200} className="rounded-md object-cover"/>
+                                        </a>
+                                    )}
+                                    {msg.text && <p className="text-sm mt-1">{msg.text}</p>}
                                     <p className="text-xs text-right mt-1 opacity-70">{new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                 </div>
                             </div>
@@ -121,17 +144,32 @@ function ChatWindow({ room, messages, agentId, loading }: { room: ChatRoom, mess
                     </div>
                 </ScrollArea>
             </CardContent>
-            <CardFooter className="p-4 border-t flex-shrink-0">
+            <CardFooter className="p-2 border-t flex-col flex-shrink-0 items-start">
+                 {imageFile && (
+                    <div className="px-2 py-1 text-xs text-muted-foreground">
+                        Attached: {imageFile.name}
+                    </div>
+                )}
                 <div className="flex w-full items-center space-x-2">
+                     <Button variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
+                        <Paperclip className="h-5 w-5" />
+                        <span className="sr-only">Attach file</span>
+                    </Button>
+                    <Input 
+                        type="file" 
+                        accept="image/*" 
+                        ref={fileInputRef} 
+                        className="hidden" 
+                        onChange={handleFileChange}
+                    />
                     <Input 
                         placeholder="Type your message..."
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                     />
-                    <Button onClick={handleSend} disabled={!input.trim()}>
-                        <Send className="h-4 w-4" />
-                        <span className="sr-only">Send</span>
+                    <Button onClick={handleSend} size="icon" disabled={(!input.trim() && !imageFile) || isSending}>
+                       {isSending ? <Loader2 className="h-4 w-4 animate-spin"/> : <Send className="h-4 w-4" />}
                     </Button>
                 </div>
             </CardFooter>

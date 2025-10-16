@@ -118,7 +118,8 @@ export type ChatMessage = {
     roomId: string;
     senderId: string;
     senderType: 'user' | 'agent' | 'system';
-    text: string;
+    text?: string;
+    imageUrl?: string;
     timestamp: string; // ISO 8601
 }
 

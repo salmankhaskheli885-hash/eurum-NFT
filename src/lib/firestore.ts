@@ -653,16 +653,31 @@ export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirest
     }
 }
 
-export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string) {
+export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string, imageFile?: File) {
     const roomRef = doc(firestore, 'chat_rooms', roomId);
     const messagesRef = collection(roomRef, 'messages');
+    
+    let imageUrl: string | undefined = undefined;
+    if (imageFile) {
+        const storage = getStorage();
+        const imagePath = `chat_images/${roomId}/${Date.now()}_${imageFile.name}`;
+        const storageRef = ref(storage, imagePath);
+        const snapshot = await uploadBytes(storageRef, imageFile);
+        imageUrl = await getDownloadURL(snapshot.ref);
+    }
 
-    const messageData: Omit<ChatMessage, 'id'> = {
+    if (!text && !imageUrl) {
+        // Don't send an empty message
+        return;
+    }
+
+    const messageData: Partial<ChatMessage> = {
         roomId: roomId,
         senderId: senderId,
         senderType: senderType,
-        text: text,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(text && { text: text }),
+        ...(imageUrl && { imageUrl: imageUrl }),
     };
     
     await addDoc(messagesRef, messageData);
@@ -671,7 +686,7 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     const isResolved = senderType !== 'user';
     
     await updateDoc(roomRef, {
-        lastMessage: text,
+        lastMessage: text || "Image",
         lastMessageAt: new Date().toISOString(),
         isResolved: isResolved
     });

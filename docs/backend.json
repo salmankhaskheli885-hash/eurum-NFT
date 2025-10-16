@@ -144,9 +144,10 @@
         "senderId": { "type": "string", "description": "The UID of the message sender (user or agent)." },
         "senderType": { "type": "string", "enum": ["user", "agent", "system"] },
         "text": { "type": "string" },
+        "imageUrl": { "type": "string", "format": "uri" },
         "timestamp": { "type": "string", "format": "date-time" }
       },
-      "required": ["roomId", "senderId", "senderType", "text", "timestamp"]
+      "required": ["roomId", "senderId", "senderType", "timestamp"]
     },
     "AppSettings": {
         "title": "App Settings",
@@ -259,5 +260,3 @@
     }
   }
 }
-
-    
