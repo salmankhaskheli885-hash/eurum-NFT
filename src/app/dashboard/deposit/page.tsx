@@ -2,7 +2,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,7 +22,7 @@ export default function DepositPage() {
     const { t } = useTranslation()
     const { user, loading: userLoading } = useUser()
     const { toast } = useToast()
-    const router = useRouter()
+    const navigate = useNavigate()
     const firestore = useFirestore()
 
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -293,3 +293,5 @@ export default function DepositPage() {
     </div>
   )
 }
+
+    

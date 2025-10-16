@@ -159,7 +159,7 @@ function DashboardContent() {
     return <div>Please log in to see your dashboard.</div>
   }
 
-  const userFirstName = user.displayName?.split(" ")[0]
+  const userFirstName = user.displayName?.split(" ")[0] || ''
 
   return (
     <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
@@ -280,3 +280,5 @@ export default function Dashboard() {
     </Suspense>
   )
 }
+
+    

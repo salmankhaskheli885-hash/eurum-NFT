@@ -20,10 +20,10 @@ import { useTranslation } from "@/hooks/use-translation"
 import { useToast } from "@/hooks/use-toast"
 import { useFirestore } from "@/firebase/provider"
 import { submitKyc } from "@/lib/firestore"
-import type { User } from "@/lib/data"
+import type { UserProfile } from "@/lib/schema"
 
 
-function KycStatusCard({ status }: { status: User['kycStatus']}) {
+function KycStatusCard({ status }: { status: UserProfile['kycStatus']}) {
     const { t } = useTranslation()
 
     const statusConfig = {
@@ -64,7 +64,7 @@ function KycStatusCard({ status }: { status: User['kycStatus']}) {
     )
 }
 
-export default function KycForm({ user }: { user: User }) {
+export default function KycForm({ user }: { user: UserProfile }) {
   const { t } = useTranslation()
   const { toast } = useToast()
   const firestore = useFirestore()
@@ -162,3 +162,5 @@ export default function KycForm({ user }: { user: User }) {
     </div>
   )
 }
+
+    
