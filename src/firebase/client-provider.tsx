@@ -2,13 +2,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { FirebaseApp } from 'firebase/app';
-import type { Auth } from 'firebase/auth';
-import type { Firestore } from 'firebase/firestore';
 import { initializeFirebase } from '@/firebase';
 import { FirebaseProvider, type FirebaseContextValue } from '@/firebase/provider';
 import { Loader2 } from 'lucide-react';
 
+/**
+ * This is the most important provider. It ensures that Firebase is initialized
+ * ONLY on the client-side, and only ONCE. It displays a loading indicator
+ * until Firebase is ready, preventing any child components from accessing
+ * Firebase services prematurely and causing the "client is offline" error.
+ */
 export function FirebaseClientProvider({
   children,
 }: {
@@ -27,11 +30,12 @@ export function FirebaseClientProvider({
     if (typeof window !== 'undefined' && !firebase) {
       init();
     }
+  // We ONLY want this to run once, so we leave the dependency array empty.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Removed firebase dependency to ensure it runs only once
+  }, []); 
 
   // While Firebase is initializing, show a loading indicator.
-  // This prevents any child components from trying to use Firebase before it's ready.
+  // This is the key to preventing the "client is offline" error.
   if (!firebase) {
     return (
       <div className="flex h-screen w-screen items-center justify-center">
@@ -40,6 +44,7 @@ export function FirebaseClientProvider({
     );
   }
 
+  // Once Firebase is ready, render the FirebaseProvider with the initialized instances.
   return (
     <FirebaseProvider value={firebase}>
       {children}

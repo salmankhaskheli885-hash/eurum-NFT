@@ -6,12 +6,14 @@ import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 import type { Firestore } from 'firebase/firestore';
 
+// This defines the shape of the context value.
 export type FirebaseContextValue = {
   app: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
 };
 
+// Create the context with an initial undefined value.
 export const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
 type FirebaseProviderProps = {
@@ -19,6 +21,10 @@ type FirebaseProviderProps = {
   value: FirebaseContextValue;
 };
 
+/**
+ * This provider simply takes the initialized Firebase instances (app, auth, firestore)
+ * and makes them available to all child components through the `FirebaseContext`.
+ */
 export function FirebaseProvider({
   children,
   value,
@@ -30,6 +36,8 @@ export function FirebaseProvider({
   );
 }
 
+
+// These are the custom hooks that components will use to access Firebase services.
 export const useFirebaseApp = () => {
   const context = useContext(FirebaseContext);
   if (context === undefined) {
