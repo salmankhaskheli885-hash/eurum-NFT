@@ -1,14 +1,12 @@
-import type { Metadata } from 'next';
+import React from 'react';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { LanguageProvider } from '@/context/language-context';
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 
-export const metadata: Metadata = {
-  title: 'Fynix Pro',
-  description: 'The Fynix Pro web application for users.',
-  manifest: '/manifest.json',
-};
+// This component is not a layout anymore in CRA, but a wrapper.
+// We are keeping the providers here.
+// The actual routing logic is now in src/App.tsx
 
 export default function RootLayout({
   children,
@@ -21,7 +19,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/logo192.png" />
       </head>
       <body className="font-body antialiased">
         <LanguageProvider>
