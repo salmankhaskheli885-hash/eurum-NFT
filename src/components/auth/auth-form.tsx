@@ -120,12 +120,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
             </AlertDialogDescription>
             </AlertDialogHeader>
             <div className="space-y-4 pt-4">
-                <Link href="/admin">
-                    <Button className="w-full h-14 text-lg justify-between" size="lg">
-                        Go to Admin Panel
-                        <Shield className="h-6 w-6" />
-                    </Button>
-                </Link>
                 <Link href="/dashboard" target="_blank">
                     <Button variant="outline" className="w-full h-12 justify-between">
                         View User Panel
@@ -136,12 +130,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
                     <Button variant="outline" className="w-full h-12 justify-between">
                         View Partner Panel
                         <Handshake className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <Link href="/agent" target="_blank">
-                    <Button variant="outline" className="w-full h-12 justify-between">
-                        View Agent Panel
-                        <MessageSquare className="h-5 w-5" />
                     </Button>
                 </Link>
             </div>
