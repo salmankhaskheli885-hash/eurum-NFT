@@ -22,13 +22,14 @@ export default function LoginPage() {
         <AuthForm />
 
         <p className="px-8 text-center text-sm text-muted-foreground">
-          Don't have an account?{' '}
+          By signing in, you agree to our{' '}
           <Link
-            href="/register"
+            href="/dashboard/settings"
             className="underline underline-offset-4 hover:text-primary"
           >
-            Sign Up
+            Terms of Service
           </Link>
+          .
         </p>
 
       </div>
