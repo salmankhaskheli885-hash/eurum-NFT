@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   getFirestore,
@@ -317,7 +318,9 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     const referrerRef = doc(firestore, 'users', user.referredBy); // get ref again for writing
                     const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
                     const commissionAmount = txData.amount * commissionRate;
-                    transaction.update(referrerRef, { balance: referrer.balance + commissionAmount });
+                    
+                    const newReferrerBalance = referrer.balance + commissionAmount;
+                    transaction.update(referrerRef, { balance: newReferrerBalance });
 
                     const commissionTxRef = doc(collection(firestore, 'transactions'));
                     transaction.set(commissionTxRef, {
@@ -327,7 +330,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                         amount: commissionAmount,
                         status: 'Completed',
                         date: new Date().toISOString(),
-                        details: `From ${user.displayName}'s deposit`
+                        details: `Commission from ${user.displayName}'s deposit`
                     });
                 }
                 break;
