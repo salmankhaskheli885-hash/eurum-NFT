@@ -20,7 +20,7 @@ import {
 import type { UserProfile } from "@/lib/schema"
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-    intendedRole: 'user' | 'partner' | 'agent';
+    intendedRole: 'user' | 'partner';
 }
 
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
@@ -41,12 +41,9 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
                 const userProfile = await getOrCreateUser(firestore, result.user);
                 toast({ title: "Sign in successful!" });
                 
-                // NEW LOGIC: Always check the role from the profile.
                 if (userProfile.role === 'admin') {
-                    // If the user is an admin, ALWAYS show the panel selection dialog.
                     setShowAdminPanelDialog(true);
                 } else {
-                    // For non-admins, navigate based on their actual role.
                     handleNavigation(userProfile);
                 }
             }
@@ -74,7 +71,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     router.push(path);
   }
 
-  // This function now only handles non-admin roles.
   const handleNavigation = (user: UserProfile) => {
     switch (user.role) {
         case 'agent':
