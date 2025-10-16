@@ -10,32 +10,23 @@ export type FirebaseContextValue = {
   app: FirebaseApp | null;
   auth: Auth | null;
   firestore: Firestore | null;
-  loading: boolean;
 };
 
-export const FirebaseContext = createContext<FirebaseContextValue>({
-  app: null,
-  auth: null,
-  firestore: null,
-  loading: true,
-});
+export const FirebaseContext = createContext<FirebaseContextValue | undefined>(undefined);
 
 type FirebaseProviderProps = {
   children: React.ReactNode;
-  app: FirebaseApp;
-  auth: Auth;
-  firestore: Firestore;
+  value: FirebaseContextValue;
 };
 
 export function FirebaseProvider({
   children,
-  app,
-  auth,
-  firestore,
+  value,
 }: FirebaseProviderProps) {
-  // This provider is now a simple wrapper. The context value is provided by FirebaseClientProvider.
   return (
-      <>{children}</>
+      <FirebaseContext.Provider value={value}>
+          {children}
+      </FirebaseContext.Provider>
   );
 }
 
