@@ -20,7 +20,7 @@ import {
 import type { UserProfile } from "@/lib/schema"
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-    intendedRole: 'user' | 'admin' | 'agent';
+    intendedRole: 'user' | 'partner' | 'agent';
 }
 
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
@@ -41,13 +41,12 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
                 const userProfile = await getOrCreateUser(firestore, result.user);
                 toast({ title: "Sign in successful!" });
                 
-                // Get the intended role from sessionStorage
-                const storedIntendedRole = sessionStorage.getItem('intendedRole');
-                
-                // Main navigation logic
-                if (userProfile.role === 'admin' && storedIntendedRole === 'admin') {
+                // NEW LOGIC: Always check the role from the profile.
+                if (userProfile.role === 'admin') {
+                    // If the user is an admin, ALWAYS show the panel selection dialog.
                     setShowAdminPanelDialog(true);
                 } else {
+                    // For non-admins, navigate based on their actual role.
                     handleNavigation(userProfile);
                 }
             }
@@ -62,7 +61,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
             });
         } finally {
             setIsLoading(false);
-            sessionStorage.removeItem('intendedRole'); // Clean up sessionStorage
         }
     };
     
@@ -76,18 +74,16 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     router.push(path);
   }
 
+  // This function now only handles non-admin roles.
   const handleNavigation = (user: UserProfile) => {
     switch (user.role) {
-        case 'admin':
-            // If a non-admin accidentally logs into admin flow, send to user dashboard.
-            router.push('/dashboard'); 
-            break;
         case 'agent':
             router.push('/agent');
             break;
         case 'partner':
             router.push('/partner');
             break;
+        case 'user':
         default:
             router.push('/dashboard');
             break;
@@ -97,9 +93,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsLoading(true);
-
-    // Store the intended role in sessionStorage before redirecting
-    sessionStorage.setItem('intendedRole', intendedRole);
     
     const provider = new GoogleAuthProvider();
     await signInWithRedirect(auth, provider);
@@ -118,15 +111,15 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
             />
           </svg>
         )}
-        {intendedRole === 'admin' ? 'Sign In as Admin' : 'Sign In with Google'}
+        Sign In with Google
       </Button>
 
        <AlertDialog open={showAdminPanelDialog}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                    <AlertDialogTitle>Select a Panel</AlertDialogTitle>
+                    <AlertDialogTitle>Admin Access Detected</AlertDialogTitle>
                     <AlertDialogDescription>
-                        You are logged in as an Admin. Choose which panel you want to visit.
+                        Choose which panel you want to visit.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2 pt-4">

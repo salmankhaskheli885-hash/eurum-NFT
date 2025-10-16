@@ -15,8 +15,8 @@ export default function LoginPage() {
       <div className="mx-auto flex w-full max-w-[380px] flex-col justify-center space-y-6">
         <Tabs defaultValue="user" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="user">{t('login.userTab')}/{t('login.partnerTab')}</TabsTrigger>
-                <TabsTrigger value="admin">Admin</TabsTrigger>
+                <TabsTrigger value="user">{t('login.userTab')}</TabsTrigger>
+                <TabsTrigger value="partner">{t('login.partnerTab')}</TabsTrigger>
             </TabsList>
             <TabsContent value="user">
                 <div className="flex flex-col space-y-2 text-center my-6">
@@ -40,17 +40,26 @@ export default function LoginPage() {
                 </Link>
                 </p>
             </TabsContent>
-             <TabsContent value="admin">
+             <TabsContent value="partner">
                  <div className="flex flex-col space-y-2 text-center my-6">
                     <h1 className="text-2xl font-semibold tracking-tight">
-                        Admin Login
+                        {t('login.partnerTab')} Login
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Sign in with your Google Admin account.
+                        Sign in to your Partner account.
                     </p>
                 </div>
 
-                <AuthForm intendedRole="admin" />
+                <AuthForm intendedRole="partner" />
+                 <p className="mt-6 px-8 text-center text-sm text-muted-foreground">
+                    {t('login.noAccountPartner')}{' '}
+                    <Link
+                        href="/register"
+                        className="underline underline-offset-4 hover:text-primary"
+                    >
+                        {t('login.signUpLink')}
+                    </Link>
+                 </p>
             </TabsContent>
         </Tabs>
       </div>
