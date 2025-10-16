@@ -26,11 +26,22 @@ import {
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage, Task, UserTask, PartnerRequest } from './data';
+import { updateProfile } from 'firebase/auth';
 
 // USER FUNCTIONS
-export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>, firebaseUser: FirebaseUser, intendedRole?: 'user' | 'partner'): Promise<User> {
+export async function getOrCreateUser(
+    firestore: ReturnType<typeof getFirestore>,
+    firebaseUser: FirebaseUser,
+    intendedRole?: 'user' | 'partner',
+    displayNameFromForm?: string
+): Promise<User> {
     const userRef = doc(firestore, 'users', firebaseUser.uid);
     const userSnap = await getDoc(userRef);
+    
+    // Update Firebase Auth profile if displayName is provided from form
+    if (displayNameFromForm && firebaseUser.displayName !== displayNameFromForm) {
+        await updateProfile(firebaseUser, { displayName: displayNameFromForm });
+    }
 
     if (userSnap.exists()) {
         const userData = userSnap.data() as User;
@@ -81,7 +92,7 @@ export async function getOrCreateUser(firestore: ReturnType<typeof getFirestore>
         const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
+            displayName: displayNameFromForm || firebaseUser.displayName,
             role: role,
             shortUid: firebaseUser.uid.substring(0, 8),
             balance: 0,
