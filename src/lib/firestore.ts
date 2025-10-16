@@ -32,68 +32,20 @@ import { updateProfile } from 'firebase/auth';
 export async function getOrCreateUser(
     firestore: ReturnType<typeof getFirestore>,
     firebaseUser: FirebaseUser,
-    intendedRole?: 'user' | 'partner',
-    displayNameFromForm?: string
 ): Promise<User> {
     const userRef = doc(firestore, 'users', firebaseUser.uid);
     const userSnap = await getDoc(userRef);
-    
-    // Update Firebase Auth profile if displayName is provided from form
-    if (displayNameFromForm && firebaseUser.displayName !== displayNameFromForm) {
-        await updateProfile(firebaseUser, { displayName: displayNameFromForm });
-    }
 
     if (userSnap.exists()) {
-        const userData = userSnap.data() as User;
-        
-        // Also fetch agent data if it exists
-        const agentRef = collection(firestore, 'chat_agents');
-        const agentQuery = query(agentRef, where("email", "==", firebaseUser.email), limit(1));
-        const agentSnap = await getDocs(agentQuery);
-        
-        if (!agentSnap.empty) {
-            const agentData = agentSnap.docs[0].data();
-            return { ...userData, ...agentData, id: agentSnap.docs[0].id, uid: userData.uid };
-        }
-
-        const updates: Partial<User> = {};
-        if (userData.failedDepositCount === undefined) {
-             updates.failedDepositCount = 0;
-        }
-         if (userData.totalDeposits === undefined) {
-            updates.totalDeposits = 0;
-        }
-        if (Object.keys(updates).length > 0) {
-            await updateDoc(userRef, updates);
-            return { ...userData, ...updates };
-        }
-        return userData;
+        // The user document already exists, return it.
+        return userSnap.data() as User;
     } else {
-        const isAdmin = firebaseUser.email === 'salmankhaskheli885@gmail.com';
-        
-        const role = isAdmin ? 'admin' : intendedRole || 'user';
-
-        let referredBy: string | undefined = undefined;
-        try {
-            const urlParams = new URLSearchParams(window.location.search);
-            const refId = urlParams.get('ref');
-    
-            if (refId) {
-                 const referrerQuery = query(collection(firestore, "users"), where("shortUid", "==", refId), limit(1));
-                 const referrerSnap = await getDocs(referrerQuery);
-                 if (!referrerSnap.empty) {
-                     referredBy = referrerSnap.docs[0].id;
-                 }
-            }
-        } catch (e) {
-            console.error("Could not parse URL for referral", e)
-        }
-
+        // The user document does not exist, create a new one with basic info.
         const newUser: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: displayNameFromForm || firebaseUser.displayName,
-            role: role,
+            displayName: firebaseUser.displayName,
+            role: 'user', // Default role for all new users.
             shortUid: firebaseUser.uid.substring(0, 8),
             balance: 0,
             currency: 'PKR',
@@ -102,25 +54,14 @@ export async function getOrCreateUser(
             kycStatus: 'unsubmitted',
             referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
             status: 'Active',
-            referredBy: referredBy,
             totalDeposits: 0,
-            lastWithdrawalDate: undefined,
             failedDepositCount: 0,
         };
         await setDoc(userRef, newUser);
-        
-        // If the email is also in chat_agents, mark them as an agent
-        const agentRef = collection(firestore, 'chat_agents');
-        const agentQuery = query(agentRef, where("email", "==", firebaseUser.email), limit(1));
-        const agentSnap = await getDocs(agentQuery);
-        if (!agentSnap.empty) {
-            await updateDoc(agentSnap.docs[0].ref, { uid: firebaseUser.uid, isActive: true });
-        }
-
-
         return newUser;
     }
 }
+
 
 export function listenToUser(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (user: User | null) => void): Unsubscribe {
     const userRef = doc(firestore, 'users', userId);
