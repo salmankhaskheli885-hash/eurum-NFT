@@ -30,6 +30,9 @@ export function FirebaseProvider({
   children,
   value,
 }: FirebaseProviderProps) {
+  if (!value.app || !value.auth || !value.firestore) {
+    return null;
+  }
   return (
       <FirebaseContext.Provider value={value}>
           {children}
