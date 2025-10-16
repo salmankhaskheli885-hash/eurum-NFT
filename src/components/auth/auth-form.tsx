@@ -9,7 +9,16 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
 import { useRouter } from "next/navigation"
 import { getOrCreateUser, isUserAChatAgent } from "@/lib/firestore"
-import { Loader2 } from "lucide-react"
+import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
+import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import Link from "next/link"
+
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
     intendedRole: 'user' | 'admin' | 'agent';
@@ -22,12 +31,14 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const { toast } = useToast()
   
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
+
 
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
     switch (role) {
         case 'admin':
-            // Redirect admins to a new panel selection screen
-            router.push('/admin/select-panel');
+            // For admins, we now show a dialog instead of redirecting directly.
+            setShowAdminPanelDialog(true);
             break;
         case 'agent':
             router.push('/agent');
@@ -64,6 +75,7 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
       }
 
       toast({ title: "Sign in successful!" });
+      // This will now handle showing the dialog for admins
       handleNavigation(userProfile.role);
 
     } catch (error: any) {
@@ -76,7 +88,10 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         description: error.message || "An unknown error occurred.",
       });
     } finally {
-      setIsLoading(false);
+      // We keep loading true for admins until they select a panel
+      if (intendedRole !== 'admin') {
+          setIsLoading(false);
+      }
     }
   }
 
@@ -95,6 +110,43 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         )}
         Sign In with Google
       </Button>
+
+       <AlertDialog open={showAdminPanelDialog}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+            <AlertDialogTitle>Select a Panel</AlertDialogTitle>
+            <AlertDialogDescription>
+                You are logged in as an Admin. Choose which panel you want to access.
+            </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="space-y-4 pt-4">
+                <Link href="/admin">
+                    <Button className="w-full h-14 text-lg justify-between" size="lg">
+                        Go to Admin Panel
+                        <Shield className="h-6 w-6" />
+                    </Button>
+                </Link>
+                <Link href="/dashboard" target="_blank">
+                    <Button variant="outline" className="w-full h-12 justify-between">
+                        View User Panel
+                        <User className="h-5 w-5" />
+                    </Button>
+                </Link>
+                <Link href="/partner" target="_blank">
+                    <Button variant="outline" className="w-full h-12 justify-between">
+                        View Partner Panel
+                        <Handshake className="h-5 w-5" />
+                    </Button>
+                </Link>
+                <Link href="/agent" target="_blank">
+                    <Button variant="outline" className="w-full h-12 justify-between">
+                        View Agent Panel
+                        <MessageSquare className="h-5 w-5" />
+                    </Button>
+                </Link>
+            </div>
+        </AlertDialogContent>
+        </AlertDialog>
     </div>
   )
 }
