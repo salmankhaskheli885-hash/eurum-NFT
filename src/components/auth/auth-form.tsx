@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth"
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -29,41 +29,13 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(true);
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
 
+  // This effect will just handle the initial loading state
   React.useEffect(() => {
-    const handleRedirectResult = async () => {
-        if (!auth || !firestore) return;
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                const userProfile = await getOrCreateUser(firestore, result.user);
-                toast({ title: "Sign in successful!" });
-                
-                if (userProfile.role === 'admin') {
-                    setShowAdminPanelDialog(true);
-                } else {
-                    handleNavigation(userProfile);
-                }
-            }
-        } catch (error: any) {
-            console.error("Google Redirect Sign-In Error:", error);
-            toast({
-                variant: "destructive",
-                title: "Sign-In Failed",
-                description: error.code === 'auth/account-exists-with-different-credential' 
-                    ? "An account already exists with the same email address but different sign-in credentials."
-                    : error.message || "An unknown error occurred.",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
-    
-    handleRedirectResult();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth, firestore]);
+    setIsLoading(false)
+  }, []);
 
 
   const handleAdminNavigation = (path: string) => {
@@ -87,11 +59,37 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   }
 
   const handleGoogleSignIn = async () => {
-    if (!auth) return;
+    if (!auth || !firestore) return;
     setIsLoading(true);
     
     const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+
+    try {
+        const result = await signInWithPopup(auth, provider);
+        if (result) {
+            const userProfile = await getOrCreateUser(firestore, result.user);
+            toast({ title: "Sign in successful!" });
+            
+            if (userProfile.role === 'admin') {
+                setShowAdminPanelDialog(true);
+            } else {
+                handleNavigation(userProfile);
+            }
+        }
+    } catch (error: any) {
+        console.error("Google Popup Sign-In Error:", error);
+        toast({
+            variant: "destructive",
+            title: "Sign-In Failed",
+            description: error.code === 'auth/popup-closed-by-user'
+                ? "The sign-in window was closed before completion."
+                : error.code === 'auth/account-exists-with-different-credential' 
+                ? "An account already exists with the same email address but different sign-in credentials."
+                : error.message || "An unknown error occurred.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
   
   return (
