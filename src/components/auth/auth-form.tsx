@@ -2,14 +2,14 @@
 "use client"
 
 import * as React from "react"
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { signInWithRedirect, GoogleAuthProvider, getRedirectResult } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
 import { useRouter } from "next/navigation"
 import { getOrCreateUser, isUserAChatAgent } from "@/lib/firestore"
-import { Loader2, Shield, User, Handshake, MessageSquare, Briefcase, UserCog } from "lucide-react"
+import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
 import {
     AlertDialog,
     AlertDialogContent,
@@ -17,11 +17,9 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import Link from "next/link"
-
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-    intendedRole: 'user' | 'admin' | 'agent';
+    intendedRole: 'user';
 }
 
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
@@ -30,8 +28,37 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(false)
+  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start loading to handle redirect
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    const handleRedirectResult = async () => {
+        if (!auth || !firestore) return;
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // User has just signed in via redirect.
+                const userProfile = await getOrCreateUser(firestore, result.user);
+                toast({ title: "Sign in successful!" });
+                handleNavigation(userProfile.role);
+            }
+        } catch (error: any) {
+            console.error("Google Redirect Sign-In Error:", error);
+            toast({
+                variant: "destructive",
+                title: "Sign-In Failed",
+                description: error.code === 'auth/account-exists-with-different-credential' 
+                    ? "An account already exists with the same email address but different sign-in credentials."
+                    : error.message || "An unknown error occurred.",
+            });
+        } finally {
+            setIsLoading(false); // Stop loading after processing redirect
+        }
+    };
+    
+    handleRedirectResult();
+  }, [auth, firestore]);
+
 
   const handleAdminNavigation = (path: string) => {
     setShowAdminPanelDialog(false);
@@ -41,7 +68,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
     switch (role) {
         case 'admin':
-            // For admins, we now show a dialog instead of redirecting directly.
             setShowAdminPanelDialog(true);
             break;
         case 'agent':
@@ -57,92 +83,14 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   }
 
   const handleGoogleSignIn = async () => {
-    if (!auth || !firestore) return;
+    if (!auth) return;
     setIsLoading(true);
     
     const provider = new GoogleAuthProvider();
-
-    try {
-      const result = await signInWithPopup(auth, provider);
-      const userProfile = await getOrCreateUser(firestore, result.user);
-      
-      // Role-based access control
-      if (intendedRole === 'admin' && userProfile.role !== 'admin') {
-        throw new Error("You do not have admin privileges.");
-      }
-      
-      if (intendedRole === 'agent') {
-        const isAgent = await isUserAChatAgent(firestore, userProfile.email!);
-        if (!isAgent) {
-            throw new Error("You are not registered as a chat agent.");
-        }
-      }
-
-      toast({ title: "Sign in successful!" });
-      // This will now handle showing the dialog for admins
-      handleNavigation(userProfile.role);
-
-    } catch (error: any) {
-      console.error("Google Sign-In Error:", error);
-      // Log user out if role check fails
-      await auth.signOut();
-      toast({
-        variant: "destructive",
-        title: "Sign-In Failed",
-        description: error.message || "An unknown error occurred.",
-      });
-      setIsLoading(false); // Make sure loading stops on error
-    } 
-    // Do not set loading to false in finally block for admin, as dialog handles it
-     if (intendedRole !== 'admin') {
-       setIsLoading(false);
-     }
+    // Instead of popup, we use redirect. This is more reliable and avoids popup blockers.
+    await signInWithRedirect(auth, provider);
   }
   
-  // Custom button for each role
-    if (intendedRole === 'admin') {
-        return (
-            <>
-                <Button variant="link" size="sm" disabled={isLoading} onClick={handleGoogleSignIn}>
-                    Are you an Admin?
-                </Button>
-                
-                 <AlertDialog open={showAdminPanelDialog}>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Select a Panel</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            You are logged in as an Admin. Choose which panel you want to access.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <div className="space-y-2 pt-4">
-                             <Button onClick={() => handleAdminNavigation('/admin')} className="w-full h-12 justify-between">
-                                Go to Admin Panel <Shield />
-                            </Button>
-                             <Button onClick={() => handleAdminNavigation('/dashboard')} variant="outline" className="w-full h-12 justify-between">
-                                View User Panel <User />
-                            </Button>
-                            <Button onClick={() => handleAdminNavigation('/partner')} variant="outline" className="w-full h-12 justify-between">
-                                View Partner Panel <Handshake />
-                            </Button>
-                             <Button onClick={() => handleAdminNavigation('/agent')} variant="outline" className="w-full h-12 justify-between">
-                                View Agent Panel <MessageSquare />
-                            </Button>
-                        </div>
-                    </AlertDialogContent>
-                </AlertDialog>
-            </>
-        )
-    }
-    
-    if (intendedRole === 'agent') {
-        return (
-            <Button variant="link" size="sm" disabled={isLoading} onClick={handleGoogleSignIn}>
-                Are you an Agent?
-            </Button>
-        )
-    }
-
   return (
     <div className={cn("grid gap-6", className)} {...props}>
       <Button variant="outline" type="button" disabled={isLoading} onClick={handleGoogleSignIn}>
@@ -158,6 +106,25 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         )}
         Sign In with Google
       </Button>
+
+       <AlertDialog open={showAdminPanelDialog}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                <AlertDialogTitle>Select a Panel</AlertDialogTitle>
+                <AlertDialogDescription>
+                    You are logged in as an Admin. Choose which panel you want to access.
+                </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2 pt-4">
+                    <Button onClick={() => handleAdminNavigation('/dashboard')} variant="outline" className="w-full h-12 justify-between">
+                        View User Panel <User />
+                    </Button>
+                    <Button onClick={() => handleAdminNavigation('/partner')} variant="outline" className="w-full h-12 justify-between">
+                        View Partner Panel <Handshake />
+                    </Button>
+                </div>
+            </AlertDialogContent>
+        </AlertDialog>
     </div>
   )
 }
