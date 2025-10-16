@@ -93,7 +93,7 @@ export default function PartnerTasksPage() {
         <div className="flex flex-col gap-4">
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">Partner Tasks</h1>
-                <p className="text-muted-foreground">Complete tasks to earn extra rewards.</p>
+                <p className="text-muted-foreground">Complete tasks to earn extra rewards. Your one referral link works for all tasks.</p>
             </div>
              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {tasks.map((task) => {
@@ -115,7 +115,7 @@ export default function PartnerTasksPage() {
                             <CardContent className="flex-grow space-y-4">
                                 <div>
                                     <p className="text-sm font-medium text-muted-foreground">
-                                        Goal: {task.targetCount} successful referrals with a minimum deposit of PKR {task.minDeposit.toLocaleString()}.
+                                        Goal: Get {task.targetCount} referrals to make a first deposit of at least PKR {task.minDeposit.toLocaleString()}.
                                     </p>
                                 </div>
                                 <div>

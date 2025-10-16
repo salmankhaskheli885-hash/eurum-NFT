@@ -233,7 +233,7 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
                     payoutTx.update(userForPayoutRef, { balance: newBalance });
 
                     const payoutDocRef = doc(collection(firestore, 'transactions'));
-                    payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
+payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
                 }
             });
         } catch (e) {
@@ -241,6 +241,73 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
         }
     }, delay);
 }
+
+// Function to handle automatic task progress updates
+async function updatePartnerTaskProgress(
+    transaction: any, // The main transaction object from runTransaction
+    firestore: ReturnType<typeof getFirestore>,
+    depositingUser: User,
+    depositAmount: number,
+    referrerId: string
+) {
+    // 1. Get all active tasks for the referrer.
+    const tasksQuery = query(
+        collection(firestore, 'tasks'),
+        where('isActive', '==', true),
+        where('type', '==', 'referral_deposit')
+    );
+    const activeTasksSnap = await getDocs(tasksQuery);
+    const activeTasks = activeTasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
+
+    for (const task of activeTasks) {
+        // 2. Check if this deposit qualifies for the task.
+        if (depositAmount < task.minDeposit) {
+            continue; // Skip if deposit amount is too low.
+        }
+
+        const userTaskRef = doc(firestore, 'users', referrerId, 'user_tasks', task.id);
+        const userTaskSnap = await transaction.get(userTaskRef);
+
+        let userTaskData: UserTask;
+
+        if (userTaskSnap.exists()) {
+            userTaskData = userTaskSnap.data() as UserTask;
+            // 3. If task progress exists, check if user is already counted.
+            if (userTaskData.isCompleted || userTaskData.qualifiedReferrals?.includes(depositingUser.uid)) {
+                continue; // Skip if task is done or user already contributed.
+            }
+        } else {
+            // 4. If no progress, create a new user_task document.
+            userTaskData = {
+                id: task.id,
+                userId: referrerId,
+                taskId: task.id,
+                progress: 0,
+                isCompleted: false,
+                isClaimed: false,
+                qualifiedReferrals: [],
+            };
+        }
+
+        // 5. Update progress.
+        const newProgress = (userTaskData.progress || 0) + 1;
+        const newQualifiedReferrals = [...(userTaskData.qualifiedReferrals || []), depositingUser.uid];
+        const isNowCompleted = newProgress >= task.targetCount;
+
+        const updates: Partial<UserTask> = {
+            progress: newProgress,
+            qualifiedReferrals: newQualifiedReferrals,
+            isCompleted: isNowCompleted,
+        };
+
+        if (userTaskSnap.exists()) {
+            transaction.update(userTaskRef, updates);
+        } else {
+            transaction.set(userTaskRef, { ...userTaskData, ...updates });
+        }
+    }
+}
+
 
 export async function updateTransactionStatus(firestore: ReturnType<typeof getFirestore>, transactionId: string, newStatus: 'Completed' | 'Failed', txData: Transaction) {
     
@@ -314,6 +381,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     vipProgress: Math.min(100, Math.max(0, Math.floor(vipProgress)))
                 });
 
+                // Check for referral and commission
                 if (user.referredBy && referrerSnap && referrerSnap.exists()) {
                     const referrer = referrerSnap.data() as User;
                     const referrerRef = doc(firestore, 'users', user.referredBy); // get ref again for writing
@@ -333,6 +401,8 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                         date: new Date().toISOString(),
                         details: `Commission from ${user.displayName}'s deposit`
                     });
+                     // Call the task progress update function
+                    await updatePartnerTaskProgress(transaction, firestore, user, txData.amount, referrer.uid);
                 }
                 break;
             }
