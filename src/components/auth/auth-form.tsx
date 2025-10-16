@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
 import { useRouter } from "next/navigation"
 import { getOrCreateUser, isUserAChatAgent } from "@/lib/firestore"
-import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
+import { Loader2, Shield, User, Handshake, MessageSquare, Briefcase, UserCog } from "lucide-react"
 import {
     AlertDialog,
     AlertDialogContent,
@@ -33,6 +33,10 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const [isLoading, setIsLoading] = React.useState<boolean>(false)
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
 
+  const handleAdminNavigation = (path: string) => {
+    setShowAdminPanelDialog(false);
+    router.push(path);
+  }
 
   const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
     switch (role) {
@@ -87,13 +91,57 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         title: "Sign-In Failed",
         description: error.message || "An unknown error occurred.",
       });
-    } finally {
-      // We keep loading true for admins until they select a panel
-      if (intendedRole !== 'admin') {
-          setIsLoading(false);
-      }
-    }
+      setIsLoading(false); // Make sure loading stops on error
+    } 
+    // Do not set loading to false in finally block for admin, as dialog handles it
+     if (intendedRole !== 'admin') {
+       setIsLoading(false);
+     }
   }
+  
+  // Custom button for each role
+    if (intendedRole === 'admin') {
+        return (
+            <>
+                <Button variant="link" size="sm" disabled={isLoading} onClick={handleGoogleSignIn}>
+                    Are you an Admin?
+                </Button>
+                
+                 <AlertDialog open={showAdminPanelDialog}>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Select a Panel</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            You are logged in as an Admin. Choose which panel you want to access.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <div className="space-y-2 pt-4">
+                             <Button onClick={() => handleAdminNavigation('/admin')} className="w-full h-12 justify-between">
+                                Go to Admin Panel <Shield />
+                            </Button>
+                             <Button onClick={() => handleAdminNavigation('/dashboard')} variant="outline" className="w-full h-12 justify-between">
+                                View User Panel <User />
+                            </Button>
+                            <Button onClick={() => handleAdminNavigation('/partner')} variant="outline" className="w-full h-12 justify-between">
+                                View Partner Panel <Handshake />
+                            </Button>
+                             <Button onClick={() => handleAdminNavigation('/agent')} variant="outline" className="w-full h-12 justify-between">
+                                View Agent Panel <MessageSquare />
+                            </Button>
+                        </div>
+                    </AlertDialogContent>
+                </AlertDialog>
+            </>
+        )
+    }
+    
+    if (intendedRole === 'agent') {
+        return (
+            <Button variant="link" size="sm" disabled={isLoading} onClick={handleGoogleSignIn}>
+                Are you an Agent?
+            </Button>
+        )
+    }
 
   return (
     <div className={cn("grid gap-6", className)} {...props}>
@@ -110,31 +158,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         )}
         Sign In with Google
       </Button>
-
-       <AlertDialog open={showAdminPanelDialog}>
-        <AlertDialogContent>
-            <AlertDialogHeader>
-            <AlertDialogTitle>Select a Panel</AlertDialogTitle>
-            <AlertDialogDescription>
-                You are logged in as an Admin. Choose which panel you want to access.
-            </AlertDialogDescription>
-            </AlertDialogHeader>
-            <div className="space-y-4 pt-4">
-                <Link href="/dashboard" target="_blank">
-                    <Button variant="outline" className="w-full h-12 justify-between">
-                        View User Panel
-                        <User className="h-5 w-5" />
-                    </Button>
-                </Link>
-                <Link href="/partner" target="_blank">
-                    <Button variant="outline" className="w-full h-12 justify-between">
-                        View Partner Panel
-                        <Handshake className="h-5 w-5" />
-                    </Button>
-                </Link>
-            </div>
-        </AlertDialogContent>
-        </AlertDialog>
     </div>
   )
 }

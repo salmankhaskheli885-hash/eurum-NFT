@@ -5,6 +5,7 @@ import * as React from 'react';
 import { AuthForm } from '@/components/auth/auth-form';
 import Link from 'next/link';
 import { useTranslation } from '@/hooks/use-translation';
+import { Separator } from '@/components/ui/separator';
 
 export default function LoginPage() {
   const { t } = useTranslation();
@@ -20,7 +21,10 @@ export default function LoginPage() {
             {t('login.description')}
           </p>
         </div>
+        
+        {/* Default User/Partner Login */}
         <AuthForm intendedRole="user" />
+
         <p className="mt-6 px-8 text-center text-sm text-muted-foreground">
           {t('login.noAccount')}{' '}
           <Link
@@ -31,16 +35,13 @@ export default function LoginPage() {
           </Link>
         </p>
 
-        <p className="px-8 text-center text-sm text-muted-foreground">
-          By signing in, you agree to our{' '}
-          <Link
-            href="/dashboard/settings"
-            className="underline underline-offset-4 hover:text-primary"
-          >
-            Terms of Service
-          </Link>
-          .
-        </p>
+        <Separator />
+        
+        {/* Special Login Links */}
+        <div className='text-center space-y-2'>
+            <AuthForm intendedRole="admin" />
+            <AuthForm intendedRole="agent" />
+        </div>
 
       </div>
     </div>
