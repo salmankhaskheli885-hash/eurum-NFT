@@ -28,7 +28,7 @@ export function FirebaseClientProvider({
       init();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [firebase]);
+  }, []); // Removed firebase dependency to ensure it runs only once
 
   // While Firebase is initializing, show a loading indicator.
   // This prevents any child components from trying to use Firebase before it's ready.
