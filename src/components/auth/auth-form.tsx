@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
 import { useRouter } from "next/navigation"
-import { getOrCreateUser, isUserAChatAgent } from "@/lib/firestore"
+import { getOrCreateUser } from "@/lib/firestore"
 import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
 import {
     AlertDialog,
@@ -17,9 +17,10 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import type { UserProfile } from "@/lib/schema"
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
-    intendedRole: 'user';
+    intendedRole: 'user' | 'admin' | 'agent';
 }
 
 export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
@@ -28,7 +29,7 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start loading to handle redirect
+  const [isLoading, setIsLoading] = React.useState<boolean>(true);
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -37,10 +38,18 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         try {
             const result = await getRedirectResult(auth);
             if (result) {
-                // User has just signed in via redirect.
                 const userProfile = await getOrCreateUser(firestore, result.user);
                 toast({ title: "Sign in successful!" });
-                handleNavigation(userProfile.role);
+                
+                // Get the intended role from sessionStorage
+                const storedIntendedRole = sessionStorage.getItem('intendedRole');
+                
+                // Main navigation logic
+                if (userProfile.role === 'admin' && storedIntendedRole === 'admin') {
+                    setShowAdminPanelDialog(true);
+                } else {
+                    handleNavigation(userProfile);
+                }
             }
         } catch (error: any) {
             console.error("Google Redirect Sign-In Error:", error);
@@ -52,11 +61,13 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
                     : error.message || "An unknown error occurred.",
             });
         } finally {
-            setIsLoading(false); // Stop loading after processing redirect
+            setIsLoading(false);
+            sessionStorage.removeItem('intendedRole'); // Clean up sessionStorage
         }
     };
     
     handleRedirectResult();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth, firestore]);
 
 
@@ -65,10 +76,11 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     router.push(path);
   }
 
-  const handleNavigation = (role: 'user' | 'partner' | 'admin' | 'agent') => {
-    switch (role) {
+  const handleNavigation = (user: UserProfile) => {
+    switch (user.role) {
         case 'admin':
-            setShowAdminPanelDialog(true);
+            // If a non-admin accidentally logs into admin flow, send to user dashboard.
+            router.push('/dashboard'); 
             break;
         case 'agent':
             router.push('/agent');
@@ -85,9 +97,11 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const handleGoogleSignIn = async () => {
     if (!auth) return;
     setIsLoading(true);
+
+    // Store the intended role in sessionStorage before redirecting
+    sessionStorage.setItem('intendedRole', intendedRole);
     
     const provider = new GoogleAuthProvider();
-    // Instead of popup, we use redirect. This is more reliable and avoids popup blockers.
     await signInWithRedirect(auth, provider);
   }
   
@@ -104,23 +118,30 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
             />
           </svg>
         )}
-        Sign In with Google
+        {intendedRole === 'admin' ? 'Sign In as Admin' : 'Sign In with Google'}
       </Button>
 
        <AlertDialog open={showAdminPanelDialog}>
             <AlertDialogContent>
                 <AlertDialogHeader>
-                <AlertDialogTitle>Select a Panel</AlertDialogTitle>
-                <AlertDialogDescription>
-                    You are logged in as an Admin. Choose which panel you want to access.
-                </AlertDialogDescription>
+                    <AlertDialogTitle>Select a Panel</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        You are logged in as an Admin. Choose which panel you want to visit.
+                    </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="space-y-2 pt-4">
+                     <Button onClick={() => handleAdminNavigation('/admin')} className="w-full h-14 text-lg justify-between">
+                        Go to Admin Panel
+                        <Shield className="h-6 w-6" />
+                    </Button>
                     <Button onClick={() => handleAdminNavigation('/dashboard')} variant="outline" className="w-full h-12 justify-between">
                         View User Panel <User />
                     </Button>
                     <Button onClick={() => handleAdminNavigation('/partner')} variant="outline" className="w-full h-12 justify-between">
                         View Partner Panel <Handshake />
+                    </Button>
+                    <Button onClick={() => handleAdminNavigation('/agent')} variant="outline" className="w-full h-12 justify-between">
+                        View Agent Panel <MessageSquare />
                     </Button>
                 </div>
             </AlertDialogContent>
