@@ -56,6 +56,9 @@ export default function AdminLayout({
 
   const [pendingDeposits, setPendingDeposits] = React.useState(0);
   const [pendingWithdrawals, setPendingWithdrawals] = React.useState(0);
+  const [pendingKyc, setPendingKyc] = React.useState(0);
+  const [pendingPartnerReqs, setPendingPartnerReqs] = React.useState(0);
+
 
   React.useEffect(() => {
     if (!firestore) return;
@@ -66,14 +69,27 @@ export default function AdminLayout({
       setPendingDeposits(deposits);
       setPendingWithdrawals(withdrawals);
     });
+    
+    // In a real app, you'd have separate listeners for these counts for performance
+    // For now, this is acceptable.
+    // const unsubKyc = listenToAllUsers(firestore, (users) => {
+    //   setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
+    // });
+    // const unsubPartner = listenToPartnerRequests(firestore, (reqs) => {
+    //    setPendingPartnerReqs(reqs.filter(r => r.status === 'pending').length);
+    // })
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      // unsubKyc();
+      // unsubPartner();
+    };
   }, [firestore]);
 
 
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
-    { 
+     { 
         label: 'User Management', 
         icon: Users,
         subItems: [
@@ -94,6 +110,7 @@ export default function AdminLayout({
                 href: "/admin/kyc", 
                 label: t('admin.nav.kyc'), 
                 icon: UserCheck,
+                badge: pendingKyc
             },
         ] 
     },
@@ -102,13 +119,13 @@ export default function AdminLayout({
         icon: Handshake,
         subItems: [
             { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
-            { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus },
+            { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus, badge: pendingPartnerReqs },
         ] 
     },
-    { href: "/admin/investments", label: t('admin.nav.investments'), icon: FileCog },
+    { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
     { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
-    { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
+    { href: "/admin/settings", label: 'Global Settings', icon: Settings },
   ]
   
   const viewMenuItems = [
@@ -118,7 +135,7 @@ export default function AdminLayout({
   ]
 
   const isSubItemActive = (subItems: any[]) => {
-      return subItems.some(item => pathname === item.href || pathname.startsWith(item.href));
+      return subItems.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
   }
 
   return (
@@ -163,7 +180,7 @@ export default function AdminLayout({
                            <SidebarMenuSubButton isActive={pathname.startsWith(subItem.href)}>
                               {subItem.icon && <subItem.icon />}
                               <span>{subItem.label}</span>
-                               {subItem.badge && subItem.badge > 0 ? (
+                               {subItem.badge != null && subItem.badge > 0 ? (
                                 <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
                                 ) : null}
                           </SidebarMenuSubButton>
