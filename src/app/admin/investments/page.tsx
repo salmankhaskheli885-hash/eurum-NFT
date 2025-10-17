@@ -81,7 +81,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     };
 
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(initialFormData);
-    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new plan');
+    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new-plan');
 
     React.useEffect(() => {
         if (open) {
@@ -100,7 +100,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
               setImageSeed(match ? match[1] : 'custom');
           } else {
               setFormData(initialFormData);
-              setImageSeed('new plan');
+              setImageSeed('new-plan');
           }
         }
     }, [open, plan]);
@@ -464,3 +464,5 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
+
+    
