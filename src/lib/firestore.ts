@@ -789,6 +789,36 @@ export async function claimTaskReward(firestore: ReturnType<typeof getFirestore>
 
 
 // PARTNER REQUEST FUNCTIONS
+export function listenToPartnerRequests(firestore: ReturnType<typeof getFirestore>, callback: (requests: PartnerRequest[]) => void): Unsubscribe {
+  const requestsCollection = collection(firestore, 'partner_requests');
+  const q = query(requestsCollection, orderBy("requestDate", "desc"));
+  
+  return onSnapshot(q, (snapshot) => {
+      const requests = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PartnerRequest));
+      callback(requests);
+  });
+}
+
+export async function updatePartnerRequestStatus(firestore: ReturnType<typeof getFirestore>, requestId: string, status: 'approved' | 'rejected') {
+    return runTransaction(firestore, async (transaction) => {
+        const requestRef = doc(firestore, 'partner_requests', requestId);
+        const requestSnap = await transaction.get(requestRef);
+        if (!requestSnap.exists()) {
+            throw new Error("Request not found!");
+        }
+
+        const requestData = requestSnap.data() as PartnerRequest;
+        const userRef = doc(firestore, 'users', requestData.userId);
+        
+        transaction.update(requestRef, { status: status });
+
+        if (status === 'approved') {
+            transaction.update(userRef, { role: 'partner' });
+        }
+    });
+}
+
+
 export async function sendPartnerRequest(firestore: ReturnType<typeof getFirestore>, user: User) {
     const request: Omit<PartnerRequest, 'id' | 'requestDate'> = {
         userId: user.uid,
@@ -803,3 +833,4 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
+
