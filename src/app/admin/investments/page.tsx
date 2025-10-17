@@ -62,6 +62,17 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
+
+const imageThemeOptions = [
+    { value: 'treasure-chest', label: 'Treasure Chest (سونے کی پیٹی)' },
+    { value: 'gold-mining', label: 'Gold Mining (سونے کی کان کنی)' },
+    { value: 'gold-mountain', label: 'Gold Mountain (سونے کا پہاڑ)' },
+    { value: 'coins-treasure', label: 'Coins & Treasure (سکے اور خزانہ)' },
+    { value: 'investment-growth', label: 'General Investment' },
+];
+
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
@@ -81,7 +92,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     };
 
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(initialFormData);
-    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new-plan');
+    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : imageThemeOptions[0].value);
 
     React.useEffect(() => {
         if (open) {
@@ -97,10 +108,11 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                   visibleToRoles: plan.visibleToRoles || ['user', 'partner'] // Fallback for old plans
               });
               const match = plan.imageUrl.match(/picsum\.photos\/seed\/([^/]+)/);
-              setImageSeed(match ? match[1] : 'custom');
+              const seed = match ? match[1] : imageThemeOptions[0].value;
+              setImageSeed(imageThemeOptions.some(opt => opt.value === seed) ? seed : 'custom-url');
           } else {
               setFormData(initialFormData);
-              setImageSeed('new-plan');
+              setImageSeed(imageThemeOptions[0].value);
           }
         }
     }, [open, plan]);
@@ -111,8 +123,8 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
 
-    const handleImageSeedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setImageSeed(e.target.value);
+    const handleImageSeedChange = (value: string) => {
+        setImageSeed(value);
     }
     
     const handleSwitchChange = (checked: boolean) => {
@@ -142,8 +154,8 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
-        const finalImageUrl = imageSeed.startsWith('http') 
-            ? imageSeed 
+        const finalImageUrl = imageSeed === 'custom-url' 
+            ? formData.imageUrl
             : `https://picsum.photos/seed/${encodeURIComponent(imageSeed)}/600/400`;
 
         const dataToSave = { ...formData, imageUrl: finalImageUrl };
@@ -215,10 +227,33 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                 </div>
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="imageSeed">Image Topic</Label>
-                                <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} placeholder="e.g., gold coins, crypto" />
-                                <p className="text-xs text-muted-foreground pt-1">Just type a topic for the image, or paste a full URL.</p>
+                                <Label htmlFor="imageSeed">Image Theme</Label>
+                                <Select value={imageSeed} onValueChange={handleImageSeedChange}>
+                                    <SelectTrigger id="imageSeed">
+                                        <SelectValue placeholder="Select an image theme" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {imageThemeOptions.map(option => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                         <SelectItem value="custom-url">Custom URL</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
+                            {imageSeed === 'custom-url' && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="imageUrl">Custom Image URL</Label>
+                                    <Input
+                                        id="imageUrl"
+                                        name="imageUrl"
+                                        value={formData.imageUrl}
+                                        onChange={handleChange}
+                                        placeholder="https://example.com/image.png"
+                                    />
+                                </div>
+                            )}
                             <div className="space-y-3 rounded-lg border p-4">
                                 <Label>Visibility</Label>
                                 <p className="text-sm text-muted-foreground">Who should see this plan?</p>
@@ -360,7 +395,7 @@ export default function AdminInvestmentsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Visible To</TableHead>
-                <TableHead>Daily Return %</TableHead>
+                <TableHead>Daily Return Amount</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Min Invest</TableHead>
                 <TableHead>
