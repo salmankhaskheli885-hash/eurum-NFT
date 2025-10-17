@@ -78,9 +78,13 @@
             "minInvestment": { "type": "number" },
             "requiredVipLevel": { "type": "number" },
             "imageUrl": { "type": "string" },
-            "isActive": { "type": "boolean" }
+            "isActive": { "type": "boolean" },
+            "visibleToRoles": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["user", "partner", "agent"] }
+            }
         },
-        "required": ["name", "dailyReturn", "durationDays", "minInvestment", "requiredVipLevel", "imageUrl", "isActive"]
+        "required": ["name", "dailyReturn", "durationDays", "minInvestment", "requiredVipLevel", "imageUrl", "isActive", "visibleToRoles"]
     },
     "ChatAgent": {
       "title": "Chat Agent",

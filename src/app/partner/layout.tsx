@@ -58,6 +58,7 @@ export default function DashboardLayout({
 
   const partnerMenuItems = [
     { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
+    { href: "/partner/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/partner/tasks", label: 'Tasks', icon: ListChecks },
     { href: "/partner/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
     { href: "/partner/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },

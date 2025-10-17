@@ -143,7 +143,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
     )
 }
 
-export default function InvestmentsPage() {
+export default function PartnerInvestmentsPage() {
   const { t } = useTranslation()
   const { toast } = useToast()
   const { user, loading: userLoading } = useUser();
@@ -156,9 +156,9 @@ export default function InvestmentsPage() {
     if (!firestore) return;
     setPlansLoading(true);
     const unsubscribe = listenToAllInvestmentPlans(firestore, (fetchedPlans) => {
-        // Filter plans for the 'user' role
-        const userPlans = fetchedPlans.filter(plan => plan.visibleToRoles && plan.visibleToRoles.includes('user'));
-        setPlans(userPlans);
+        // Filter plans for the 'partner' role
+        const partnerPlans = fetchedPlans.filter(plan => plan.visibleToRoles && plan.visibleToRoles.includes('partner'));
+        setPlans(partnerPlans);
         setPlansLoading(false);
     });
     return () => unsubscribe();
@@ -334,7 +334,7 @@ export default function InvestmentsPage() {
             <Card className="md:col-span-3 text-center">
                 <CardHeader>
                     <CardTitle>No Plans Available</CardTitle>
-                    <CardDescription>The administrator has not added any investment plans yet. Please check back later.</CardDescription>
+                    <CardDescription>The administrator has not added any investment plans for partners yet. Please check back later.</CardDescription>
                 </CardHeader>
             </Card>
         )}

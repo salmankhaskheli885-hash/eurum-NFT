@@ -61,28 +61,45 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 
 // Component for Add/Edit Plan Dialog
 function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, onSave: () => void, children: React.ReactNode }) {
     const firestore = useFirestore();
     const [open, setOpen] = React.useState(false);
     const { toast } = useToast()
-    const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(
-        plan 
-        ? { name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl, isActive: plan.isActive } 
-        : { name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: 'new plan', isActive: true }
-    );
-     const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new plan');
+    
+    const initialFormData: Omit<InvestmentPlan, 'id'> = {
+        name: '',
+        dailyReturn: 0,
+        durationDays: 0,
+        minInvestment: 0,
+        requiredVipLevel: 1,
+        imageUrl: '',
+        isActive: true,
+        visibleToRoles: ['user', 'partner'] // Default visibility
+    };
+
+    const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(initialFormData);
+    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : 'new plan');
 
     React.useEffect(() => {
         if (open) {
           if (plan) {
-              setFormData({ name: plan.name, dailyReturn: plan.dailyReturn, durationDays: plan.durationDays, minInvestment: plan.minInvestment, requiredVipLevel: plan.requiredVipLevel, imageUrl: plan.imageUrl, isActive: plan.isActive });
-              // A simple way to extract a seed if it follows the picsum pattern
+              setFormData({ 
+                  name: plan.name, 
+                  dailyReturn: plan.dailyReturn, 
+                  durationDays: plan.durationDays, 
+                  minInvestment: plan.minInvestment, 
+                  requiredVipLevel: plan.requiredVipLevel, 
+                  imageUrl: plan.imageUrl, 
+                  isActive: plan.isActive,
+                  visibleToRoles: plan.visibleToRoles || ['user', 'partner'] // Fallback for old plans
+              });
               const match = plan.imageUrl.match(/picsum\.photos\/seed\/([^/]+)/);
               setImageSeed(match ? match[1] : 'custom');
           } else {
-              setFormData({ name: '', dailyReturn: 0, durationDays: 0, minInvestment: 0, requiredVipLevel: 1, imageUrl: '', isActive: true });
+              setFormData(initialFormData);
               setImageSeed('new plan');
           }
         }
@@ -102,6 +119,17 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         setFormData(prev => ({ ...prev, isActive: checked }));
     }
 
+    const handleRoleVisibilityChange = (role: 'user' | 'partner' | 'agent', checked: boolean) => {
+        setFormData(prev => {
+            const currentRoles = prev.visibleToRoles;
+            if (checked) {
+                return { ...prev, visibleToRoles: [...currentRoles, role] };
+            } else {
+                return { ...prev, visibleToRoles: currentRoles.filter(r => r !== role) };
+            }
+        });
+    }
+
     const handleSubmit = async () => {
         if (!firestore) return;
 
@@ -114,7 +142,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
-        // Auto-generate URL from seed if it's not a full URL
         const finalImageUrl = imageSeed.startsWith('http') 
             ? imageSeed 
             : `https://picsum.photos/seed/${encodeURIComponent(imageSeed)}/600/400`;
@@ -146,6 +173,8 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         }
     };
 
+    const roleOptions: ('user' | 'partner' | 'agent')[] = ['user', 'partner', 'agent'];
+
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
@@ -165,26 +194,48 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                 <Label htmlFor="name">Name</Label>
                                 <Input id="name" name="name" value={formData.name} onChange={handleChange} />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="dailyReturn">Daily Return %</Label>
-                                <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="dailyReturn">Daily Return %</Label>
+                                    <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="durationDays">Duration (Days)</Label>
+                                    <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} />
+                                </div>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="durationDays">Duration (Days)</Label>
-                                <Input id="durationDays" name="durationDays" type="number" value={formData.durationDays} onChange={handleChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="minInvestment">Min Investment</Label>
-                                <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="requiredVipLevel">Required VIP</Label>
-                                <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="minInvestment">Min Investment</Label>
+                                    <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="requiredVipLevel">Required VIP</Label>
+                                    <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} />
+                                </div>
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="imageSeed">Image Topic</Label>
                                 <Input id="imageSeed" name="imageSeed" value={imageSeed} onChange={handleImageSeedChange} placeholder="e.g., gold coins, crypto" />
                                 <p className="text-xs text-muted-foreground pt-1">Just type a topic for the image, or paste a full URL.</p>
+                            </div>
+                            <div className="space-y-3 rounded-lg border p-4">
+                                <Label>Visibility</Label>
+                                <p className="text-sm text-muted-foreground">Who should see this plan?</p>
+                                <div className="flex flex-wrap gap-4 pt-2">
+                                    {roleOptions.map(role => (
+                                        <div key={role} className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`role-${role}`}
+                                                checked={formData.visibleToRoles.includes(role)}
+                                                onCheckedChange={(checked) => handleRoleVisibilityChange(role, Boolean(checked))}
+                                            />
+                                            <Label htmlFor={`role-${role}`} className="text-sm font-normal capitalize">
+                                                {role}s
+                                            </Label>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                              <div className="flex items-center space-x-2">
                                 <Switch id="isActive" checked={formData.isActive} onCheckedChange={handleSwitchChange} />
@@ -244,7 +295,6 @@ export default function AdminInvestmentsPage() {
             title: `Plan Deleted`,
             description: `The plan "${planName}" has been removed.`,
         });
-        // The listener will auto-update the UI, no need to call refreshPlans() here.
     } catch (error) {
         toast({
             variant: "destructive",
@@ -309,10 +359,10 @@ export default function AdminInvestmentsPage() {
                 <TableHead className="w-[80px]">Image</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Visible To</TableHead>
                 <TableHead>Daily Return %</TableHead>
-                <TableHead>Duration (Days)</TableHead>
-                <TableHead>Min Investment</TableHead>
-                <TableHead>Required VIP</TableHead>
+                <TableHead>Duration</TableHead>
+                <TableHead>Min Invest</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>
@@ -327,10 +377,10 @@ export default function AdminInvestmentsPage() {
                         </TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-6 w-16 rounded-full" /></TableCell>
+                        <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                        <TableCell><Skeleton className="h-5 w-12" /></TableCell>
                         <TableCell><Skeleton className="h-8 w-8 rounded-md" /></TableCell>
                     </TableRow>
                 ))
@@ -353,10 +403,16 @@ export default function AdminInvestmentsPage() {
                         {plan.isActive ? 'Active' : 'Locked'}
                       </Badge>
                    </TableCell>
+                   <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                            {(plan.visibleToRoles || []).map(role => (
+                                <Badge key={role} variant="outline" className="capitalize">{role}</Badge>
+                            ))}
+                        </div>
+                   </TableCell>
                   <TableCell>{plan.dailyReturn}</TableCell>
-                  <TableCell>{plan.durationDays}</TableCell>
+                  <TableCell>{plan.durationDays} days</TableCell>
                   <TableCell>{plan.minInvestment.toLocaleString()}</TableCell>
-                  <TableCell>{plan.requiredVipLevel}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

@@ -62,6 +62,7 @@ export type InvestmentPlan = {
   requiredVipLevel: number;
   imageUrl: string;
   isActive: boolean; // To lock/unlock the plan
+  visibleToRoles: ('user' | 'partner' | 'agent')[];
 };
 
 export type AppSettings = {
