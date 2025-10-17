@@ -17,7 +17,8 @@ import {
   UserCheck,
   History,
   MessageSquare,
-  ListChecks
+  ListChecks,
+  UserPlus
 } from "lucide-react"
 
 import {
@@ -72,35 +73,39 @@ export default function AdminLayout({
 
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
-    { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
     { 
-      href: "/admin/deposits", 
-      label: t('admin.nav.deposits'), 
-      icon: DollarSign,
-      badge: pendingDeposits,
-      subItems: [
-        { href: "/admin/deposits/history", label: "History" }
-      ] 
+        label: 'User Management', 
+        icon: Users,
+        subItems: [
+            { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
+            { 
+                href: "/admin/deposits", 
+                label: t('admin.nav.deposits'), 
+                icon: DollarSign,
+                badge: pendingDeposits,
+            },
+            { 
+                href: "/admin/withdrawals", 
+                label: t('admin.nav.withdrawals'), 
+                icon: Landmark,
+                badge: pendingWithdrawals,
+            },
+             { 
+                href: "/admin/kyc", 
+                label: t('admin.nav.kyc'), 
+                icon: UserCheck,
+            },
+        ] 
     },
-    { 
-      href: "/admin/withdrawals", 
-      label: t('admin.nav.withdrawals'), 
-      icon: Landmark,
-      badge: pendingWithdrawals,
-      subItems: [
-        { href: "/admin/withdrawals/history", label: "History" }
-      ] 
+     { 
+        label: 'Partner Management', 
+        icon: Handshake,
+        subItems: [
+            { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
+            { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus },
+        ] 
     },
     { href: "/admin/investments", label: t('admin.nav.investments'), icon: FileCog },
-    { href: "/admin/tasks", label: "Tasks", icon: ListChecks },
-    { 
-      href: "/admin/kyc", 
-      label: t('admin.nav.kyc'), 
-      icon: UserCheck,
-      subItems: [
-        { href: "/admin/kyc/history", label: "History" }
-      ]
-    },
     { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
     { href: "/admin/settings", label: t('admin.nav.settings'), icon: Settings },
@@ -111,6 +116,10 @@ export default function AdminLayout({
     { href: "/partner", label: "View Partner Panel", icon: Handshake },
     { href: "/agent", label: "View Agent Panel", icon: MessageSquare },
   ]
+
+  const isSubItemActive = (subItems: any[]) => {
+      return subItems.some(item => pathname === item.href || pathname.startsWith(item.href));
+  }
 
   return (
     <SidebarProvider>
@@ -123,28 +132,40 @@ export default function AdminLayout({
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            {menuItems.map((item) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                  <SidebarMenuButton
-                    isActive={pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href) && !item.subItems)}
-                    tooltip={item.label}
-                  >
-                    <item.icon />
-                    <span>{item.label}</span>
-                     {item.badge && item.badge > 0 ? (
-                      <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                    ) : null}
-                  </SidebarMenuButton>
-                </Link>
+            {menuItems.map((item, index) => (
+              <SidebarMenuItem key={index}>
+                {item.href ? (
+                    <Link href={item.href}>
+                        <SidebarMenuButton
+                            isActive={pathname === item.href}
+                            tooltip={item.label}
+                        >
+                            <item.icon />
+                            <span>{item.label}</span>
+                        </SidebarMenuButton>
+                    </Link>
+                ) : (
+                    <SidebarMenuButton
+                        isSub
+                        isActive={isSubItemActive(item.subItems!)}
+                        tooltip={item.label}
+                    >
+                        <item.icon />
+                        <span>{item.label}</span>
+                    </SidebarMenuButton>
+                )}
+
                 {item.subItems && (
                   <SidebarMenuSub>
                     {item.subItems.map(subItem => (
                       <SidebarMenuSubItem key={subItem.href}>
                         <Link href={subItem.href}>
-                           <SidebarMenuSubButton isActive={pathname === subItem.href}>
-                              <History />
+                           <SidebarMenuSubButton isActive={pathname.startsWith(subItem.href)}>
+                              {subItem.icon && <subItem.icon />}
                               <span>{subItem.label}</span>
+                               {subItem.badge && subItem.badge > 0 ? (
+                                <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
+                                ) : null}
                           </SidebarMenuSubButton>
                         </Link>
                       </SidebarMenuSubItem>
