@@ -106,12 +106,6 @@ export default function AdminLayout({
                 icon: Landmark,
                 badge: pendingWithdrawals,
             },
-             { 
-                href: "/admin/kyc", 
-                label: t('admin.nav.kyc'), 
-                icon: UserCheck,
-                badge: pendingKyc
-            },
         ] 
     },
      { 
@@ -120,6 +114,12 @@ export default function AdminLayout({
         subItems: [
             { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
             { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus, badge: pendingPartnerReqs },
+             { 
+                href: "/admin/kyc", 
+                label: t('admin.nav.kyc'), 
+                icon: UserCheck,
+                badge: pendingKyc
+            },
         ] 
     },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },

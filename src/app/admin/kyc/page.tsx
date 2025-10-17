@@ -77,7 +77,8 @@ export default function AdminKycPage() {
         if (!firestore) return;
         setLoading(true);
         const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-            setUsers(allUsers.filter(u => u.kycStatus === 'pending'));
+            // Only show pending KYC requests from partners
+            setUsers(allUsers.filter(u => u.role === 'partner' && u.kycStatus === 'pending'));
             setLoading(false);
         });
         return () => unsubscribe();
@@ -111,8 +112,8 @@ export default function AdminKycPage() {
     return (
         <div className="flex flex-col gap-4">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">KYC Management</h1>
-                <p className="text-muted-foreground">Review and approve user identity verification submissions.</p>
+                <h1 className="text-3xl font-bold tracking-tight">Partner KYC Management</h1>
+                <p className="text-muted-foreground">Review and approve partner identity verification submissions.</p>
             </div>
             <Tabs defaultValue="pending">
                 <TabsList className="grid w-full grid-cols-2">
@@ -122,8 +123,8 @@ export default function AdminKycPage() {
                 <TabsContent value="pending">
                      <Card>
                         <CardHeader>
-                        <CardTitle>Pending KYC Requests</CardTitle>
-                        <CardDescription>A list of all users awaiting KYC verification.</CardDescription>
+                        <CardTitle>Pending Partner KYC Requests</CardTitle>
+                        <CardDescription>A list of all partners awaiting KYC verification.</CardDescription>
                         <div className="relative pt-2">
                             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
@@ -139,7 +140,7 @@ export default function AdminKycPage() {
                         <Table>
                             <TableHeader>
                             <TableRow>
-                                <TableHead>User</TableHead>
+                                <TableHead>Partner Name</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead className="text-center">Status</TableHead>
                                 <TableHead className="text-center">Documents</TableHead>
@@ -184,7 +185,7 @@ export default function AdminKycPage() {
                                 ))
                             ) : (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="h-24 text-center">No pending KYC requests found.</TableCell>
+                                    <TableCell colSpan={5} className="h-24 text-center">No pending KYC requests from partners found.</TableCell>
                                 </TableRow>
                             )}
                             </TableBody>
@@ -199,5 +200,3 @@ export default function AdminKycPage() {
         </div>
     )
 }
-
-    
