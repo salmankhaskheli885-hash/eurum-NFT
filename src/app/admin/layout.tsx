@@ -34,6 +34,7 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
+  SidebarMenuSubItem,
   SidebarMenuBadge
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/icons"
