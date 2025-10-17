@@ -78,7 +78,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                         <span className="font-semibold">{plan.name}</span>
                     </div>
                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('investments.dailyReturn')}</span>
+                        <span className="text-muted-foreground">{t('investments.dailyReturn')} %</span>
                         <span className="font-semibold text-primary">{plan.dailyReturn}</span>
                     </div>
                     <div className="flex justify-between">
@@ -297,7 +297,7 @@ export default function InvestmentsPage() {
               </CardHeader>
               <CardContent className="flex-grow grid gap-4">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('investments.dailyReturn')}</span>
+                  <span className="text-muted-foreground">{t('investments.dailyReturn')} %</span>
                   <span className="font-semibold text-primary">{plan.dailyReturn}</span>
                 </div>
                 <div className="flex justify-between">
@@ -341,5 +341,3 @@ export default function InvestmentsPage() {
     </div>
   )
 }
-
-    

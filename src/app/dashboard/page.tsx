@@ -196,7 +196,7 @@ function DashboardContent() {
           </CardHeader>
           <CardContent>
             <div className="text-xs text-muted-foreground">
-              +25% from last month
+              {/* This is a placeholder value */}
             </div>
           </CardContent>
         </Card>
