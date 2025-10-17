@@ -51,7 +51,6 @@ export default function DashboardLayout({
     { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
     { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
     { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
-    { href: "/dashboard/kyc", label: t('kyc.title'), icon: User },
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
     { href: "/dashboard/settings", label: t('nav.settings'), icon: Settings },
   ]

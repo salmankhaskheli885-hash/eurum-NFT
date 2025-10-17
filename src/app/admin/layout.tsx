@@ -42,8 +42,8 @@ import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions } from "@/lib/firestore"
-import type { Transaction } from "@/lib/data"
+import { listenToAllTransactions, listenToAllUsers, listenToPartnerRequests } from "@/lib/firestore"
+import type { Transaction, User as UserType, PartnerRequest } from "@/lib/data"
 
 export default function AdminLayout({
   children,
@@ -63,26 +63,25 @@ export default function AdminLayout({
   React.useEffect(() => {
     if (!firestore) return;
 
-    const unsubscribe = listenToAllTransactions(firestore, (transactions: Transaction[]) => {
+    const unsubscribeTransactions = listenToAllTransactions(firestore, (transactions: Transaction[]) => {
       const deposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending').length;
       const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
       setPendingDeposits(deposits);
       setPendingWithdrawals(withdrawals);
     });
     
-    // In a real app, you'd have separate listeners for these counts for performance
-    // For now, this is acceptable.
-    // const unsubKyc = listenToAllUsers(firestore, (users) => {
-    //   setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
-    // });
-    // const unsubPartner = listenToPartnerRequests(firestore, (reqs) => {
-    //    setPendingPartnerReqs(reqs.filter(r => r.status === 'pending').length);
-    // })
+    const unsubKyc = listenToAllUsers(firestore, (users: UserType[]) => {
+      setPendingKyc(users.filter(u => u.role === 'partner' && u.kycStatus === 'pending').length);
+    });
+    
+    const unsubPartner = listenToPartnerRequests(firestore, (reqs: PartnerRequest[]) => {
+       setPendingPartnerReqs(reqs.filter(r => r.status === 'pending').length);
+    })
 
     return () => {
-      unsubscribe();
-      // unsubKyc();
-      // unsubPartner();
+      unsubscribeTransactions();
+      unsubKyc();
+      unsubPartner();
     };
   }, [firestore]);
 
