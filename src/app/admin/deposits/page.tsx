@@ -27,6 +27,8 @@ import { Input } from "@/components/ui/input"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import AdminDepositsHistoryPage from "./history/page"
 
 export default function AdminDepositsPage() {
   const { t } = useTranslation()
@@ -40,8 +42,8 @@ export default function AdminDepositsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING deposits for action
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
+        // Show only PENDING deposits from standard USERS for action
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -75,96 +77,104 @@ export default function AdminDepositsPage() {
     }
   }
 
-
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.deposits')}</h1>
-        <p className="text-muted-foreground">Review and approve pending user deposits.</p>
+        <h1 className="text-3xl font-bold tracking-tight">User Deposits</h1>
+        <p className="text-muted-foreground">Review and approve pending deposits from standard users.</p>
       </div>
-        <Card>
-            <CardHeader>
-            <CardTitle>Pending Deposit Requests</CardTitle>
-            <CardDescription>A list of all deposits awaiting approval.</CardDescription>
-            <div className="relative pt-2">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                type="search"
-                placeholder="Search by transaction ID or user..."
-                className="w-full pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Date & Time</TableHead>
-                    <TableHead className="text-right">Amount (PKR)</TableHead>
-                    <TableHead className="text-center">Receipt</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {loading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-32" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+        <Tabs defaultValue="pending">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pending">
+                 <Card>
+                    <CardHeader>
+                    <CardTitle>Pending Deposit Requests</CardTitle>
+                    <CardDescription>A list of all user deposits awaiting approval.</CardDescription>
+                    <div className="relative pt-2">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        type="search"
+                        placeholder="Search by transaction ID or user..."
+                        className="w-full pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    </CardHeader>
+                    <CardContent>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead className="text-right">Amount (PKR)</TableHead>
+                            <TableHead className="text-center">Receipt</TableHead>
+                            <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
-                    ))
-                ) : filteredDeposits.length > 0 ? (
-                    filteredDeposits.map((deposit) => (
-                        <TableRow key={deposit.id}>
-                        <TableCell>
-                            <div className="font-medium">{deposit.userName}</div>
-                            <div className="text-sm text-muted-foreground">{deposit.id}</div>
-                        </TableCell>
-                        <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
-                        <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
-                        <TableCell className="text-center">
-                            {deposit.receiptUrl ? (
-                                <Button variant="outline" size="sm" asChild>
-                                    <a href={deposit.receiptUrl} target="_blank" rel="noopener noreferrer">
-                                        <Eye className="mr-2 h-4 w-4"/>
-                                        View Receipt
-                                    </a>
-                                </Button>
-                            ) : (
-                                <Badge variant="secondary">No Receipt</Badge>
-                            )}
-                        </TableCell>
-                        <TableCell className="text-center">
-                            <div className="flex gap-2 justify-center">
-                                <Button variant="outline" size="sm" onClick={() => handleAction(deposit, 'Completed')}>
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Approve
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleAction(deposit, 'Failed')}>
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                </Button>
-                            </div>
-                        </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={5} className="h-24 text-center">No pending deposits found.</TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-5 w-20" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredDeposits.length > 0 ? (
+                            filteredDeposits.map((deposit) => (
+                                <TableRow key={deposit.id}>
+                                <TableCell>
+                                    <div className="font-medium">{deposit.userName}</div>
+                                    <div className="text-sm text-muted-foreground">{deposit.id}</div>
+                                </TableCell>
+                                <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
+                                <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
+                                <TableCell className="text-center">
+                                    {deposit.receiptUrl ? (
+                                        <Button variant="outline" size="sm" asChild>
+                                            <a href={deposit.receiptUrl} target="_blank" rel="noopener noreferrer">
+                                                <Eye className="mr-2 h-4 w-4"/>
+                                                View Receipt
+                                            </a>
+                                        </Button>
+                                    ) : (
+                                        <Badge variant="secondary">No Receipt</Badge>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex gap-2 justify-center">
+                                        <Button variant="outline" size="sm" onClick={() => handleAction(deposit, 'Completed')}>
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            Approve
+                                        </Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleAction(deposit, 'Failed')}>
+                                            <XCircle className="mr-2 h-4 w-4" />
+                                            Reject
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center">No pending deposits found.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="history">
+                <AdminDepositsHistoryPage />
+            </TabsContent>
+        </Tabs>
     </div>
   )
 }
-
-    

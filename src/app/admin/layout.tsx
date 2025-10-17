@@ -34,7 +34,6 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarMenuBadge
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/icons"
@@ -95,13 +94,13 @@ export default function AdminLayout({
             { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
             { 
                 href: "/admin/deposits", 
-                label: t('admin.nav.deposits'), 
+                label: "User Deposits", 
                 icon: DollarSign,
                 badge: pendingDeposits,
             },
             { 
                 href: "/admin/withdrawals", 
-                label: t('admin.nav.withdrawals'), 
+                label: "User Withdrawals", 
                 icon: Landmark,
                 badge: pendingWithdrawals,
             },
@@ -115,7 +114,7 @@ export default function AdminLayout({
             { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus, badge: pendingPartnerReqs },
              { 
                 href: "/admin/kyc", 
-                label: t('admin.nav.kyc'), 
+                label: "Partner KYC", 
                 icon: UserCheck,
                 badge: pendingKyc
             },
@@ -134,7 +133,7 @@ export default function AdminLayout({
   ]
 
   const isSubItemActive = (subItems: any[]) => {
-      return subItems.some(item => pathname === item.href || pathname.startsWith(`${item.href}/`));
+      return subItems.some(item => pathname.startsWith(item.href));
   }
 
   return (

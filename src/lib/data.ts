@@ -23,6 +23,7 @@ export type Transaction = {
   id: string;
   userId: string;
   userName: string;
+  userRole?: 'user' | 'partner' | 'admin';
   type: 'Deposit' | 'Withdrawal' | 'Investment' | 'Payout' | 'Commission';
   date: string; // ISO 8601 format
   amount: number;

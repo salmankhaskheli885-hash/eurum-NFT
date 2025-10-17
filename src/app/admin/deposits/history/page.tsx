@@ -36,8 +36,8 @@ export default function AdminDepositsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Filter for processed deposits
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending'));
+        // Filter for processed deposits from standard users
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -67,8 +67,8 @@ export default function AdminDepositsHistoryPage() {
   return (
     <Card>
         <CardHeader>
-          <CardTitle>Deposit History</CardTitle>
-          <CardDescription>A list of all processed (Completed/Failed) deposits.</CardDescription>
+          <CardTitle>User Deposit History</CardTitle>
+          <CardDescription>A list of all processed (Completed/Failed) deposits from standard users.</CardDescription>
            <div className="relative pt-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input

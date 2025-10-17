@@ -26,6 +26,8 @@ import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestor
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
+import AdminWithdrawalsHistoryPage from "./history/page"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
@@ -39,7 +41,8 @@ export default function AdminWithdrawalsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
+        // Only show PENDING withdrawals from standard USERS
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -82,100 +85,109 @@ export default function AdminWithdrawalsPage() {
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.withdrawals')}</h1>
-        <p className="text-muted-foreground">Review and approve pending user withdrawals.</p>
+        <h1 className="text-3xl font-bold tracking-tight">User Withdrawals</h1>
+        <p className="text-muted-foreground">Review and approve pending withdrawals from standard users.</p>
       </div>
-        <Card>
-            <CardHeader>
-            <CardTitle>Pending Withdrawal Requests</CardTitle>
-            <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
-            <div className="relative pt-2">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                type="search"
-                placeholder="Search by transaction ID, user name or UID..."
-                className="w-full pl-8"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                />
-            </div>
-            </CardHeader>
-            <CardContent>
-            <Table>
-                <TableHeader>
-                <TableRow>
-                    <TableHead>User</TableHead>
-                    <TableHead>Account Details</TableHead>
-                    <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-center">Actions</TableHead>
-                </TableRow>
-                </TableHeader>
-                <TableBody>
-                {loading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell>
-                                 <div className="space-y-2">
-                                    <Skeleton className="h-5 w-24" />
-                                    <Skeleton className="h-4 w-32" />
-                                 </div>
-                            </TableCell>
-                            <TableCell>
-                                <div className="space-y-2">
-                                    <Skeleton className="h-4 w-40" />
-                                    <Skeleton className="h-4 w-48" />
-                                </div>
-                            </TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+        <Tabs defaultValue="pending">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="pending">Pending Requests</TabsTrigger>
+                <TabsTrigger value="history">History</TabsTrigger>
+            </TabsList>
+            <TabsContent value="pending">
+                <Card>
+                    <CardHeader>
+                    <CardTitle>Pending Withdrawal Requests</CardTitle>
+                    <CardDescription>A list of all user withdrawals awaiting approval.</CardDescription>
+                    <div className="relative pt-2">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        type="search"
+                        placeholder="Search by transaction ID, user name or UID..."
+                        className="w-full pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    </CardHeader>
+                    <CardContent>
+                    <Table>
+                        <TableHeader>
+                        <TableRow>
+                            <TableHead>User</TableHead>
+                            <TableHead>Account Details</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-center">Actions</TableHead>
                         </TableRow>
-                    ))
-                ) : filteredWithdrawals.length > 0 ? (
-                    filteredWithdrawals.map((withdrawal) => (
-                        <TableRow key={withdrawal.id}>
-                        <TableCell>
-                            <div className="font-medium">{withdrawal.userName}</div>
-                            <div className="text-sm text-muted-foreground">
-                                {new Date(withdrawal.date).toLocaleString()}
-                            </div>
-                        </TableCell>
-                        <TableCell>
-                            {withdrawal.withdrawalDetails && (
-                                <div className="text-sm space-y-1">
-                                <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
-                                <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
-                                <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
-                                </div>
-                            )}
-                        </TableCell>
-                        <TableCell className="text-right text-destructive font-medium">
-                            {formatCurrency(Math.abs(withdrawal.amount))}
-                        </TableCell>
-                        <TableCell className="text-center">
-                            <div className="flex gap-2 justify-center">
-                                <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal, 'Completed')}>
-                                    <CheckCircle className="mr-2 h-4 w-4" />
-                                    Approve
-                                </Button>
-                                <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal, 'Failed')}>
-                                    <XCircle className="mr-2 h-4 w-4" />
-                                    Reject
-                                </Button>
-                            </div>
-                        </TableCell>
-                        </TableRow>
-                    ))
-                ) : (
-                    <TableRow>
-                        <TableCell colSpan={4} className="h-24 text-center">No pending withdrawals found.</TableCell>
-                    </TableRow>
-                )}
-                </TableBody>
-            </Table>
-            </CardContent>
-        </Card>
+                        </TableHeader>
+                        <TableBody>
+                        {loading ? (
+                            [...Array(5)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell>
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-5 w-24" />
+                                            <Skeleton className="h-4 w-32" />
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-40" />
+                                            <Skeleton className="h-4 w-48" />
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : filteredWithdrawals.length > 0 ? (
+                            filteredWithdrawals.map((withdrawal) => (
+                                <TableRow key={withdrawal.id}>
+                                <TableCell>
+                                    <div className="font-medium">{withdrawal.userName}</div>
+                                    <div className="text-sm text-muted-foreground">
+                                        {new Date(withdrawal.date).toLocaleString()}
+                                    </div>
+                                </TableCell>
+                                <TableCell>
+                                    {withdrawal.withdrawalDetails && (
+                                        <div className="text-sm space-y-1">
+                                        <p><span className="font-semibold">Holder:</span> {withdrawal.withdrawalDetails.accountName}</p>
+                                        <p><span className="font-semibold">Number:</span> {withdrawal.withdrawalDetails.accountNumber}</p>
+                                        <p><span className="font-semibold">Method:</span> {withdrawal.withdrawalDetails.method}</p>
+                                        </div>
+                                    )}
+                                </TableCell>
+                                <TableCell className="text-right text-destructive font-medium">
+                                    {formatCurrency(Math.abs(withdrawal.amount))}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                    <div className="flex gap-2 justify-center">
+                                        <Button variant="outline" size="sm" onClick={() => handleAction(withdrawal, 'Completed')}>
+                                            <CheckCircle className="mr-2 h-4 w-4" />
+                                            Approve
+                                        </Button>
+                                        <Button variant="destructive" size="sm" onClick={() => handleAction(withdrawal, 'Failed')}>
+                                            <XCircle className="mr-2 h-4 w-4" />
+                                            Reject
+                                        </Button>
+                                    </div>
+                                </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">No pending withdrawals found.</TableCell>
+                            </TableRow>
+                        )}
+                        </TableBody>
+                    </Table>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            <TabsContent value="history">
+                <AdminWithdrawalsHistoryPage />
+            </TabsContent>
+        </Tabs>
     </div>
   )
 }
-
-    

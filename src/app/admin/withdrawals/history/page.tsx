@@ -35,7 +35,7 @@ export default function AdminWithdrawalsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -70,8 +70,8 @@ export default function AdminWithdrawalsHistoryPage() {
   return (
     <Card>
         <CardHeader>
-          <CardTitle>Withdrawal History</CardTitle>
-          <CardDescription>A list of all processed (Completed/Failed) withdrawals.</CardDescription>
+          <CardTitle>User Withdrawal History</CardTitle>
+          <CardDescription>A list of all processed (Completed/Failed) withdrawals from standard users.</CardDescription>
            <div className="relative pt-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
