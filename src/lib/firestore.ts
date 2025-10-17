@@ -206,8 +206,7 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
     }
 
     const { maturityDate, investedAmount, dailyReturn, durationDays, planName } = finalTransaction.investmentDetails;
-    const profit = investedAmount * (dailyReturn / 100) * durationDays;
-    const payoutAmount = investedAmount + profit;
+    const payoutAmount = (dailyReturn * durationDays) + investedAmount;
 
     const maturityTimestamp = new Date(maturityDate).getTime();
     const nowTimestamp = new Date().getTime();
@@ -834,3 +833,4 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 
 export { type ChatMessage };
 
+    
