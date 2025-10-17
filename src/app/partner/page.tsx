@@ -10,15 +10,46 @@ import {
   CardDescription
 } from "@/components/ui/card"
 import { useTranslation } from "@/hooks/use-translation"
-import { DollarSign, Users, TrendingUp, ShieldCheck } from "lucide-react"
+import { DollarSign, Users, TrendingUp, ShieldCheck, Megaphone } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllUsers, listenToUserTransactions } from "@/lib/firestore"
-import type { User, Transaction } from "@/lib/data"
+import { listenToAllUsers, listenToUserTransactions, listenToLatestAnnouncement } from "@/lib/firestore"
+import type { User, Transaction, Announcement as AnnouncementType } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
+
+function Announcement() {
+    const firestore = useFirestore();
+    const [announcement, setAnnouncement] = React.useState<AnnouncementType | null>(null);
+    const [loading, setLoading] = React.useState(true);
+    
+    React.useEffect(() => {
+        if (!firestore) return;
+        setLoading(true);
+        const unsubscribe = listenToLatestAnnouncement(firestore, (newAnnouncement) => {
+            setAnnouncement(newAnnouncement);
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [firestore]);
+
+    if (loading || !announcement) {
+        return null;
+    }
+
+    return (
+        <Alert>
+            <Megaphone className="h-4 w-4" />
+            <AlertTitle>Announcement!</AlertTitle>
+            <AlertDescription>
+                {announcement.message}
+            </AlertDescription>
+        </Alert>
+    )
+}
 
 export default function PartnerDashboardPage() {
   const { t } = useTranslation()
@@ -114,7 +145,7 @@ export default function PartnerDashboardPage() {
         <h1 className="text-3xl font-bold tracking-tight">{t('partner.dashboard.title')}</h1>
         <p className="text-muted-foreground">{t('partner.dashboard.description')}</p>
       </div>
-
+      <Announcement />
       <div className="grid gap-4 md:grid-cols-4">
         {stats.map((stat) => (
           <StatCard key={stat.title} stat={stat} isLoading={isLoading} />
