@@ -124,40 +124,6 @@ const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof ge
     }
 };
 
-// New Round-Robin Assignment Logic
-const assignAgent = async (firestore: ReturnType<typeof getFirestore>, permission: 'canApproveDeposits' | 'canApproveWithdrawals'): Promise<string | null> => {
-    return await runTransaction(firestore, async (transaction) => {
-        // 1. Get active agents with the required permission
-        const agentsQuery = query(
-            collection(firestore, 'chat_agents'),
-            where(permission, '==', true),
-            where('isActive', '==', true)
-        );
-        const agentsSnap = await getDocs(agentsQuery);
-        const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent)).filter(a => a.uid);
-
-        if (activeAgents.length === 0) {
-            return null; // No agents available
-        }
-
-        // 2. Get the current assignment index from app settings
-        const settingsRef = doc(firestore, 'app', 'settings');
-        const settingsSnap = await transaction.get(settingsRef);
-        const settings = settingsSnap.data() as AppSettings;
-        const lastIndex = settings.lastAssignedAgentIndex ?? -1;
-
-        // 3. Determine the next agent (Round-Robin)
-        const nextIndex = (lastIndex + 1) % activeAgents.length;
-        const assignedAgent = activeAgents[nextIndex];
-
-        // 4. Update the index in app settings for the next assignment
-        transaction.update(settingsRef, { lastAssignedAgentIndex: nextIndex });
-
-        return assignedAgent.uid!;
-    });
-};
-
-
 export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
@@ -169,23 +135,6 @@ export async function addTransaction(
         date: new Date().toISOString(),
         status: dataToSave.status || 'Pending',
     };
-    
-    // Assign agent only for pending deposits and withdrawals
-    if (transactionObject.status === 'Pending') {
-        let permission: 'canApproveDeposits' | 'canApproveWithdrawals' | null = null;
-        if (transactionObject.type === 'Deposit') {
-            permission = 'canApproveDeposits';
-        } else if (transactionObject.type === 'Withdrawal') {
-            permission = 'canApproveWithdrawals';
-        }
-
-        if (permission) {
-             const agentId = await assignAgent(firestore, permission);
-             if (agentId) {
-                transactionObject.assignedAgentId = agentId;
-             }
-        }
-    }
     
     const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
     const fullTransaction = { ...transactionObject, id: newTransactionRef.id } as Transaction;
@@ -222,6 +171,7 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
                     const payoutTransactionData: Omit<Transaction, 'id' | 'date'> = {
                         userId: finalTransaction.userId,
                         userName: finalTransaction.userName,
+                        userRole: finalTransaction.userRole,
                         type: 'Payout',
                         amount: payoutAmount,
                         status: 'Completed',
@@ -394,6 +344,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     transaction.set(commissionTxRef, {
                         userId: referrer.uid,
                         userName: referrer.displayName || 'N/A',
+                        userRole: referrer.role,
                         type: 'Commission',
                         amount: commissionAmount,
                         status: 'Completed',
@@ -832,5 +783,3 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
-
-    
