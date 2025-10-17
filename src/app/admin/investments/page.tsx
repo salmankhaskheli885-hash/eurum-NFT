@@ -196,7 +196,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="dailyReturn">Daily Return %</Label>
+                                    <Label htmlFor="dailyReturn">Daily Return Amount</Label>
                                     <Input id="dailyReturn" name="dailyReturn" type="number" value={formData.dailyReturn} onChange={handleChange} />
                                 </div>
                                 <div className="space-y-2">
@@ -464,5 +464,3 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
-
-    
