@@ -218,7 +218,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="minInvestment">Min Investment</Label>
+                                    <Label htmlFor="minInvestment">Investment Amount</Label>
                                     <Input id="minInvestment" name="minInvestment" type="number" value={formData.minInvestment} onChange={handleChange} />
                                 </div>
                                 <div className="space-y-2">
@@ -362,7 +362,7 @@ export default function AdminInvestmentsPage() {
     <div className="flex flex-col gap-4">
        <div className="flex justify-between items-center">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.investments')}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">Plans (User + Partner)</h1>
                 <p className="text-muted-foreground">Manage all investment plans available to users.</p>
             </div>
             <PlanForm onSave={() => { /* Listener will update UI */ }}>
@@ -395,9 +395,9 @@ export default function AdminInvestmentsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Visible To</TableHead>
-                <TableHead>Daily Return Amount</TableHead>
+                <TableHead>Daily Return</TableHead>
                 <TableHead>Duration</TableHead>
-                <TableHead>Min Invest</TableHead>
+                <TableHead>Investment</TableHead>
                 <TableHead>
                   <span className="sr-only">Actions</span>
                 </TableHead>

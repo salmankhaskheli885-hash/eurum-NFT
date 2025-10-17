@@ -49,13 +49,13 @@ import { Skeleton } from "@/components/ui/skeleton"
 function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (plan: InvestmentPlan, amount: number) => void }) {
     const { user } = useUser();
     const { t } = useTranslation()
-    const [amount, setAmount] = React.useState(plan.minInvestment);
+    
+    const amount = plan.minInvestment; // Investment amount is now fixed
 
     const formatCurrency = (val: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(val);
 
-    const totalProfit = amount * (plan.dailyReturn / 100) * plan.durationDays;
+    const totalProfit = plan.dailyReturn * plan.durationDays;
     const totalIncome = amount + totalProfit;
-    const isAmountValid = amount >= plan.minInvestment;
     const isBalanceSufficient = user ? user.balance >= amount : false;
 
     return (
@@ -78,27 +78,20 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
                         <span className="font-semibold">{plan.name}</span>
                     </div>
                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">{t('investments.dailyReturn')} %</span>
-                        <span className="font-semibold text-primary">{plan.dailyReturn}</span>
+                        <span className="text-muted-foreground">Daily Return</span>
+                        <span className="font-semibold text-primary">{formatCurrency(plan.dailyReturn)}</span>
                     </div>
                     <div className="flex justify-between">
                         <span className="text-muted-foreground">{t('investments.duration')}</span>
                         <span className="font-semibold">{plan.durationDays} {t('investments.days')}</span>
                     </div>
-                    <div className="grid w-full items-center gap-1.5">
-                        <Label htmlFor="amount">{t('investments.investmentAmount')}</Label>
-                        <Input 
-                            id="amount" 
-                            type="number" 
-                            value={amount} 
-                            onChange={(e) => setAmount(Number(e.target.value))}
-                            min={plan.minInvestment}
-                        />
-                        <p className="text-xs text-muted-foreground">Min Investment: {formatCurrency(plan.minInvestment)}</p>
-                         {!isBalanceSufficient && isAmountValid && (
-                             <p className="text-xs text-destructive">You have insufficient balance for this amount.</p>
-                         )}
+                    <div className="flex justify-between">
+                        <span className="text-muted-foreground">Investment Amount</span>
+                        <span className="font-semibold">{formatCurrency(amount)}</span>
                     </div>
+                     {!isBalanceSufficient && (
+                         <p className="text-xs text-destructive">You have insufficient balance for this amount.</p>
+                     )}
                     <hr/>
                     <div className="flex justify-between font-bold">
                         <span>Total Profit</span>
@@ -116,7 +109,7 @@ function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPla
 
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button type="submit" disabled={!isAmountValid || !isBalanceSufficient}>
+                            <Button type="submit" disabled={!isBalanceSufficient}>
                                 {t('investments.confirmButton')}
                             </Button>
                         </AlertDialogTrigger>
@@ -229,7 +222,7 @@ export default function InvestmentsPage() {
   }
   
   const calculateTotalIncome = (plan: InvestmentPlan) => {
-      const profit = plan.minInvestment * (plan.dailyReturn / 100) * plan.durationDays;
+      const profit = plan.dailyReturn * plan.durationDays;
       return plan.minInvestment + profit;
   }
 
@@ -298,15 +291,15 @@ export default function InvestmentsPage() {
               </CardHeader>
               <CardContent className="flex-grow grid gap-4">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t('investments.dailyReturn')} %</span>
-                  <span className="font-semibold text-primary">{plan.dailyReturn}</span>
+                  <span className="text-muted-foreground">Daily Return</span>
+                  <span className="font-semibold text-primary">{formatCurrency(plan.dailyReturn)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">{t('investments.duration')}</span>
                   <span className="font-semibold">{plan.durationDays} {t('investments.days')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Total Income (at min)</span>
+                  <span className="text-muted-foreground">Total Income</span>
                   <span className="font-semibold">
                     {formatCurrency(calculateTotalIncome(plan))}
                   </span>
