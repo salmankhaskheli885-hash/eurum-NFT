@@ -82,7 +82,7 @@ function WithdrawalHistory({ agentId }: { agentId: string }) {
                     <TableHeader>
                         <TableRow>
                             <TableHead>User</TableHead>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Date</TableHead>
                             <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Final Status</TableHead>
                         </TableRow>
@@ -104,7 +104,7 @@ function WithdrawalHistory({ agentId }: { agentId: string }) {
                                         <div className="font-medium">{tx.userName}</div>
                                         <div className="text-sm text-muted-foreground">{tx.id}</div>
                                     </TableCell>
-                                    <TableCell>{new Date(tx.date).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(tx.date).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-right text-red-600">{formatCurrency(Math.abs(tx.amount))}</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant={getStatusVariant(tx.status)}>
@@ -259,7 +259,7 @@ export default function AgentWithdrawalsPage() {
                                     <TableRow key={withdrawal.id}>
                                         <TableCell>
                                             <div className="font-medium">{withdrawal.userName}</div>
-                                            <div className="text-sm text-muted-foreground">{new Date(withdrawal.date).toLocaleString()}</div>
+                                            <div className="text-sm text-muted-foreground">{new Date(withdrawal.date).toLocaleDateString()}</div>
                                         </TableCell>
                                         <TableCell>
                                             {withdrawal.withdrawalDetails && (

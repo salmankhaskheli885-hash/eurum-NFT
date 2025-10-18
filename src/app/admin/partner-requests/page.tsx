@@ -102,7 +102,7 @@ function RequestHistory() {
                                 <TableRow key={req.id}>
                                     <TableCell className="font-medium">{req.userName}</TableCell>
                                     <TableCell>{req.userEmail}</TableCell>
-                                    <TableCell>{new Date(req.requestDate).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(req.requestDate).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant={getStatusVariant(req.status)}>
                                             {req.status}
@@ -218,7 +218,7 @@ export default function AdminPartnerRequestsPage() {
                                     <TableRow key={req.id}>
                                     <TableCell className="font-medium">{req.userName}</TableCell>
                                     <TableCell>{req.userEmail}</TableCell>
-                                    <TableCell>{new Date(req.requestDate).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(req.requestDate).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-center">
                                         <div className="flex gap-2 justify-center">
                                             <Button variant="outline" size="sm" onClick={() => handleAction(req, 'approved')}>

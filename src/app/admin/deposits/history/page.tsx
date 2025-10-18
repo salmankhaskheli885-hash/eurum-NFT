@@ -72,7 +72,7 @@ export default function AdminDepositsHistoryPage({ transactions, loading }: { tr
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>User</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Date & Time</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount (PKR)</TableHead>
                 <TableHead className="text-center">Receipt</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
@@ -101,7 +101,7 @@ export default function AdminDepositsHistoryPage({ transactions, loading }: { tr
                         {deposit.userRole || 'user'}
                       </Badge>
                     </TableCell>
-                    <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
+                    <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
                         {deposit.receiptUrl ? (

@@ -89,9 +89,9 @@ export default function PartnerDashboardPage() {
       notation: compact ? "compact" : "standard"
     }).format(amount)
   }
-   const formatDate = (dateString: string) => {
+   const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
-      return new Date(dateString).toLocaleString();
+      return new Date(dateString).toLocaleDateString();
   }
 
   const getStatusVariant = (status: Transaction['status']) => {
@@ -163,7 +163,7 @@ export default function PartnerDashboardPage() {
                 <TableRow>
                     <TableHead>Details</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Date & Time</TableHead>
+                    <TableHead>Date</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
                     <TableHead className="text-center">Status</TableHead>
                 </TableRow>

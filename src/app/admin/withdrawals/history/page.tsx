@@ -74,7 +74,7 @@ export default function AdminWithdrawalsHistoryPage({ transactions, loading }: {
               <TableRow>
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>Account & User Details</TableHead>
-                <TableHead>Date & Time</TableHead>
+                <TableHead>Date</TableHead>
                 <TableHead className="text-right">Amount (PKR)</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>
@@ -117,7 +117,7 @@ export default function AdminWithdrawalsHistoryPage({ transactions, loading }: {
                             </div>
                         )}
                     </TableCell>
-                    <TableCell>{new Date(withdrawal.date).toLocaleString()}</TableCell>
+                    <TableCell>{new Date(withdrawal.date).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right text-destructive">
                         {formatCurrency(Math.abs(withdrawal.amount))}
                     </TableCell>

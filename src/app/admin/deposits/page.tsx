@@ -117,7 +117,7 @@ export default function AdminDepositsPage() {
                         <TableRow>
                             <TableHead>User</TableHead>
                             <TableHead>Role</TableHead>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Date</TableHead>
                             <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Receipt</TableHead>
                             <TableHead className="text-center">Actions</TableHead>
@@ -147,7 +147,7 @@ export default function AdminDepositsPage() {
                                     {deposit.userRole || 'user'}
                                   </Badge>
                                 </TableCell>
-                                <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
+                                <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                                 <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                 <TableCell className="text-center">
                                     {deposit.receiptUrl ? (

@@ -150,7 +150,7 @@ export default function AdminWithdrawalsPage() {
                                 <TableCell>
                                     <div className="font-medium">{withdrawal.userName}</div>
                                     <div className="text-sm text-muted-foreground">
-                                        {new Date(withdrawal.date).toLocaleString()}
+                                        {new Date(withdrawal.date).toLocaleDateString()}
                                     </div>
                                 </TableCell>
                                  <TableCell>

@@ -38,7 +38,7 @@ function WithdrawalHistory() {
         return () => unsubscribe();
     }, [user, firestore]);
 
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
+    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
     const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
     const getStatusVariant = (status: Transaction['status']) => {
         switch (status) {
@@ -61,7 +61,7 @@ function WithdrawalHistory() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Date</TableHead>
                             <TableHead>Account</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead className="text-center">Status</TableHead>

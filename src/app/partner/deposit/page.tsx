@@ -154,7 +154,7 @@ export default function DepositPage() {
     }
     
     // Helper functions for rendering history
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
+    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
     const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
     const getStatusVariant = (status: Transaction['status']) => {
         switch (status) {
@@ -258,7 +258,7 @@ export default function DepositPage() {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Date</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead className="text-center">Status</TableHead>
                         </TableRow>

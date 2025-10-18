@@ -79,7 +79,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
                         <TableRow>
                             <TableHead>Transaction ID</TableHead>
                             <TableHead>User</TableHead>
-                            <TableHead>Date & Time</TableHead>
+                            <TableHead>Date</TableHead>
                             <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Final Status</TableHead>
                         </TableRow>
@@ -100,7 +100,7 @@ function DepositHistory({ agentId }: { agentId: string }) {
                                 <TableRow key={deposit.id}>
                                     <TableCell className="font-medium">{deposit.id}</TableCell>
                                     <TableCell>{deposit.userName}</TableCell>
-                                    <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
+                                    <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                     <TableCell className="text-center">
                                         <Badge variant={getStatusVariant(deposit.status)}>
@@ -222,7 +222,7 @@ export default function AgentDepositsPage() {
                             <TableHeader>
                             <TableRow>
                                 <TableHead>User</TableHead>
-                                <TableHead>Date & Time</TableHead>
+                                <TableHead>Date</TableHead>
                                 <TableHead className="text-right">Amount (PKR)</TableHead>
                                 <TableHead className="text-center">Receipt</TableHead>
                                 <TableHead className="text-center">Actions</TableHead>
@@ -246,7 +246,7 @@ export default function AgentDepositsPage() {
                                             <div className="font-medium">{deposit.userName}</div>
                                             <div className="text-sm text-muted-foreground">{deposit.id}</div>
                                         </TableCell>
-                                        <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
+                                        <TableCell>{new Date(deposit.date).toLocaleDateString()}</TableCell>
                                         <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                                         <TableCell className="text-center">
                                             {deposit.receiptUrl ? (

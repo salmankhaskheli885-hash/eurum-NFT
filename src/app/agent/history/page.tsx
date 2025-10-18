@@ -79,7 +79,7 @@ function ChatHistoryList({ rooms, loading }: { rooms: ChatRoom[], loading: boole
                                     {room.lastMessage}
                                 </p>
                                 <p className="text-xs text-muted-foreground mt-1">
-                                    {new Date(room.lastMessageAt).toLocaleString()}
+                                    {new Date(room.lastMessageAt).toLocaleDateString()}
                                 </p>
                             </div>
                             <div>
