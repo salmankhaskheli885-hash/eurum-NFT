@@ -219,7 +219,7 @@
     },
     "liveChat": {
         "title": "Live Chat",
-        "welcome": "Hello! How can we help you today?",
+        "welcome": "Hello! How can we help you today? An agent will be with you shortly.",
         "supportReply": "Thanks for your message. An agent will be with you shortly.",
         "placeholder": "Type your message..."
     },
