@@ -140,26 +140,38 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const handleSubmit = async () => {
         if (!firestore) return;
 
+        // Basic validation
         if (!formData.name || formData.dailyReturn <= 0 || formData.durationDays <= 0 || formData.minInvestment <= 0) {
             toast({ variant: "destructive", title: "Invalid Input", description: "Please fill all fields with valid values." });
             return;
         }
-        
-        if (!imageFile && !plan) {
+
+        // For new plans, image is required. For edits, it's optional.
+        if (!plan && !imageFile) {
             toast({ variant: "destructive", title: "Image Required", description: "Please upload an image for the new plan." });
             return;
         }
-        
+
         setUploadProgress(0); // Start progress indication
-        
+
         try {
-            if (plan) {
-                // Updating an existing plan
-                await updateInvestmentPlan(firestore, plan.id, formData, imageFile ? { file: imageFile, compressor: imageCompression } : undefined, setUploadProgress);
+            if (plan) { // This is an UPDATE operation
+                await updateInvestmentPlan(
+                    firestore,
+                    plan.id,
+                    formData,
+                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined, // Pass image if it exists
+                    setUploadProgress
+                );
                 toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
-            } else {
-                // Adding a new plan
-                await addInvestmentPlan(firestore, formData, { file: imageFile!, compressor: imageCompression }, setUploadProgress);
+
+            } else { // This is a CREATE operation
+                await addInvestmentPlan(
+                    firestore,
+                    formData,
+                    { file: imageFile!, compressor: imageCompression }, // Image is guaranteed by the check above
+                    setUploadProgress
+                );
                 toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
             }
             onSave();
@@ -170,6 +182,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             setUploadProgress(null); // Reset progress on finish/error
         }
     };
+
 
     const roleOptions: ('user' | 'partner' | 'agent')[] = ['user', 'partner', 'agent'];
 
@@ -493,5 +506,3 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
-
-    
