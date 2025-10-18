@@ -130,19 +130,10 @@ export async function addTransaction(
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     
-    let assignedAgentId: string | undefined = undefined;
-
-    // Agent assignment logic for deposit and withdrawal
-    if (dataToSave.type === 'Deposit' || dataToSave.type === 'Withdrawal') {
-       // Agent assignment logic removed for direct admin handling
-    }
-
-
     const transactionObject: Partial<Transaction> = {
         ...dataToSave,
         date: new Date().toISOString(),
         status: dataToSave.status || 'Pending',
-        assignedAgentId: assignedAgentId,
     };
     
     const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
@@ -290,23 +281,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         // --- WRITES SECOND ---
         transaction.update(txRef, { status: newStatus });
 
-        // Agent Performance Tracking
-        if (txData.assignedAgentId) {
-             const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
-             const agentDocs = await getDocs(agentQuery); // This is outside transaction, which is fine for getting the ref
-             if (!agentDocs.empty) {
-                const agentDocRef = agentDocs.docs[0].ref;
-                let fieldToIncrement: string | null = null;
-                if (txData.type === 'Deposit') {
-                    // fieldToIncrement = newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected';
-                } else if (txData.type === 'Withdrawal') {
-                    // fieldToIncrement = newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected';
-                }
-                if (fieldToIncrement) {
-                    // transaction.update(agentDocRef, { [fieldToIncrement]: increment(1) });
-                }
-            }
-        }
+        // Agent Performance Tracking is removed to simplify logic for direct admin handling
         
         if (newStatus !== 'Completed') {
             if (txData.type === 'Deposit') {
