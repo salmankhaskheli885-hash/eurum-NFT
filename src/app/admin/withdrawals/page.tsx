@@ -41,8 +41,8 @@ export default function AdminWithdrawalsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Only show PENDING withdrawals from standard USERS
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user'));
+        // Reverting to original logic: Show only PENDING withdrawals that are UNASSIGNED
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && !tx.assignedAgentId));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -85,8 +85,8 @@ export default function AdminWithdrawalsPage() {
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Withdrawals</h1>
-        <p className="text-muted-foreground">Review and approve pending withdrawals from standard users.</p>
+        <h1 className="text-3xl font-bold tracking-tight">User & Partner Withdrawals</h1>
+        <p className="text-muted-foreground">Review and approve pending withdrawals.</p>
       </div>
         <Tabs defaultValue="pending">
             <TabsList className="grid w-full grid-cols-2">
@@ -97,7 +97,7 @@ export default function AdminWithdrawalsPage() {
                 <Card>
                     <CardHeader>
                     <CardTitle>Pending Withdrawal Requests</CardTitle>
-                    <CardDescription>A list of all user withdrawals awaiting approval.</CardDescription>
+                    <CardDescription>A list of all unassigned withdrawals awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input

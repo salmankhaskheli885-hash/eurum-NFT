@@ -128,24 +128,35 @@ export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
-    const { receiptFile, ...dataToSave } = transactionData;
-    
-    const transactionObject: Partial<Transaction> = {
-        ...dataToSave,
-        date: new Date().toISOString(),
-        status: dataToSave.status || 'Pending',
-    };
-    
-    const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
-    const fullTransaction = { ...transactionObject, id: newTransactionRef.id } as Transaction;
+  const { receiptFile, ...dataToSave } = transactionData;
+  const settingsDoc = await getDoc(doc(firestore, 'app', 'settings'));
+  const settings = settingsDoc.data() as AppSettings;
+  const agentsQuery = query(collection(firestore, 'chat_agents'), where('isActive', '==', true));
+  const agentsSnapshot = await getDocs(agentsQuery);
+  const activeAgents = agentsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatAgent));
 
-    if (transactionObject.status === 'Completed') {
-         await updateTransactionStatus(firestore, newTransactionRef.id, 'Completed', fullTransaction);
-    }
+  let assignedAgentId: string | undefined;
+  if (activeAgents.length > 0) {
+    const lastIndex = settings.lastAssignedAgentIndex ?? -1;
+    const nextIndex = (lastIndex + 1) % activeAgents.length;
+    assignedAgentId = activeAgents[nextIndex].id;
+    // This update should ideally be part of the transaction, but can be a separate write for simplicity
+    await updateDoc(doc(firestore, 'app', 'settings'), { lastAssignedAgentIndex: nextIndex });
+  }
 
-    if (dataToSave.type === 'Deposit' && receiptFile) {
-        uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, dataToSave.userId, receiptFile);
-    }
+  const transactionObject: Partial<Transaction> = {
+    ...dataToSave,
+    date: new Date().toISOString(),
+    status: dataToSave.status || 'Pending',
+    assignedAgentId: assignedAgentId,
+  };
+  
+  const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);
+
+  if (dataToSave.type === 'Deposit' && receiptFile) {
+    // Don't await this, let it run in the background
+    uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, dataToSave.userId, receiptFile);
+  }
 }
 
 
@@ -278,10 +289,28 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
             referrerSnap = await transaction.get(referrerRef);
         }
 
+        let agentSnap: any = null;
+        if(txData.assignedAgentId) {
+            const agentRef = doc(firestore, 'chat_agents', txData.assignedAgentId);
+            agentSnap = await transaction.get(agentRef);
+        }
+
         // --- WRITES SECOND ---
         transaction.update(txRef, { status: newStatus });
 
-        // Agent Performance Tracking is removed to simplify logic for direct admin handling
+        // Agent Performance Tracking
+        if (agentSnap && agentSnap.exists()) {
+            const agentRef = doc(firestore, 'chat_agents', txData.assignedAgentId!);
+            if (txData.type === 'Deposit') {
+                transaction.update(agentRef, {
+                    [newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected']: increment(1)
+                });
+            } else if (txData.type === 'Withdrawal') {
+                 transaction.update(agentRef, {
+                    [newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected']: increment(1)
+                });
+            }
+        }
         
         if (newStatus !== 'Completed') {
             if (txData.type === 'Deposit') {
@@ -328,7 +357,6 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                     transaction.set(commissionTxRef, {
                         userId: referrer.uid,
                         userName: referrer.displayName || 'N/A',
-                        userRole: referrer.role,
                         type: 'Commission',
                         amount: commissionAmount,
                         status: 'Completed',
