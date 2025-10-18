@@ -128,7 +128,6 @@ export default function DepositPage() {
                 status: 'Pending', 
                 receiptFile: receiptFile,
                 details: `Deposit via ${yourNumber} with TID: ${tid}`,
-                userRole: user.role,
             });
 
              toast({

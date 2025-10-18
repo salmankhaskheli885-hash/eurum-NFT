@@ -168,7 +168,6 @@ export default function WithdrawPage() {
                     accountNumber,
                     method,
                 },
-                userRole: user.role,
             });
 
             toast({

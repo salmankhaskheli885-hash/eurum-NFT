@@ -74,14 +74,15 @@ export default function AdminLayout({
       setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
     });
     
-    const unsubPartnerReqs = listenToPartnerRequests(firestore, (requests: PartnerRequest[]) => {
-        setPendingPartnerReqs(requests.filter(r => r.status === 'pending').length);
-    });
+    // Partner Requests are not part of the simplified setup
+    // const unsubPartnerReqs = listenToPartnerRequests(firestore, (requests: PartnerRequest[]) => {
+    //     setPendingPartnerReqs(requests.filter(r => r.status === 'pending').length);
+    // });
 
     return () => {
       unsubscribeTransactions();
       unsubKyc();
-      unsubPartnerReqs();
+      // unsubPartnerReqs();
     };
   }, [firestore]);
 
@@ -106,12 +107,6 @@ export default function AdminLayout({
         label: "User KYC", 
         icon: UserCheck,
         badge: pendingKyc
-    },
-    { 
-        href: "/admin/partner-requests", 
-        label: "Partner Requests", 
-        icon: UserPlus,
-        badge: pendingPartnerReqs
     },
     { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
