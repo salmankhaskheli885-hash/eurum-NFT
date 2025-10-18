@@ -62,6 +62,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Progress } from "@/components/ui/progress"
 
 
 // Component for Add/Edit Plan Dialog
@@ -83,7 +84,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const [formData, setFormData] = React.useState(initialFormData);
     const [currentImageUrl, setCurrentImageUrl] = React.useState('');
     const [imageFile, setImageFile] = React.useState<File | null>(null);
-    const [isSaving, setIsSaving] = React.useState(false);
+    const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
 
 
     React.useEffect(() => {
@@ -104,6 +105,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
               setCurrentImageUrl('');
           }
           setImageFile(null); // Reset file on open
+          setUploadProgress(null); // Reset progress on open
         }
     }, [open, plan]);
 
@@ -146,16 +148,17 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             toast({ variant: "destructive", title: "Image Required", description: "Please upload an image for the new plan." });
             return;
         }
-
-        setIsSaving(true);
+        
+        setUploadProgress(0); // Start progress indication
+        
         try {
             if (plan) {
                 // Updating an existing plan
-                await updateInvestmentPlan(firestore, plan.id, formData, imageFile || undefined);
+                await updateInvestmentPlan(firestore, plan.id, formData, imageFile || undefined, setUploadProgress);
                 toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
             } else {
                 // Adding a new plan
-                await addInvestmentPlan(firestore, formData, imageFile!);
+                await addInvestmentPlan(firestore, formData, imageFile!, setUploadProgress);
                 toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
             }
             onSave();
@@ -163,7 +166,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         } catch (error: any) {
             toast({ variant: "destructive", title: "Save Failed", description: error.message || "Could not save the plan." });
         } finally {
-            setIsSaving(false);
+            setUploadProgress(null); // Reset progress on finish/error
         }
     };
 
@@ -259,10 +262,16 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" onClick={handleSubmit} disabled={isSaving}>
-                               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                               Save changes
-                            </Button>
+                            {uploadProgress !== null ? (
+                                <div className="w-full flex items-center gap-2">
+                                    <Progress value={uploadProgress} className="w-full" />
+                                    <span className="text-sm text-muted-foreground">{Math.round(uploadProgress)}%</span>
+                                </div>
+                            ) : (
+                                <Button type="submit" onClick={handleSubmit}>
+                                    Save changes
+                                </Button>
+                            )}
                         </DialogFooter>
                     </div>
                 </ScrollArea>
@@ -483,3 +492,5 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
+
+    

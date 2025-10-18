@@ -24,7 +24,7 @@ import {
   collectionGroup,
   increment
 } from 'firebase/firestore';
-import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { getStorage, ref, uploadBytes, getDownloadURL, uploadBytesResumable, type UploadTaskSnapshot } from "firebase/storage";
 import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage, Task, UserTask, PartnerRequest } from './data';
 import { UserProfile } from './schema';
@@ -552,23 +552,42 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
 
 
 // INVESTMENT PLAN FUNCTIONS
-const uploadPlanImage = async (planId: string, imageFile: File): Promise<string> => {
-    const storage = getStorage();
-    const imagePath = `investment_plans/${planId}/${imageFile.name}`;
-    const storageRef = ref(storage, imagePath);
-    const snapshot = await uploadBytes(storageRef, imageFile);
-    const downloadURL = await getDownloadURL(snapshot.ref);
-    return downloadURL;
+const uploadPlanImage = (planId: string, imageFile: File, onProgress: (progress: number) => void): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const storage = getStorage();
+        const imagePath = `investment_plans/${planId}/${Date.now()}_${imageFile.name}`;
+        const storageRef = ref(storage, imagePath);
+        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+
+        uploadTask.on(
+            'state_changed',
+            (snapshot: UploadTaskSnapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                onProgress(progress);
+            },
+            (error) => {
+                console.error("Upload failed:", error);
+                reject(error);
+            },
+            async () => {
+                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadURL);
+            }
+        );
+    });
 };
 
-export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>, imageFile: File): Promise<InvestmentPlan> {
+export async function addInvestmentPlan(
+    firestore: ReturnType<typeof getFirestore>,
+    planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>,
+    imageFile: File,
+    onProgress: (progress: number) => void
+): Promise<InvestmentPlan> {
     const plansCollection = collection(firestore, 'investment_plans');
-    const newDocRef = doc(plansCollection); // Correct way to get a new doc ref with an ID
+    const newDocRef = doc(plansCollection); // Get a new doc ref with an ID first
     
-    // First, upload the image with the new ID
-    const imageUrl = await uploadPlanImage(newDocRef.id, imageFile);
+    const imageUrl = await uploadPlanImage(newDocRef.id, imageFile, onProgress);
     
-    // Then, create the document with the image URL
     const finalPlanData = { ...planData, imageUrl };
     await setDoc(newDocRef, finalPlanData);
 
@@ -576,13 +595,19 @@ export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestor
 }
 
 
-export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planId: string, updates: Partial<Omit<InvestmentPlan, 'id'>>, imageFile?: File) {
+export async function updateInvestmentPlan(
+    firestore: ReturnType<typeof getFirestore>,
+    planId: string,
+    updates: Partial<Omit<InvestmentPlan, 'id'>>,
+    imageFile?: File,
+    onProgress?: (progress: number) => void
+) {
     const planRef = doc(firestore, 'investment_plans', planId);
     
     const finalUpdates: Partial<InvestmentPlan> = { ...updates };
 
-    if (imageFile) {
-        const newImageUrl = await uploadPlanImage(planId, imageFile);
+    if (imageFile && onProgress) {
+        const newImageUrl = await uploadPlanImage(planId, imageFile, onProgress);
         finalUpdates.imageUrl = newImageUrl;
     }
     
@@ -958,3 +983,5 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
+
+    
