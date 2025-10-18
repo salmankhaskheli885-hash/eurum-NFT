@@ -123,6 +123,7 @@ export default function DepositPage() {
             await addTransaction(firestore, {
                 userId: user.uid,
                 userName: user.displayName || 'Unknown User',
+                userRole: user.role, // Pass the user's role
                 type: 'Deposit',
                 amount: parseFloat(amount),
                 status: 'Pending', 

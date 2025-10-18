@@ -134,6 +134,7 @@ export async function addTransaction(
     ...dataToSave,
     date: new Date().toISOString(),
     status: dataToSave.status || 'Pending',
+    userRole: dataToSave.userRole, // Ensure userRole is saved
   };
   
   const newTransactionRef = await addDoc(collection(firestore, 'transactions'), transactionObject);

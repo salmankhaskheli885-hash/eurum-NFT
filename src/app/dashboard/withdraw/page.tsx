@@ -160,6 +160,7 @@ export default function WithdrawPage() {
             await addTransaction(firestore, {
                 userId: user.uid,
                 userName: user.displayName || 'Unknown User',
+                userRole: user.role, // Pass the user's role
                 type: 'Withdrawal',
                 amount: -withdrawalAmount, // Withdrawals are negative amounts
                 status: 'Pending',
