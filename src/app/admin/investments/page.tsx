@@ -83,9 +83,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     };
 
     const [formData, setFormData] = React.useState(initialFormData);
-    const [currentImageUrl, setCurrentImageUrl] = React.useState('');
-    const [imageFile, setImageFile] = React.useState<File | null>(null);
-    const [uploadProgress, setUploadProgress] = React.useState<number | null>(null);
+    const [isSaving, setIsSaving] = React.useState(false);
 
 
     React.useEffect(() => {
@@ -100,13 +98,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                   isActive: plan.isActive,
                   visibleToRoles: plan.visibleToRoles || ['user', 'partner'] // Fallback for old plans
               });
-              setCurrentImageUrl(plan.imageUrl);
           } else {
               setFormData(initialFormData);
-              setCurrentImageUrl('');
           }
-          setImageFile(null); // Reset file on open
-          setUploadProgress(null); // Reset progress on open
+          setIsSaving(false);
         }
     }, [open, plan]);
 
@@ -115,12 +110,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         const { name, value, type } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setImageFile(e.target.files[0]);
-        }
-    }
     
     const handleSwitchChange = (checked: boolean) => {
         setFormData(prev => ({ ...prev, isActive: checked }));
@@ -145,7 +134,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
-        setUploadProgress(0);
+        setIsSaving(true);
 
         try {
             if (plan) { // This is an UPDATE operation
@@ -153,8 +142,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                     firestore,
                     plan.id,
                     formData,
-                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined,
-                    setUploadProgress
                 );
                 toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
 
@@ -162,8 +149,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                 await addInvestmentPlan(
                     firestore,
                     formData,
-                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined,
-                    setUploadProgress
                 );
                 toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
             }
@@ -172,7 +157,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         } catch (error: any) {
             toast({ variant: "destructive", title: "Save Failed", description: error.message || "Could not save the plan." });
         } finally {
-            setUploadProgress(null); // Reset progress on finish/error
+            setIsSaving(false);
         }
     };
 
@@ -190,7 +175,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                         <DialogHeader className="pr-6">
                             <DialogTitle>{plan ? 'Edit Plan' : 'Add New Plan'}</DialogTitle>
                             <DialogDescription>
-                                {plan ? 'Make changes to the investment plan.' : 'Create a new investment plan for users.'}
+                                {plan ? 'Make changes to the investment plan.' : 'Create a new investment plan for users. An image will be generated automatically.'}
                             </DialogDescription>
                         </DialogHeader>
                         <div className="space-y-4 py-4">
@@ -218,36 +203,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                     <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} />
                                 </div>
                             </div>
-                            
-                            <div className="space-y-2">
-                                <Label htmlFor="imageFile">Plan Image (Optional)</Label>
-                                <Input 
-                                    id="imageFile" 
-                                    name="imageFile" 
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleFileChange}
-                                />
-                                {plan ? 
-                                    <p className="text-xs text-muted-foreground">Upload a new image to replace the current one.</p>
-                                    :
-                                    <p className="text-xs text-muted-foreground">If no image is uploaded, a random one will be generated.</p>
-                                }
-                            </div>
-
-                             {(currentImageUrl || imageFile) && (
-                                <div>
-                                    <Label>Image Preview</Label>
-                                    <div className="mt-2 aspect-video w-full relative rounded-md overflow-hidden border">
-                                        <Image 
-                                          src={imageFile ? URL.createObjectURL(imageFile) : currentImageUrl} 
-                                          alt={formData.name || "Preview"} 
-                                          fill 
-                                          className="object-cover"
-                                        />
-                                    </div>
-                                </div>
-                             )}
 
                             <div className="space-y-3 rounded-lg border p-4">
                                 <Label>Visibility</Label>
@@ -273,11 +228,11 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                         </div>
                         <DialogFooter>
-                            {uploadProgress !== null ? (
-                                <div className="w-full flex items-center gap-2">
-                                    <Progress value={uploadProgress} className="w-full" />
-                                    <span className="text-sm text-muted-foreground">{Math.round(uploadProgress)}%</span>
-                                </div>
+                            {isSaving ? (
+                                <Button disabled>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Saving...
+                                </Button>
                             ) : (
                                 <Button type="submit" onClick={handleSubmit}>
                                     Save changes

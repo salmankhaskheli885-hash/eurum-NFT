@@ -575,21 +575,11 @@ const uploadPlanImage = (planId: string, image: { file: File, compressor: (file:
 export async function addInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>,
-    image: { file: File, compressor: (file: File, options: any) => Promise<File> } | undefined,
-    onProgress: (progress: number) => void
 ): Promise<InvestmentPlan> {
     const newDocRef = doc(collection(firestore, 'investment_plans'));
     
-    let imageUrl;
-
-    if (image?.file) {
-        onProgress(0); // Start progress
-        imageUrl = await uploadPlanImage(newDocRef.id, image, onProgress);
-        onProgress(100); // Mark as complete
-    } else {
-        // If no image is provided, use a placeholder from picsum.photos with the doc ID as a seed
-        imageUrl = `https://picsum.photos/seed/${newDocRef.id}/600/400`;
-    }
+    // Always use a placeholder from picsum.photos with the doc ID as a seed
+    const imageUrl = `https://picsum.photos/seed/${newDocRef.id}/600/400`;
     
     const finalPlanData = { ...planData, imageUrl };
     await setDoc(newDocRef, finalPlanData);
@@ -602,20 +592,10 @@ export async function addInvestmentPlan(
 export async function updateInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planId: string,
-    updates: Partial<Omit<InvestmentPlan, 'id'>>,
-    image?: { file: File, compressor: (file: File, options: any) => Promise<File> },
-    onProgress?: (progress: number) => void
+    updates: Partial<Omit<InvestmentPlan, 'id'>>
 ) {
     const planRef = doc(firestore, 'investment_plans', planId);
-    
-    const finalUpdates: Partial<InvestmentPlan> = { ...updates };
-
-    if (image?.file && onProgress) {
-        const newImageUrl = await uploadPlanImage(planId, image, onProgress);
-        finalUpdates.imageUrl = newImageUrl;
-    }
-    
-    await updateDoc(planRef, finalUpdates);
+    await updateDoc(planRef, updates);
 }
 
 
@@ -988,5 +968,3 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
-
-    
