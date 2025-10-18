@@ -130,6 +130,10 @@ export async function addTransaction(
 ) {
   const { receiptFile, ...dataToSave } = transactionData;
   
+  if (!dataToSave.userRole) {
+      throw new Error("User role is required to create a transaction.");
+  }
+
   const transactionObject: Partial<Transaction> = {
     ...dataToSave,
     date: new Date().toISOString(),
