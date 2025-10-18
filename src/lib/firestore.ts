@@ -146,12 +146,19 @@ export async function addTransaction(
     let isFakeReceipt = false;
     let extractedTid = '';
 
-    if (receiptFile) {
+    // Get admin wallet number from settings to pass to AI
+    const settingsRef = doc(firestore, "app", "settings");
+    const settingsSnap = await getDoc(settingsRef);
+    const settings = settingsSnap.data() as AppSettings;
+    const adminWalletNumber = settings?.adminWalletNumber;
+
+    if (receiptFile && adminWalletNumber) {
         try {
             const receiptDataUri = await fileToDataUri(receiptFile);
-            const aiResult = await extractTid({ receiptDataUri });
+            // Pass admin's wallet number to the AI for verification
+            const aiResult = await extractTid({ receiptDataUri, adminWalletNumber });
             if (!aiResult.transactionId) {
-                isFakeReceipt = true; // AI failed to find a TID, mark as fake/unreadable
+                isFakeReceipt = true; // AI failed to find a TID or recipient didn't match, mark as fake/unreadable
             } else {
                 extractedTid = aiResult.transactionId;
             }
@@ -160,7 +167,7 @@ export async function addTransaction(
             isFakeReceipt = true; // Treat AI errors as a failure case
         }
     } else {
-        isFakeReceipt = true; // No receipt file is also a failure case for deposits
+        isFakeReceipt = true; // No receipt file OR no admin wallet number is also a failure case for deposits
     }
 
     if (isFakeReceipt) {
@@ -188,7 +195,7 @@ export async function addTransaction(
                 id: failedTxRef.id,
                 date: new Date().toISOString(),
                 status: 'Failed',
-                details: 'Failed AI receipt check or no receipt provided.',
+                details: 'Failed AI receipt check (TID not found or recipient mismatch) or no receipt provided.',
             };
             transaction.set(failedTxRef, failedTxObject);
         });
@@ -201,10 +208,7 @@ export async function addTransaction(
         throw new Error("User role is required to create a transaction.");
     }
 
-    // Agent Assignment Logic
-    const settingsRef = doc(firestore, "app", "settings");
-    const settingsSnap = await getDoc(settingsRef);
-    const settings = settingsSnap.data() as AppSettings;
+    // Agent Assignment Logic (Round-Robin)
     const lastAssignedIndex = settings?.lastAssignedAgentIndex ?? -1;
 
     const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
