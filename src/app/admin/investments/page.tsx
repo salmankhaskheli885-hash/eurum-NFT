@@ -62,7 +62,6 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { generateNft } from "@/ai/flows/generate-nft-flow"
 
 
 // Component for Add/Edit Plan Dialog
@@ -71,20 +70,20 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const [open, setOpen] = React.useState(false);
     const { toast } = useToast()
     
-    const initialFormData: Omit<InvestmentPlan, 'id'> = {
+    const initialFormData: Omit<InvestmentPlan, 'id' | 'imageUrl'> = {
         name: '',
         dailyReturn: 0,
         durationDays: 0,
         minInvestment: 0,
         requiredVipLevel: 1,
-        imageUrl: '',
         isActive: true,
         visibleToRoles: ['user', 'partner'] // Default visibility
     };
 
-    const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(initialFormData);
-    const [nftPrompt, setNftPrompt] = React.useState("");
-    const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
+    const [formData, setFormData] = React.useState(initialFormData);
+    const [currentImageUrl, setCurrentImageUrl] = React.useState('');
+    const [imageFile, setImageFile] = React.useState<File | null>(null);
+    const [isSaving, setIsSaving] = React.useState(false);
 
 
     React.useEffect(() => {
@@ -95,16 +94,16 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                   dailyReturn: plan.dailyReturn, 
                   durationDays: plan.durationDays, 
                   minInvestment: plan.minInvestment, 
-                  requiredVipLevel: plan.requiredVipLevel, 
-                  imageUrl: plan.imageUrl, 
+                  requiredVipLevel: plan.requiredVipLevel,
                   isActive: plan.isActive,
                   visibleToRoles: plan.visibleToRoles || ['user', 'partner'] // Fallback for old plans
               });
-              setNftPrompt(""); // Reset prompt on edit
+              setCurrentImageUrl(plan.imageUrl);
           } else {
               setFormData(initialFormData);
-              setNftPrompt("");
+              setCurrentImageUrl('');
           }
+          setImageFile(null); // Reset file on open
         }
     }, [open, plan]);
 
@@ -113,6 +112,12 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         const { name, value, type } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setImageFile(e.target.files[0]);
+        }
+    }
     
     const handleSwitchChange = (checked: boolean) => {
         setFormData(prev => ({ ...prev, isActive: checked }));
@@ -133,66 +138,32 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         if (!firestore) return;
 
         if (!formData.name || formData.dailyReturn <= 0 || formData.durationDays <= 0 || formData.minInvestment <= 0) {
-            toast({
-                variant: "destructive",
-                title: "Invalid Input",
-                description: "Please fill all fields with valid values.",
-            });
+            toast({ variant: "destructive", title: "Invalid Input", description: "Please fill all fields with valid values." });
+            return;
+        }
+        
+        if (!imageFile && !plan) {
+            toast({ variant: "destructive", title: "Image Required", description: "Please upload an image for the new plan." });
             return;
         }
 
-        let finalImageUrl = formData.imageUrl;
-        if (nftPrompt) {
-            setIsGeneratingImage(true);
-            try {
-                const result = await generateNft({ prompt: nftPrompt });
-                finalImageUrl = result.imageDataUri;
-            } catch (error) {
-                console.error("NFT Generation failed:", error);
-                toast({
-                    variant: "destructive",
-                    title: "Image Generation Failed",
-                    description: "Could not generate NFT image. Please try a different prompt or save without a new image.",
-                });
-                setIsGeneratingImage(false);
-                return; // Stop the save process if image generation fails
-            }
-            setIsGeneratingImage(false);
-        }
-
-        if (!finalImageUrl && !plan) {
-            toast({
-                variant: "destructive",
-                title: "Image Required",
-                description: "Please generate an NFT image using a prompt before saving.",
-            });
-            return;
-        }
-
-        const dataToSave = { ...formData, imageUrl: finalImageUrl };
-
+        setIsSaving(true);
         try {
             if (plan) {
-                await updateInvestmentPlan(firestore, { ...dataToSave, id: plan.id });
-                toast({
-                    title: "Plan Updated",
-                    description: `The plan "${formData.name}" has been updated.`,
-                });
+                // Updating an existing plan
+                await updateInvestmentPlan(firestore, plan.id, formData, imageFile || undefined);
+                toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
             } else {
-                await addInvestmentPlan(firestore, dataToSave);
-                toast({
-                    title: "New Plan Added",
-                    description: `The plan "${formData.name}" has been created.`,
-                });
+                // Adding a new plan
+                await addInvestmentPlan(firestore, formData, imageFile!);
+                toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
             }
             onSave();
             setOpen(false);
-        } catch (error) {
-            toast({
-                variant: "destructive",
-                title: "Save Failed",
-                description: "Could not save the plan to the database.",
-            });
+        } catch (error: any) {
+            toast({ variant: "destructive", title: "Save Failed", description: error.message || "Could not save the plan." });
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -239,29 +210,28 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                             
                             <div className="space-y-2">
-                                <Label htmlFor="nftPrompt">NFT Image Prompt</Label>
+                                <Label htmlFor="imageFile">Plan Image</Label>
                                 <Input 
-                                    id="nftPrompt" 
-                                    name="nftPrompt" 
-                                    value={nftPrompt}
-                                    onChange={(e) => setNftPrompt(e.target.value)}
-                                    placeholder={plan ? "Enter new prompt to change image" : "e.g., A golden lion with a crown"}
+                                    id="imageFile" 
+                                    name="imageFile" 
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={handleFileChange}
                                 />
-                                <p className="text-xs text-muted-foreground">Describe the NFT art you want to generate for this plan.</p>
+                                {plan && <p className="text-xs text-muted-foreground">Upload a new image to replace the current one.</p>}
                             </div>
 
-                             {formData.imageUrl && !isGeneratingImage && (
+                             {(currentImageUrl || imageFile) && (
                                 <div>
-                                    <Label>Current Image</Label>
+                                    <Label>Image Preview</Label>
                                     <div className="mt-2 aspect-video w-full relative rounded-md overflow-hidden border">
-                                        <Image src={formData.imageUrl} alt={formData.name} fill className="object-cover"/>
+                                        <Image 
+                                          src={imageFile ? URL.createObjectURL(imageFile) : currentImageUrl} 
+                                          alt={formData.name || "Preview"} 
+                                          fill 
+                                          className="object-cover"
+                                        />
                                     </div>
-                                </div>
-                             )}
-                             {isGeneratingImage && (
-                                <div className="flex items-center gap-2 text-muted-foreground">
-                                    <Loader2 className="h-4 w-4 animate-spin"/>
-                                    <span>Generating NFT... Please wait.</span>
                                 </div>
                              )}
 
@@ -289,8 +259,8 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" onClick={handleSubmit} disabled={isGeneratingImage}>
-                               {isGeneratingImage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            <Button type="submit" onClick={handleSubmit} disabled={isSaving}>
+                               {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                                Save changes
                             </Button>
                         </DialogFooter>
@@ -357,7 +327,7 @@ export default function AdminInvestmentsPage() {
       if (!firestore) return;
       const newStatus = !plan.isActive;
       try {
-        await updateInvestmentPlan(firestore, { ...plan, isActive: newStatus });
+        await updateInvestmentPlan(firestore, plan.id, { isActive: newStatus });
         toast({
             title: "Plan Status Updated",
             description: `The plan "${plan.name}" is now ${newStatus ? 'Active' : 'Locked'}.`,

@@ -55,7 +55,7 @@ export type Transaction = {
 };
 
 export type InvestmentPlan = {
-  id: string; // Changed to string for Firestore
+  id: string; 
   name: string;
   dailyReturn: number;
   durationDays: number;
@@ -246,7 +246,7 @@ export function getOrCreateUser(firebaseUser: FirebaseUser): User {
         vipLevel: 1,
         vipProgress: 0,
         kycStatus: 'unsubmitted',
-        referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
+        referralLink: `https://aurumnft.com/ref/${firebaseUser.uid.substring(0, 8)}`,
         status: 'Active',
         referredBy: undefined,
         totalDeposits: 0,

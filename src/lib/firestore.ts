@@ -55,7 +55,7 @@ export async function getOrCreateUser(
             vipLevel: 1,
             vipProgress: 0,
             kycStatus: 'unsubmitted',
-            referralLink: `https://fynix.pro/ref/${firebaseUser.uid.substring(0, 8)}`,
+            referralLink: `https://aurumnft.com/ref/${firebaseUser.uid.substring(0, 8)}`,
             status: 'Active',
             totalDeposits: 0,
             failedDepositCount: 0,
@@ -146,69 +146,66 @@ export async function addTransaction(
     let isFakeReceipt = false;
     let extractedTid = '';
 
-    // Get admin wallet number from settings to pass to AI
-    const settingsRef = doc(firestore, "app", "settings");
-    const settingsSnap = await getDoc(settingsRef);
-    const settings = settingsSnap.data() as AppSettings;
-    const adminWalletNumber = settings?.adminWalletNumber;
+    if (transactionData.type === 'Deposit') {
+        const settingsRef = doc(firestore, "app", "settings");
+        const settingsSnap = await getDoc(settingsRef);
+        const settings = settingsSnap.data() as AppSettings;
+        const adminWalletNumber = settings?.adminWalletNumber;
 
-    if (receiptFile && adminWalletNumber) {
-        try {
-            const receiptDataUri = await fileToDataUri(receiptFile);
-            // Pass admin's wallet number to the AI for verification
-            const aiResult = await extractTid({ receiptDataUri, adminWalletNumber });
-            if (!aiResult.transactionId) {
-                isFakeReceipt = true; // AI failed to find a TID or recipient didn't match, mark as fake/unreadable
-            } else {
-                extractedTid = aiResult.transactionId;
+        if (receiptFile && adminWalletNumber) {
+            try {
+                const receiptDataUri = await fileToDataUri(receiptFile);
+                const aiResult = await extractTid({ receiptDataUri, adminWalletNumber });
+                if (!aiResult.transactionId) {
+                    isFakeReceipt = true;
+                } else {
+                    extractedTid = aiResult.transactionId;
+                }
+            } catch (error) {
+                console.error("AI TID extraction failed:", error);
+                isFakeReceipt = true;
             }
-        } catch (error) {
-            console.error("AI TID extraction failed:", error);
-            isFakeReceipt = true; // Treat AI errors as a failure case
+        } else if (!receiptFile) {
+            isFakeReceipt = true;
         }
-    } else {
-        isFakeReceipt = true; // No receipt file OR no admin wallet number is also a failure case for deposits
+
+        if (isFakeReceipt) {
+            return runTransaction(firestore, async (transaction) => {
+                const userRef = doc(firestore, 'users', dataToSave.userId);
+                const userSnap = await transaction.get(userRef);
+                if (!userSnap.exists()) throw new Error("User not found.");
+
+                const user = userSnap.data() as User;
+                const newFailedCount = (user.failedDepositCount || 0) + 1;
+                const updates: Partial<User> = { failedDepositCount: newFailedCount };
+                if (newFailedCount >= 5) updates.status = 'Suspended';
+                
+                transaction.update(userRef, updates);
+
+                const failedTxRef = doc(collection(firestore, 'transactions'));
+                transaction.set(failedTxRef, {
+                    ...dataToSave,
+                    id: failedTxRef.id,
+                    date: new Date().toISOString(),
+                    status: 'Failed',
+                    details: 'Failed AI receipt check or no receipt provided.',
+                });
+            });
+        }
     }
 
-    if (isFakeReceipt) {
-        // If the receipt is fake, immediately fail the transaction and update user stats.
-        return runTransaction(firestore, async (transaction) => {
-            const userRef = doc(firestore, 'users', dataToSave.userId);
-            const userSnap = await transaction.get(userRef);
 
-            if (!userSnap.exists()) {
-                throw new Error("User not found to update failed deposit count.");
-            }
-
-            const user = userSnap.data() as User;
-            const newFailedCount = (user.failedDepositCount || 0) + 1;
-
-            const updates: Partial<User> = { failedDepositCount: newFailedCount };
-            if (newFailedCount >= 5) {
-                updates.status = 'Suspended';
-            }
-            transaction.update(userRef, updates);
-
-            const failedTxRef = doc(collection(firestore, 'transactions'));
-            const failedTxObject: Partial<Transaction> = {
-                ...dataToSave,
-                id: failedTxRef.id,
-                date: new Date().toISOString(),
-                status: 'Failed',
-                details: 'Failed AI receipt check (TID not found or recipient mismatch) or no receipt provided.',
-            };
-            transaction.set(failedTxRef, failedTxObject);
-        });
-    }
-
-    // --- Proceed with normal transaction if receipt is valid ---
+    // --- Proceed with normal transaction if not a failed deposit ---
     const newTransactionRef = doc(collection(firestore, 'transactions'));
 
     if (!dataToSave.userRole) {
         throw new Error("User role is required to create a transaction.");
     }
 
-    // Agent Assignment Logic (Round-Robin)
+    const settingsRef = doc(firestore, "app", "settings");
+    const settingsSnap = await getDoc(settingsRef);
+    const settings = settingsSnap.data() as AppSettings;
+
     const lastAssignedIndex = settings?.lastAssignedAgentIndex ?? -1;
 
     const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
@@ -235,7 +232,6 @@ export async function addTransaction(
     await setDoc(newTransactionRef, transactionObject);
 
     if (receiptFile) {
-        // Upload happens after the main transaction is committed
         await uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, transactionData.userId, receiptFile);
     }
 }
@@ -526,17 +522,39 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
 
 
 // INVESTMENT PLAN FUNCTIONS
-export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, plan: Omit<InvestmentPlan, 'id'>): Promise<InvestmentPlan> {
+const uploadPlanImage = async (planId: string, imageFile: File): Promise<string> => {
+    const storage = getStorage();
+    const imagePath = `investment_plans/${planId}/${imageFile.name}`;
+    const storageRef = ref(storage, imagePath);
+    const snapshot = await uploadBytes(storageRef, imageFile);
+    const downloadURL = await getDownloadURL(snapshot.ref);
+    return downloadURL;
+};
+
+export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>, imageFile: File): Promise<InvestmentPlan> {
     const plansCollection = collection(firestore, 'investment_plans');
-    const newDocRef = await addDoc(plansCollection, plan);
-    return { ...plan, id: newDocRef.id };
+    const newDocRef = doc(plansCollection); // Create ref with ID first
+    
+    const imageUrl = await uploadPlanImage(newDocRef.id, imageFile);
+    
+    const finalPlanData = { ...planData, imageUrl };
+    await setDoc(newDocRef, finalPlanData);
+
+    return { ...finalPlanData, id: newDocRef.id };
 }
 
-export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planToUpdate: InvestmentPlan) {
-    const planRef = doc(firestore, 'investment_plans', planToUpdate.id);
-    const { id, ...planData } = planToUpdate;
-    await setDoc(planRef, planData, { merge: true });
+export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planId: string, updates: Partial<Omit<InvestmentPlan, 'id'>>, imageFile?: File) {
+    const planRef = doc(firestore, 'investment_plans', planId);
+    let finalUpdates = { ...updates };
+
+    if (imageFile) {
+        const newImageUrl = await uploadPlanImage(planId, imageFile);
+        finalUpdates.imageUrl = newImageUrl;
+    }
+    
+    await updateDoc(planRef, finalUpdates);
 }
+
 
 export async function deleteInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planId: string) {
     const planRef = doc(firestore, 'investment_plans', planId);
