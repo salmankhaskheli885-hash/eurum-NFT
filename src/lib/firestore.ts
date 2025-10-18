@@ -29,6 +29,7 @@ import type { User as FirebaseUser } from 'firebase/auth';
 import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, ChatAgent, ChatRoom, ChatMessage, Task, UserTask, PartnerRequest } from './data';
 import { UserProfile } from './schema';
 import { updateProfile } from 'firebase/auth';
+import { extractTid } from '@/ai/flows/extract-tid-flow';
 
 // USER FUNCTIONS
 export async function getOrCreateUser(
@@ -118,67 +119,82 @@ const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof ge
 
         const transactionRef = doc(firestore, 'transactions', transactionId);
         await updateDoc(transactionRef, { receiptUrl: receiptUrl });
+
+        return receiptUrl; // Return the URL for further use
     } catch (error) {
         console.error("Error in background receipt upload:", error);
         // Optionally, update the transaction to a 'failed' state if upload is critical
+        return null;
     }
 };
+
+const fileToDataUri = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
 
 export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
-    
-    // This function will run outside the main transaction logic
-    // to avoid blocking it with file I/O
-    const handleReceiptUpload = async (txId: string, userId: string, file: File) => {
-         await uploadReceiptAndUpdateTransaction(firestore, txId, userId, file);
-    }
-    
-  const newTransactionRef = doc(collection(firestore, 'transactions'));
-  
-  await runTransaction(firestore, async (transaction) => {
     const { receiptFile, ...dataToSave } = transactionData;
-    
-    if (!dataToSave.userRole) {
-      throw new Error("User role is required to create a transaction.");
-    }
-    
-    // Agent assignment logic (Round Robin)
-    const settingsRef = doc(firestore, "app", "settings");
-    const settingsSnap = await transaction.get(settingsRef);
-    const settings = settingsSnap.data() as AppSettings;
-    const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
+    const newTransactionRef = doc(collection(firestore, 'transactions'));
+    let extractedTid = '';
 
-    // Agent query must be outside transaction. We get all active agents.
-    const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
-    const agentsSnap = await getDocs(agentsQuery);
-    const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
-
-    let assignedAgentId: string | undefined = undefined;
-    if (activeAgents.length > 0) {
-      const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
-      assignedAgentId = activeAgents[nextAgentIndex].uid;
-      transaction.update(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
+    if (receiptFile) {
+        try {
+            const receiptDataUri = await fileToDataUri(receiptFile);
+            const aiResult = await extractTid({ receiptDataUri });
+            extractedTid = aiResult.transactionId;
+        } catch (error) {
+            console.error("AI TID extraction failed:", error);
+            // Decide if you want to proceed without AI TID or throw an error
+        }
     }
-    
-    const transactionObject: Partial<Transaction> = {
-      ...dataToSave,
-      id: newTransactionRef.id, // Pre-generate ID
-      date: new Date().toISOString(),
-      status: dataToSave.status || 'Pending',
-      userRole: dataToSave.userRole,
-      assignedAgentId: assignedAgentId,
-    };
-    
-    transaction.set(newTransactionRef, transactionObject);
-    
-  });
-  
-  // Handle receipt upload after the transaction is successfully committed
-  if (transactionData.receiptFile) {
-     await handleReceiptUpload(newTransactionRef.id, transactionData.userId, transactionData.receiptFile);
-  }
+
+    await runTransaction(firestore, async (transaction) => {
+        if (!dataToSave.userRole) {
+            throw new Error("User role is required to create a transaction.");
+        }
+
+        const settingsRef = doc(firestore, "app", "settings");
+        const settingsSnap = await transaction.get(settingsRef);
+        const settings = settingsSnap.data() as AppSettings;
+        const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
+
+        const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
+        const agentsSnap = await getDocs(agentsQuery);
+        const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
+
+        let assignedAgentId: string | undefined = undefined;
+        if (activeAgents.length > 0) {
+            const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
+            assignedAgentId = activeAgents[nextAgentIndex].uid;
+            transaction.update(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
+        }
+
+        const transactionObject: Partial<Transaction> = {
+            ...dataToSave,
+            id: newTransactionRef.id,
+            date: new Date().toISOString(),
+            status: dataToSave.status || 'Pending',
+            userRole: dataToSave.userRole,
+            assignedAgentId: assignedAgentId,
+            details: extractedTid ? `TID: ${extractedTid}` : dataToSave.details,
+        };
+
+        transaction.set(newTransactionRef, transactionObject);
+    });
+
+    if (receiptFile) {
+        // Upload happens after the main transaction is committed
+        await uploadReceiptAndUpdateTransaction(firestore, newTransactionRef.id, transactionData.userId, receiptFile);
+    }
 }
 
 

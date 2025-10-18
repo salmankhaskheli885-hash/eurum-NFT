@@ -32,7 +32,6 @@ export default function DepositPage() {
     const [copied, setCopied] = useState(false)
     const [yourNumber, setYourNumber] = useState("")
     const [amount, setAmount] = useState("")
-    const [tid, setTid] = useState("")
     const [receiptFile, setReceiptFile] = useState<File | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -129,7 +128,7 @@ export default function DepositPage() {
                 amount: parseFloat(amount),
                 status: 'Pending', 
                 receiptFile: receiptFile,
-                details: `Deposit via ${yourNumber} with TID: ${tid}`,
+                details: `Deposit from ${yourNumber}`,
             });
 
              toast({
@@ -139,7 +138,6 @@ export default function DepositPage() {
             // Clear form
             setAmount("");
             setYourNumber("");
-            setTid("");
             setReceiptFile(null);
         } catch (error: any) {
             console.error("Deposit submission error:", error);
@@ -229,10 +227,6 @@ export default function DepositPage() {
                            Minimum deposit is PKR {settings.minDeposit || 0}.
                         </p>
                     )}
-                </div>
-                <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="tid-number">{t('deposit.tidNumber')}</Label>
-                    <Input id="tid-number" type="text" placeholder="A1B2C3D4E5" value={tid} onChange={(e) => setTid(e.target.value)} required />
                 </div>
                  <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="receipt">Payment Receipt (Required)</Label>
