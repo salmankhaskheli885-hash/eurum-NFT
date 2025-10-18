@@ -298,11 +298,9 @@ export default function AgentWithdrawalsPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="history">
-                   <WithdrawalHistory agentId={agentProfile.uid} />
+                   {agentProfile && <WithdrawalHistory agentId={agentProfile.uid} />}
                 </TabsContent>
             </Tabs>
         </div>
     )
 }
-
-    

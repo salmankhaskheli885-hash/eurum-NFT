@@ -12,7 +12,7 @@ import {
   User,
   History,
   Settings,
-  UserCheck
+  UserCheck,
 } from "lucide-react"
 
 import {

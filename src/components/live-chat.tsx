@@ -4,7 +4,7 @@
 import * as React from 'react'
 import Image from 'next/image'
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardFooter, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
@@ -100,6 +100,7 @@ export function LiveChat() {
                 <Card className="flex flex-col h-[32rem] border-0">
                     <CardHeader className="flex-shrink-0">
                         <CardTitle>{t('liveChat.title')}</CardTitle>
+                        <CardDescription>{t('liveChat.supportReply')}</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow overflow-hidden p-0">
                         <ScrollArea className="h-full p-6" ref={scrollAreaRef}>

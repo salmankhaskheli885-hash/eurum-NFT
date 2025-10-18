@@ -285,11 +285,9 @@ export default function AgentDepositsPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="history">
-                   <DepositHistory agentId={agentProfile.uid} />
+                   {agentProfile && <DepositHistory agentId={agentProfile.uid} />}
                 </TabsContent>
             </Tabs>
         </div>
     )
 }
-
-    
