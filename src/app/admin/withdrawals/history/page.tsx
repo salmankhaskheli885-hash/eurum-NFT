@@ -35,7 +35,7 @@ export default function AdminWithdrawalsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
