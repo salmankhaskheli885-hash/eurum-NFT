@@ -41,8 +41,8 @@ export default function AdminWithdrawalsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Reverting to original logic: Show only PENDING withdrawals that are UNASSIGNED
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && !tx.assignedAgentId));
+        // Show only PENDING withdrawals.
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -97,7 +97,7 @@ export default function AdminWithdrawalsPage() {
                 <Card>
                     <CardHeader>
                     <CardTitle>Pending Withdrawal Requests</CardTitle>
-                    <CardDescription>A list of all unassigned withdrawals awaiting approval.</CardDescription>
+                    <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input

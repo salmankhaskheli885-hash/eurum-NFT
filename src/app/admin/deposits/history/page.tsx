@@ -36,7 +36,7 @@ export default function AdminDepositsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Filter for processed deposits (was not filtering by role before)
+        // Filter for processed deposits
         setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending'));
         setLoading(false);
     });

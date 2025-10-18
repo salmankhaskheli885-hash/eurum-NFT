@@ -42,8 +42,8 @@ export default function AdminDepositsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Reverting to original logic: Show only PENDING deposits that are UNASSIGNED
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && !tx.assignedAgentId));
+        // Show only PENDING deposits.
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -92,7 +92,7 @@ export default function AdminDepositsPage() {
                  <Card>
                     <CardHeader>
                     <CardTitle>Pending Deposit Requests</CardTitle>
-                    <CardDescription>A list of all unassigned deposits awaiting approval.</CardDescription>
+                    <CardDescription>A list of all deposits awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
