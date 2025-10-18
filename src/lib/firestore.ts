@@ -163,16 +163,21 @@ export async function addTransaction(
     const newTransactionRef = doc(collection(firestore, 'transactions'));
     transaction.set(newTransactionRef, transactionObject);
 
+    // This is a special property that does not get saved to Firestore
+    // It's used to pass data from the transaction to the code that runs after the transaction.
+    // @ts-ignore
     if (dataToSave.type === 'Deposit' && receiptFile) {
         // Can't run async upload inside transaction. We trigger it after.
         // We will store the ref and file to be processed post-transaction.
         (transactionObject as any).__receiptUpload = { ref: newTransactionRef, file: receiptFile, userId: dataToSave.userId };
     }
   }).then(async (result) => {
-    // Post-transaction logic
-    if (result && (result as any).__receiptUpload) {
-      const { ref, file, userId } = (result as any).__receiptUpload;
-      await uploadReceiptAndUpdateTransaction(firestore, ref.id, userId, file);
+    // Post-transaction logic to handle file upload
+    // @ts-ignore
+    if (result && result.__receiptUpload) {
+        // @ts-ignore
+        const { ref, file, userId } = result.__receiptUpload;
+        await uploadReceiptAndUpdateTransaction(firestore, ref.id, userId, file);
     }
   });
 }
@@ -309,6 +314,28 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 
         // --- WRITES SECOND ---
         transaction.update(txRef, { status: newStatus });
+        
+        // Update Agent performance stats
+        if (txData.assignedAgentId) {
+            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+            const agentSnap = await getDocs(agentQuery);
+            if (!agentSnap.empty) {
+                const agentDocRef = agentSnap.docs[0].ref;
+                if (txData.type === 'Deposit') {
+                    if (newStatus === 'Completed') {
+                        transaction.update(agentDocRef, { depositsApproved: increment(1) });
+                    } else {
+                        transaction.update(agentDocRef, { depositsRejected: increment(1) });
+                    }
+                } else if (txData.type === 'Withdrawal') {
+                    if (newStatus === 'Completed') {
+                        transaction.update(agentDocRef, { withdrawalsApproved: increment(1) });
+                    } else {
+                        transaction.update(agentDocRef, { withdrawalsRejected: increment(1) });
+                    }
+                }
+            }
+        }
         
         if (newStatus !== 'Completed') {
             if (txData.type === 'Deposit') {
@@ -592,51 +619,41 @@ export function listenToAllChatAgents(firestore: ReturnType<typeof getFirestore>
 
 // CHAT SYSTEM FUNCTIONS
 export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirestore>, user: UserProfile): Promise<ChatRoom> {
-  const roomsRef = collection(firestore, 'chat_rooms');
-  const q = query(roomsRef, where("userId", "==", user.uid), where("isResolved", "==", false), limit(1));
-  
-  const snapshot = await getDocs(q);
-  
-  if (!snapshot.empty) {
-    const doc = snapshot.docs[0];
-    return { id: doc.id, ...doc.data() } as ChatRoom;
-  } else {
-    // No active room, create a new one with an agent assigned
-    return runTransaction(firestore, async (transaction) => {
-      const settingsRef = doc(firestore, "app", "settings");
-      const settingsSnap = await transaction.get(settingsRef);
-      const settings = settingsSnap.data() as AppSettings;
-      const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
+  // Always create a new chat room.
+  return runTransaction(firestore, async (transaction) => {
+    const settingsRef = doc(firestore, "app", "settings");
+    const settingsSnap = await transaction.get(settingsRef);
+    const settings = settingsSnap.data() as AppSettings;
+    const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
 
-      const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
-      const agentsSnap = await getDocs(agentsQuery);
-      const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
+    const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
+    const agentsSnap = await getDocs(agentsQuery);
+    const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
 
-      let agentId: string | undefined = undefined;
-      let agentName: string | undefined = undefined;
-      if (activeAgents.length > 0) {
-        const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
-        const assignedAgent = activeAgents[nextAgentIndex];
-        agentId = assignedAgent.uid;
-        agentName = assignedAgent.email; // or a displayName if available
-        transaction.update(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
-      }
+    let agentId: string | undefined = undefined;
+    let agentName: string | undefined = undefined;
+    if (activeAgents.length > 0) {
+      const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
+      const assignedAgent = activeAgents[nextAgentIndex];
+      agentId = assignedAgent.uid;
+      agentName = assignedAgent.email; // or a displayName if available
+      transaction.update(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
+    }
 
-      const newRoomData: Omit<ChatRoom, 'id'> = {
-        userId: user.uid,
-        userName: user.displayName || "Unknown User",
-        agentId: agentId,
-        agentName: agentName,
-        createdAt: new Date().toISOString(),
-        lastMessage: "Chat started",
-        lastMessageAt: new Date().toISOString(),
-        isResolved: false
-      };
-      const newRoomRef = doc(collection(firestore, 'chat_rooms'));
-      transaction.set(newRoomRef, newRoomData);
-      return { id: newRoomRef.id, ...newRoomData };
-    });
-  }
+    const newRoomData: Omit<ChatRoom, 'id'> = {
+      userId: user.uid,
+      userName: user.displayName || "Unknown User",
+      agentId: agentId,
+      agentName: agentName,
+      createdAt: new Date().toISOString(),
+      lastMessage: "Chat started",
+      lastMessageAt: new Date().toISOString(),
+      isResolved: false // New chats are always unresolved
+    };
+    const newRoomRef = doc(collection(firestore, 'chat_rooms'));
+    transaction.set(newRoomRef, newRoomData);
+    return { id: newRoomRef.id, ...newRoomData };
+  });
 }
 
 export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string, imageFile?: File) {
