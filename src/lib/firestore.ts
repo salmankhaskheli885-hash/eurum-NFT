@@ -128,6 +128,15 @@ export async function addTransaction(
   firestore: ReturnType<typeof getFirestore>,
   transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
+    
+    // This function will run outside the main transaction logic
+    // to avoid blocking it with file I/O
+    const handleReceiptUpload = async (txId: string, userId: string, file: File) => {
+         await uploadReceiptAndUpdateTransaction(firestore, txId, userId, file);
+    }
+    
+  const newTransactionRef = doc(collection(firestore, 'transactions'));
+  
   await runTransaction(firestore, async (transaction) => {
     const { receiptFile, ...dataToSave } = transactionData;
     
@@ -141,8 +150,9 @@ export async function addTransaction(
     const settings = settingsSnap.data() as AppSettings;
     const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
 
+    // Agent query must be outside transaction. We get all active agents.
     const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
-    const agentsSnap = await getDocs(agentsQuery); // Must be getDocs, cannot be transaction.get(query)
+    const agentsSnap = await getDocs(agentsQuery);
     const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
 
     let assignedAgentId: string | undefined = undefined;
@@ -154,32 +164,21 @@ export async function addTransaction(
     
     const transactionObject: Partial<Transaction> = {
       ...dataToSave,
+      id: newTransactionRef.id, // Pre-generate ID
       date: new Date().toISOString(),
       status: dataToSave.status || 'Pending',
       userRole: dataToSave.userRole,
       assignedAgentId: assignedAgentId,
     };
     
-    const newTransactionRef = doc(collection(firestore, 'transactions'));
     transaction.set(newTransactionRef, transactionObject);
-
-    // This is a special property that does not get saved to Firestore
-    // It's used to pass data from the transaction to the code that runs after the transaction.
-    // @ts-ignore
-    if (dataToSave.type === 'Deposit' && receiptFile) {
-        // Can't run async upload inside transaction. We trigger it after.
-        // We will store the ref and file to be processed post-transaction.
-        (transactionObject as any).__receiptUpload = { ref: newTransactionRef, file: receiptFile, userId: dataToSave.userId };
-    }
-  }).then(async (result) => {
-    // Post-transaction logic to handle file upload
-    // @ts-ignore
-    if (result && result.__receiptUpload) {
-        // @ts-ignore
-        const { ref, file, userId } = result.__receiptUpload;
-        await uploadReceiptAndUpdateTransaction(firestore, ref.id, userId, file);
-    }
+    
   });
+  
+  // Handle receipt upload after the transaction is successfully committed
+  if (transactionData.receiptFile) {
+     await handleReceiptUpload(newTransactionRef.id, transactionData.userId, transactionData.receiptFile);
+  }
 }
 
 
@@ -216,7 +215,7 @@ async function handleInvestmentPayout(firestore: ReturnType<typeof getFirestore>
                     payoutTx.update(userForPayoutRef, { balance: newBalance });
 
                     const payoutDocRef = doc(collection(firestore, 'transactions'));
-payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
+                    payoutTx.set(payoutDocRef, { ...payoutTransactionData, date: new Date().toISOString() });
                 }
             });
         } catch (e) {
@@ -318,6 +317,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         // Update Agent performance stats
         if (txData.assignedAgentId) {
             const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+            // This needs to be outside the transaction's read phase
             const agentSnap = await getDocs(agentQuery);
             if (!agentSnap.empty) {
                 const agentDocRef = agentSnap.docs[0].ref;
@@ -339,9 +339,11 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         
         if (newStatus !== 'Completed') {
             if (txData.type === 'Deposit') {
-                const newFailedCount = (user.failedDepositCount || 0) + 1;
-                const updates: Partial<User> = { failedDepositCount: newFailedCount };
-                if (newFailedCount >= 5) updates.status = 'Suspended';
+                const newFailedCount = increment(1);
+                const updates: Partial<User> = { failedDepositCount: newFailedCount as any };
+                if ((user.failedDepositCount || 0) + 1 >= 5) {
+                    updates.status = 'Suspended';
+                }
                 transaction.update(userRef, updates);
             }
             return;
@@ -626,6 +628,7 @@ export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirest
     const settings = settingsSnap.data() as AppSettings;
     const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
 
+    // This query must be outside the transaction
     const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
     const agentsSnap = await getDocs(agentsQuery);
     const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
