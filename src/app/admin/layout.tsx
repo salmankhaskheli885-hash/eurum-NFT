@@ -66,8 +66,8 @@ export default function AdminLayout({
     if (!firestore) return;
 
     const unsubscribeTransactions = listenToAllTransactions(firestore, (transactions: Transaction[]) => {
-      const userDeposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user').length;
-      const userWithdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user').length;
+      const userDeposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending').length;
+      const userWithdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
       setPendingUserDeposits(userDeposits);
       setPendingUserWithdrawals(userWithdrawals);
     });
@@ -97,6 +97,7 @@ export default function AdminLayout({
         { href: "/admin/users", label: "All Users" },
         { href: "/admin/deposits", label: "Deposits", badge: pendingUserDeposits },
         { href: "/admin/withdrawals", label: "Withdrawals", badge: pendingUserWithdrawals },
+        { href: "/admin/kyc", label: "KYC Requests", badge: pendingKyc },
       ]
     },
     { 
@@ -106,12 +107,6 @@ export default function AdminLayout({
         { href: "/admin/partner-requests", label: "Partner Requests", badge: pendingPartnerReqs },
         { href: "/admin/tasks", label: "Partner Tasks" },
       ]
-    },
-     { 
-        href: "/admin/kyc", 
-        label: "KYC Management", 
-        icon: UserCheck,
-        badge: pendingKyc
     },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
     { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },

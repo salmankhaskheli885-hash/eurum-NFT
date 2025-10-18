@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import AdminWithdrawalsHistoryPage from "./history/page"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Badge } from "@/components/ui/badge"
 
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
@@ -41,8 +42,8 @@ export default function AdminWithdrawalsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING withdrawals from users.
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user'));
+        // Show only PENDING withdrawals from everyone.
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -85,8 +86,8 @@ export default function AdminWithdrawalsPage() {
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Withdrawals</h1>
-        <p className="text-muted-foreground">Review and approve pending withdrawals from regular users.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Withdrawal Requests</h1>
+        <p className="text-muted-foreground">Review and approve pending withdrawals from all users and partners.</p>
       </div>
         <Tabs defaultValue="pending">
             <TabsList className="grid w-full grid-cols-2">
@@ -96,8 +97,8 @@ export default function AdminWithdrawalsPage() {
             <TabsContent value="pending">
                 <Card>
                     <CardHeader>
-                    <CardTitle>Pending User Withdrawal Requests</CardTitle>
-                    <CardDescription>A list of all user withdrawals awaiting approval.</CardDescription>
+                    <CardTitle>Pending Withdrawal Requests</CardTitle>
+                    <CardDescription>A list of all withdrawals awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -114,6 +115,7 @@ export default function AdminWithdrawalsPage() {
                         <TableHeader>
                         <TableRow>
                             <TableHead>User</TableHead>
+                            <TableHead>Role</TableHead>
                             <TableHead>Account Details</TableHead>
                             <TableHead className="text-right">Amount</TableHead>
                             <TableHead className="text-center">Actions</TableHead>
@@ -129,6 +131,7 @@ export default function AdminWithdrawalsPage() {
                                             <Skeleton className="h-4 w-32" />
                                         </div>
                                     </TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                                     <TableCell>
                                         <div className="space-y-2">
                                             <Skeleton className="h-4 w-40" />
@@ -147,6 +150,11 @@ export default function AdminWithdrawalsPage() {
                                     <div className="text-sm text-muted-foreground">
                                         {new Date(withdrawal.date).toLocaleString()}
                                     </div>
+                                </TableCell>
+                                 <TableCell>
+                                  <Badge variant={withdrawal.userRole === 'partner' ? 'secondary' : 'outline'} className="capitalize">
+                                    {withdrawal.userRole || 'user'}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>
                                     {withdrawal.withdrawalDetails && (
@@ -176,7 +184,7 @@ export default function AdminWithdrawalsPage() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center">No pending user withdrawals found.</TableCell>
+                                <TableCell colSpan={5} className="h-24 text-center">No pending withdrawals found.</TableCell>
                             </TableRow>
                         )}
                         </TableBody>

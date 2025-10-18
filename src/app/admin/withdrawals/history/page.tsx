@@ -35,7 +35,7 @@ export default function AdminWithdrawalsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending' && tx.userRole === 'user'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -70,8 +70,8 @@ export default function AdminWithdrawalsHistoryPage() {
   return (
     <Card>
         <CardHeader>
-          <CardTitle>User Withdrawal History</CardTitle>
-          <CardDescription>A list of all processed (Completed/Failed) withdrawals from users.</CardDescription>
+          <CardTitle>Withdrawal History</CardTitle>
+          <CardDescription>A list of all processed (Completed/Failed) withdrawals.</CardDescription>
            <div className="relative pt-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -118,6 +118,7 @@ export default function AdminWithdrawalsHistoryPage() {
                     <TableCell>
                         <div className="font-medium">{withdrawal.userName}</div>
                         <div className="text-sm text-muted-foreground">
+                            <Badge variant={withdrawal.userRole === 'partner' ? 'secondary' : 'outline'} className="capitalize mr-2">{withdrawal.userRole || 'user'}</Badge>
                             <span className="font-semibold">UID:</span> {withdrawal.userId}
                         </div>
                         {withdrawal.withdrawalDetails && (
@@ -144,7 +145,7 @@ export default function AdminWithdrawalsHistoryPage() {
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">No processed user withdrawals found.</TableCell>
+                    <TableCell colSpan={5} className="h-24 text-center">No processed withdrawals found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

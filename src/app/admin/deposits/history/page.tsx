@@ -36,8 +36,8 @@ export default function AdminDepositsHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Filter for processed deposits from users
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending' && tx.userRole === 'user'));
+        // Filter for processed deposits from everyone
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -67,8 +67,8 @@ export default function AdminDepositsHistoryPage() {
   return (
     <Card>
         <CardHeader>
-          <CardTitle>User Deposit History</CardTitle>
-          <CardDescription>A list of all processed (Completed/Failed) deposits from users.</CardDescription>
+          <CardTitle>Deposit History</CardTitle>
+          <CardDescription>A list of all processed (Completed/Failed) deposits.</CardDescription>
            <div className="relative pt-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -86,6 +86,7 @@ export default function AdminDepositsHistoryPage() {
               <TableRow>
                 <TableHead>Transaction ID</TableHead>
                 <TableHead>User</TableHead>
+                <TableHead>Role</TableHead>
                 <TableHead>Date & Time</TableHead>
                 <TableHead className="text-right">Amount (PKR)</TableHead>
                 <TableHead className="text-center">Receipt</TableHead>
@@ -98,6 +99,7 @@ export default function AdminDepositsHistoryPage() {
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                        <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                         <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                         <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                         <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
@@ -109,6 +111,11 @@ export default function AdminDepositsHistoryPage() {
                     <TableRow key={deposit.id}>
                     <TableCell className="font-medium">{deposit.id}</TableCell>
                     <TableCell>{deposit.userName}</TableCell>
+                     <TableCell>
+                      <Badge variant={deposit.userRole === 'partner' ? 'secondary' : 'outline'} className="capitalize">
+                        {deposit.userRole || 'user'}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                     <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
                     <TableCell className="text-center">
@@ -132,7 +139,7 @@ export default function AdminDepositsHistoryPage() {
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">No processed user deposits found.</TableCell>
+                    <TableCell colSpan={7} className="h-24 text-center">No processed deposits found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

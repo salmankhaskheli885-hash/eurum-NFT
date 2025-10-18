@@ -42,8 +42,8 @@ export default function AdminDepositsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING deposits from users.
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user'));
+        // Show only PENDING deposits from everyone.
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -80,8 +80,8 @@ export default function AdminDepositsPage() {
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">User Deposits</h1>
-        <p className="text-muted-foreground">Review and approve pending deposits from regular users.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Deposit Requests</h1>
+        <p className="text-muted-foreground">Review and approve pending deposits from all users and partners.</p>
       </div>
         <Tabs defaultValue="pending">
             <TabsList className="grid w-full grid-cols-2">
@@ -91,8 +91,8 @@ export default function AdminDepositsPage() {
             <TabsContent value="pending">
                  <Card>
                     <CardHeader>
-                    <CardTitle>Pending User Deposit Requests</CardTitle>
-                    <CardDescription>A list of all user deposits awaiting approval.</CardDescription>
+                    <CardTitle>Pending Deposit Requests</CardTitle>
+                    <CardDescription>A list of all deposits awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -109,6 +109,7 @@ export default function AdminDepositsPage() {
                         <TableHeader>
                         <TableRow>
                             <TableHead>User</TableHead>
+                            <TableHead>Role</TableHead>
                             <TableHead>Date & Time</TableHead>
                             <TableHead className="text-right">Amount (PKR)</TableHead>
                             <TableHead className="text-center">Receipt</TableHead>
@@ -120,6 +121,7 @@ export default function AdminDepositsPage() {
                             [...Array(5)].map((_, i) => (
                                 <TableRow key={i}>
                                     <TableCell><Skeleton className="h-5 w-32" /></TableCell>
+                                    <TableCell><Skeleton className="h-6 w-16" /></TableCell>
                                     <TableCell><Skeleton className="h-5 w-20" /></TableCell>
                                     <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
                                     <TableCell className="text-center"><Skeleton className="h-8 w-24 mx-auto" /></TableCell>
@@ -132,6 +134,11 @@ export default function AdminDepositsPage() {
                                 <TableCell>
                                     <div className="font-medium">{deposit.userName}</div>
                                     <div className="text-sm text-muted-foreground">{deposit.id}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={deposit.userRole === 'partner' ? 'secondary' : 'outline'} className="capitalize">
+                                    {deposit.userRole || 'user'}
+                                  </Badge>
                                 </TableCell>
                                 <TableCell>{new Date(deposit.date).toLocaleString()}</TableCell>
                                 <TableCell className="text-right">{deposit.amount.toLocaleString()}</TableCell>
@@ -163,7 +170,7 @@ export default function AdminDepositsPage() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">No pending user deposits found.</TableCell>
+                                <TableCell colSpan={6} className="h-24 text-center">No pending deposits found.</TableCell>
                             </TableRow>
                         )}
                         </TableBody>
