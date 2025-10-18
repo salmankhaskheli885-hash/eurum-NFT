@@ -7,7 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Send, Bot, Paperclip, Loader2 } from "lucide-react"
+import { Send, Bot, Paperclip, Loader2, Search } from "lucide-react"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
 import { listenToChatRooms, listenToMessages, sendMessage, type ChatRoom, type ChatMessage } from "@/lib/firestore"
@@ -15,6 +15,18 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 function ChatRoomList({ rooms, onSelectRoom, selectedRoomId, loading }: { rooms: ChatRoom[], onSelectRoom: (roomId: string) => void, selectedRoomId: string | null, loading: boolean }) {
+    const [searchTerm, setSearchTerm] = React.useState("");
+
+    const filteredRooms = React.useMemo(() => {
+        if (!searchTerm) return rooms;
+        const lowercasedFilter = searchTerm.toLowerCase();
+        return rooms.filter(room =>
+            room.userName.toLowerCase().includes(lowercasedFilter) ||
+            room.userId.toLowerCase().includes(lowercasedFilter) ||
+            room.lastMessage.toLowerCase().includes(lowercasedFilter)
+        );
+    }, [rooms, searchTerm]);
+    
     if (loading) {
         return (
             <div className="space-y-2 p-2">
@@ -42,30 +54,43 @@ function ChatRoomList({ rooms, onSelectRoom, selectedRoomId, loading }: { rooms:
     }
 
     return (
-        <ScrollArea className="h-full">
-            <div className="flex flex-col gap-2 p-2">
-                {rooms.map((room) => (
-                    <button
-                        key={room.id}
-                        onClick={() => onSelectRoom(room.id)}
-                        className={cn(
-                            "flex items-center gap-4 p-2 rounded-lg text-left transition-colors w-full",
-                            selectedRoomId === room.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
-                        )}
-                    >
-                        <Avatar className="h-12 w-12 border">
-                            <AvatarFallback>{room.userName.charAt(0)}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 truncate">
-                            <div className="font-semibold">{room.userName}</div>
-                            <p className={cn("text-sm truncate", selectedRoomId === room.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
-                                {room.lastMessage}
-                            </p>
-                        </div>
-                    </button>
-                ))}
+        <div className="flex flex-col h-full">
+            <div className="p-4 border-b">
+                <div className="relative">
+                    <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search chats..."
+                        className="w-full pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
             </div>
-        </ScrollArea>
+            <ScrollArea className="flex-grow">
+                <div className="flex flex-col gap-2 p-2">
+                    {filteredRooms.map((room) => (
+                        <button
+                            key={room.id}
+                            onClick={() => onSelectRoom(room.id)}
+                            className={cn(
+                                "flex items-center gap-4 p-2 rounded-lg text-left transition-colors w-full",
+                                selectedRoomId === room.id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                            )}
+                        >
+                            <Avatar className="h-12 w-12 border">
+                                <AvatarFallback>{room.userName.charAt(0)}</AvatarFallback>
+                            </Avatar>
+                            <div className="flex-1 truncate">
+                                <div className="font-semibold">{room.userName}</div>
+                                <p className={cn("text-sm truncate", selectedRoomId === room.id ? "text-primary-foreground/80" : "text-muted-foreground")}>
+                                    {room.lastMessage}
+                                </p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </ScrollArea>
+        </div>
     )
 }
 
@@ -233,13 +258,7 @@ export default function AgentDashboardPage() {
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow">
         <Card className="lg:col-span-1 flex flex-col">
-          <CardHeader>
-            <CardTitle>User Inbox</CardTitle>
-            <CardDescription>Select a user to start a conversation.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-grow p-0 overflow-hidden">
             <ChatRoomList rooms={rooms} onSelectRoom={setSelectedRoomId} selectedRoomId={selectedRoomId} loading={roomsLoading} />
-          </CardContent>
         </Card>
         <Card className="lg:col-span-2 flex flex-col">
             {selectedRoom && agent ? (

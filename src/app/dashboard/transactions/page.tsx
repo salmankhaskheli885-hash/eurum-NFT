@@ -14,11 +14,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useFirestore } from "@/firebase/provider"
 import { useUser } from "@/hooks/use-user"
 import { listenToUserTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Input } from "@/components/ui/input"
+import { Search } from "lucide-react"
 
 
 export default function TransactionsPage() {
@@ -27,12 +29,14 @@ export default function TransactionsPage() {
   const { user, loading: userLoading } = useUser()
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [activeTab, setActiveTab] = React.useState("all")
+  const [searchTerm, setSearchTerm] = React.useState("")
 
   React.useEffect(() => {
     if (!firestore || !user?.uid) return;
     setLoading(true);
     const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
-        setTransactions(newTransactions);
+        setTransactions(newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -59,13 +63,30 @@ export default function TransactionsPage() {
       default: return 'outline'
     }
   }
+  
+  const filteredTransactions = React.useMemo(() => {
+    let items = transactions;
 
-  const deposits = transactions.filter(tx => tx.type === 'Deposit').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const others = transactions.filter(tx => tx.type !== 'Deposit' && tx.type !== 'Withdrawal').sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  const allTransactions = [...transactions].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    if (activeTab === "deposits") {
+      items = transactions.filter(tx => tx.type === 'Deposit');
+    } else if (activeTab === "withdrawals") {
+      items = transactions.filter(tx => tx.type === 'Withdrawal');
+    } else if (activeTab === "others") {
+      items = transactions.filter(tx => tx.type !== 'Deposit' && tx.type !== 'Withdrawal');
+    }
 
-  const renderTable = (transactions: Transaction[], isLoading: boolean) => (
+    if (!searchTerm) return items;
+    
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return items.filter(tx =>
+        tx.id.toLowerCase().includes(lowercasedFilter) ||
+        tx.type.toLowerCase().includes(lowercasedFilter) ||
+        (tx.details && tx.details.toLowerCase().includes(lowercasedFilter))
+    );
+  }, [transactions, activeTab, searchTerm]);
+
+
+  const renderTable = (transactionsToRender: Transaction[], isLoading: boolean) => (
      <Table>
       <TableHeader>
         <TableRow>
@@ -87,8 +108,8 @@ export default function TransactionsPage() {
                     <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
                 </TableRow>
             ))
-        ) : transactions.length > 0 ? (
-          transactions.map((transaction) => (
+        ) : transactionsToRender.length > 0 ? (
+          transactionsToRender.map((transaction) => (
             <TableRow key={transaction.id}>
               <TableCell className="font-medium">{transaction.id.substring(0,8)}...</TableCell>
               <TableCell>{transaction.type}</TableCell>
@@ -119,25 +140,32 @@ export default function TransactionsPage() {
         <p className="text-muted-foreground">{t('transactions.description')}</p>
       </div>
       <Card>
-        <CardContent className="pt-6">
-          <Tabs defaultValue="all">
+        <CardHeader>
+             <CardTitle>Your Transactions</CardTitle>
+             <CardDescription>
+                Filter and search through your entire transaction history.
+             </CardDescription>
+             <div className="relative pt-2">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                type="search"
+                placeholder="Search by ID, type, or details..."
+                className="w-full pl-8"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="all">{t('transactions.all')}</TabsTrigger>
               <TabsTrigger value="deposits">{t('transactions.deposits')}</TabsTrigger>
               <TabsTrigger value="withdrawals">{t('transactions.withdrawals')}</TabsTrigger>
               <TabsTrigger value="others">{t('transactions.investments')}</TabsTrigger>
             </TabsList>
-            <TabsContent value="all">
-              {renderTable(allTransactions, userLoading || loading)}
-            </TabsContent>
-            <TabsContent value="deposits">
-              {renderTable(deposits, userLoading || loading)}
-            </TabsContent>
-            <TabsContent value="withdrawals">
-              {renderTable(withdrawals, userLoading || loading)}
-            </TabsContent>
-             <TabsContent value="others">
-              {renderTable(others, userLoading || loading)}
+            <TabsContent value={activeTab}>
+              {renderTable(filteredTransactions, userLoading || loading)}
             </TabsContent>
           </Tabs>
         </CardContent>

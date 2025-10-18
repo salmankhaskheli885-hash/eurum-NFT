@@ -41,7 +41,7 @@ import {
 
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { UserPlus, Trash2, PlusCircle, Edit, CheckCircle, XCircle } from "lucide-react"
+import { UserPlus, Trash2, PlusCircle, Edit, CheckCircle, XCircle, Search } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -164,7 +164,8 @@ export default function AdminAgentsPage() {
     const { toast } = useToast();
     const [agents, setAgents] = React.useState<ChatAgent[]>([]);
     const [loading, setLoading] = React.useState(true);
-    
+    const [searchTerm, setSearchTerm] = React.useState("");
+
     const refreshAgents = () => {
         if (!firestore) return;
         setLoading(true);
@@ -180,6 +181,14 @@ export default function AdminAgentsPage() {
         return () => unsubscribe && unsubscribe();
     }, [firestore]);
     
+    const filteredAgents = React.useMemo(() => {
+        if (!searchTerm) return agents;
+        const lowercasedFilter = searchTerm.toLowerCase();
+        return agents.filter(agent =>
+            agent.email.toLowerCase().includes(lowercasedFilter)
+        );
+    }, [searchTerm, agents]);
+
     const handleDeleteAgent = async (agentId: string) => {
         if (!firestore) return;
         try {
@@ -203,6 +212,16 @@ export default function AdminAgentsPage() {
                 <CardHeader>
                     <CardTitle>Existing Agents</CardTitle>
                     <CardDescription>A list of all current support agents and their performance statistics.</CardDescription>
+                    <div className="relative pt-2">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                        type="search"
+                        placeholder="Search by agent email..."
+                        className="w-full pl-8"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -224,8 +243,8 @@ export default function AdminAgentsPage() {
                                         <TableCell className="text-right"><Skeleton className="h-8 w-20 ml-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : agents.length > 0 ? (
-                                agents.map((agent) => (
+                            ) : filteredAgents.length > 0 ? (
+                                filteredAgents.map((agent) => (
                                     <TableRow key={agent.id}>
                                         <TableCell className="font-medium">{agent.email}</TableCell>
                                         <TableCell>
@@ -293,5 +312,3 @@ export default function AdminAgentsPage() {
         </div>
     )
 }
-
-    
