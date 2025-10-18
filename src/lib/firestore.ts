@@ -78,21 +78,12 @@ export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, cal
     const q = query(usersCollection);
     
     let usersLoaded = false;
-    let timeout: NodeJS.Timeout;
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const users = snapshot.docs.map(doc => ({...doc.data(), uid: doc.id } as User));
         callback(users);
         usersLoaded = true;
-        clearTimeout(timeout);
     });
-    
-    timeout = setTimeout(() => {
-        if (!usersLoaded) {
-            console.warn("Firestore 'listenToAllUsers' timed out after 10 seconds.");
-            callback([]); // Return empty array on timeout
-        }
-    }, 10000);
 
     return unsubscribe;
 }
@@ -583,8 +574,7 @@ export async function addInvestmentPlan(
     imageFile: File,
     onProgress: (progress: number) => void
 ): Promise<InvestmentPlan> {
-    const plansCollection = collection(firestore, 'investment_plans');
-    const newDocRef = doc(plansCollection); // Get a new doc ref with an ID first
+    const newDocRef = doc(collection(firestore, 'investment_plans')); // Get a new doc ref with an ID first
     
     const imageUrl = await uploadPlanImage(newDocRef.id, imageFile, onProgress);
     
