@@ -32,32 +32,36 @@ import { Badge } from "@/components/ui/badge"
 export default function AdminWithdrawalsPage() {
   const firestore = useFirestore()
   const { toast } = useToast()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   
   React.useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING withdrawals from everyone.
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
+    const unsubscribe = listenToAllTransactions(firestore, (transactions) => {
+        setAllTransactions(transactions.filter(tx => tx.type === 'Withdrawal'));
         setLoading(false);
     });
     return () => unsubscribe();
   }, [firestore]);
 
-  const filteredWithdrawals = React.useMemo(() => {
-    if (!searchTerm) return transactions;
+  const pendingWithdrawals = React.useMemo(() => {
+    const filtered = allTransactions.filter(tx => tx.status === 'Pending');
+    if (!searchTerm) return filtered;
     const lowercasedFilter = searchTerm.toLowerCase();
-    return transactions.filter(item => {
+    return filtered.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
         item.userName.toLowerCase().includes(lowercasedFilter) ||
         item.userId.toLowerCase().includes(lowercasedFilter)
       );
     });
-  }, [searchTerm, transactions]);
+  }, [searchTerm, allTransactions]);
+
+  const processedWithdrawals = React.useMemo(() => {
+      return allTransactions.filter(tx => tx.status !== 'Pending');
+  }, [allTransactions]);
   
   const formatCurrency = (val: number | undefined) => {
     if (val === undefined) return 'N/A';
@@ -140,8 +144,8 @@ export default function AdminWithdrawalsPage() {
                                     <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : filteredWithdrawals.length > 0 ? (
-                            filteredWithdrawals.map((withdrawal) => (
+                        ) : pendingWithdrawals.length > 0 ? (
+                            pendingWithdrawals.map((withdrawal) => (
                                 <TableRow key={withdrawal.id}>
                                 <TableCell>
                                     <div className="font-medium">{withdrawal.userName}</div>
@@ -191,7 +195,7 @@ export default function AdminWithdrawalsPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="history">
-                <AdminWithdrawalsHistoryPage />
+                <AdminWithdrawalsHistoryPage transactions={processedWithdrawals} loading={loading} />
             </TabsContent>
         </Tabs>
     </div>

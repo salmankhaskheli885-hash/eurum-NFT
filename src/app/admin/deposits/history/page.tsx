@@ -21,27 +21,12 @@ import { Badge } from "@/components/ui/badge"
 import { type Transaction } from "@/lib/data"
 import { Search, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 
-export default function AdminDepositsHistoryPage() {
-  const firestore = useFirestore()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
-  const [loading, setLoading] = React.useState(true)
+// The component now receives transactions and loading state as props
+export default function AdminDepositsHistoryPage({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
   const [searchTerm, setSearchTerm] = React.useState("")
-  
-  React.useEffect(() => {
-    if (!firestore) return;
-    setLoading(true);
-    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Filter for processed deposits from everyone
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status !== 'Pending'));
-        setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [firestore]);
 
   const filteredDeposits = React.useMemo(() => {
     if (!searchTerm) return transactions;

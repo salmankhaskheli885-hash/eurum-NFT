@@ -32,33 +32,42 @@ import AdminDepositsHistoryPage from "./history/page"
 export default function AdminDepositsPage() {
   const firestore = useFirestore()
   const { toast } = useToast()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
+  
+  // State for all transactions (pending and processed)
+  const [allTransactions, setAllTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [searchTerm, setSearchTerm] = React.useState("")
   
+  // Fetch all deposit-related transactions once
   React.useEffect(() => {
     if (!firestore) return;
     setLoading(true);
-    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING deposits from everyone.
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
+    const unsubscribe = listenToAllTransactions(firestore, (transactions) => {
+        setAllTransactions(transactions.filter(tx => tx.type === 'Deposit'));
         setLoading(false);
     });
     return () => unsubscribe();
   }, [firestore]);
 
-  const filteredDeposits = React.useMemo(() => {
-    if (!searchTerm) return transactions;
+  // Filter for PENDING deposits for the main table
+  const pendingDeposits = React.useMemo(() => {
+    const filtered = allTransactions.filter(tx => tx.status === 'Pending');
+    if (!searchTerm) return filtered;
     const lowercasedFilter = searchTerm.toLowerCase();
-    return transactions.filter(item => {
+    return filtered.filter(item => {
       return (
         item.id.toLowerCase().includes(lowercasedFilter) ||
         item.userName.toLowerCase().includes(lowercasedFilter)
       );
     });
-  }, [searchTerm, transactions]);
+  }, [searchTerm, allTransactions]);
 
- const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
+  // Filter for PROCESSED deposits for the history tab
+  const processedDeposits = React.useMemo(() => {
+      return allTransactions.filter(tx => tx.status !== 'Pending');
+  }, [allTransactions]);
+
+  const handleAction = async (transaction: Transaction, status: 'Completed' | 'Failed') => {
     if (!firestore) return;
     try {
       await updateTransactionStatus(firestore, transaction.id, status, transaction);
@@ -126,8 +135,8 @@ export default function AdminDepositsPage() {
                                     <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                                 </TableRow>
                             ))
-                        ) : filteredDeposits.length > 0 ? (
-                            filteredDeposits.map((deposit) => (
+                        ) : pendingDeposits.length > 0 ? (
+                            pendingDeposits.map((deposit) => (
                                 <TableRow key={deposit.id}>
                                 <TableCell>
                                     <div className="font-medium">{deposit.userName}</div>
@@ -177,7 +186,7 @@ export default function AdminDepositsPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="history">
-                <AdminDepositsHistoryPage />
+                <AdminDepositsHistoryPage transactions={processedDeposits} loading={loading} />
             </TabsContent>
         </Tabs>
     </div>

@@ -21,26 +21,11 @@ import { Badge } from "@/components/ui/badge"
 import { type Transaction } from "@/lib/data"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
-import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function AdminWithdrawalsHistoryPage() {
-  const firestore = useFirestore()
-  const [transactions, setTransactions] = React.useState<Transaction[]>([])
-  const [loading, setLoading] = React.useState(true)
+export default function AdminWithdrawalsHistoryPage({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
   const [searchTerm, setSearchTerm] = React.useState("")
   
-  React.useEffect(() => {
-    if (!firestore) return;
-    setLoading(true);
-    const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status !== 'Pending'));
-        setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [firestore]);
-
   const filteredWithdrawals = React.useMemo(() => {
     if (!searchTerm) return transactions;
     const lowercasedFilter = searchTerm.toLowerCase();
