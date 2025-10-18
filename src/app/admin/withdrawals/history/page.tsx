@@ -22,6 +22,7 @@ import { type Transaction } from "@/lib/data"
 import { Search } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 export default function AdminWithdrawalsHistoryPage({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
   const [searchTerm, setSearchTerm] = React.useState("")
@@ -38,14 +39,6 @@ export default function AdminWithdrawalsHistoryPage({ transactions, loading }: {
       );
     });
   }, [searchTerm, transactions]);
-
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
-  }
   
   const formatCurrency = (val: number | undefined) => {
     if (val === undefined) return 'N/A';
@@ -122,8 +115,13 @@ export default function AdminWithdrawalsHistoryPage({ transactions, loading }: {
                         {formatCurrency(Math.abs(withdrawal.amount))}
                     </TableCell>
                     <TableCell className="text-center">
-                        <Badge variant={getStatusVariant(withdrawal.status)}>
-                        {withdrawal.status}
+                        <Badge
+                          variant={withdrawal.status === 'Failed' ? 'destructive' : withdrawal.status === 'Completed' ? 'default' : 'secondary'}
+                          className={cn(
+                            withdrawal.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                          )}
+                        >
+                          {withdrawal.status}
                         </Badge>
                     </TableCell>
                     </TableRow>

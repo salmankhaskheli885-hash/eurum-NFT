@@ -23,6 +23,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Megaphone } from "lucide-react"
 import { useFirestore } from "@/firebase/provider"
 import { listenToLatestAnnouncement, listenToUserTransactions } from "@/lib/firestore"
+import { cn } from "@/lib/utils"
 
 function Announcement() {
     const firestore = useFirestore();
@@ -85,15 +86,6 @@ function DashboardContent() {
   const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString();
-  }
-
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Pending': return 'secondary'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
   }
   
   const investmentTransactions = transactions.filter(
@@ -255,8 +247,13 @@ function DashboardContent() {
                             {formatCurrency(transaction.amount)}
                         </TableCell>
                         <TableCell className="text-center">
-                            <Badge variant={getStatusVariant(transaction.status)}>
-                                {transaction.status}
+                            <Badge
+                              variant={transaction.status === 'Failed' ? 'destructive' : transaction.status === 'Completed' ? 'default' : 'secondary'}
+                              className={cn(
+                                transaction.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                              )}
+                            >
+                              {transaction.status}
                             </Badge>
                         </TableCell>
                         </TableRow>

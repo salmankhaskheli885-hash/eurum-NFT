@@ -21,6 +21,7 @@ import { listenToUserTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Input } from "@/components/ui/input"
 import { Search } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export default function TransactionsPage() {
   const { t } = useTranslation()
@@ -52,15 +53,6 @@ export default function TransactionsPage() {
   
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
-  }
-
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Pending': return 'secondary'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
   }
 
   const filteredTransactions = React.useMemo(() => {
@@ -116,7 +108,12 @@ export default function TransactionsPage() {
                 {formatCurrency(transaction.amount)}
               </TableCell>
               <TableCell className="text-center">
-                <Badge variant={getStatusVariant(transaction.status)}>
+                <Badge
+                  variant={transaction.status === 'Failed' ? 'destructive' : transaction.status === 'Completed' ? 'default' : 'secondary'}
+                  className={cn(
+                    transaction.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                  )}
+                >
                   {transaction.status}
                 </Badge>
               </TableCell>

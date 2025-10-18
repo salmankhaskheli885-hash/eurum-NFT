@@ -16,6 +16,7 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToUserTransactions } from "@/lib/firestore"
 import type { Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
+import { cn } from "@/lib/utils"
 
 export default function ProfilePage() {
     const { t } = useTranslation()
@@ -42,15 +43,6 @@ export default function ProfilePage() {
             style: "currency",
             currency: user?.currency || "PKR",
         }).format(amount)
-    }
-    
-    const getStatusVariant = (status: Transaction['status']) => {
-        switch (status) {
-        case 'Completed': return 'default'
-        case 'Pending': return 'secondary'
-        case 'Failed': return 'destructive'
-        default: return 'outline'
-        }
     }
     
     const loading = userLoading || transactionsLoading;
@@ -169,8 +161,13 @@ export default function ProfilePage() {
                                         <TableCell>{new Date(transaction.date).toLocaleDateString()}</TableCell>
                                         <TableCell className={`text-right ${transaction.amount > 0 ? 'text-green-500' : 'text-red-500'}`}>{formatCurrency(transaction.amount)}</TableCell>
                                         <TableCell className="text-center">
-                                            <Badge variant={getStatusVariant(transaction.status)}>
-                                                {transaction.status}
+                                            <Badge
+                                              variant={transaction.status === 'Failed' ? 'destructive' : transaction.status === 'Completed' ? 'default' : 'secondary'}
+                                              className={cn(
+                                                transaction.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                                              )}
+                                            >
+                                              {transaction.status}
                                             </Badge>
                                         </TableCell>
                                         </TableRow>

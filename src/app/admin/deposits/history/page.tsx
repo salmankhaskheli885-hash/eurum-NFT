@@ -23,6 +23,7 @@ import { Search, Eye } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 // The component now receives transactions and loading state as props
 export default function AdminDepositsHistoryPage({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
@@ -40,14 +41,6 @@ export default function AdminDepositsHistoryPage({ transactions, loading }: { tr
     });
   }, [searchTerm, transactions]);
 
-
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
-  }
 
   return (
     <Card>
@@ -116,8 +109,13 @@ export default function AdminDepositsHistoryPage({ transactions, loading }: { tr
                         )}
                     </TableCell>
                     <TableCell className="text-center">
-                        <Badge variant={getStatusVariant(deposit.status)}>
-                        {deposit.status}
+                        <Badge
+                          variant={deposit.status === 'Failed' ? 'destructive' : deposit.status === 'Completed' ? 'default' : 'secondary'}
+                          className={cn(
+                            deposit.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                          )}
+                        >
+                          {deposit.status}
                         </Badge>
                     </TableCell>
                     </TableRow>

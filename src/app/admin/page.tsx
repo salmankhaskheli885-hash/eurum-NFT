@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/hooks/use-toast"
+import { cn } from "@/lib/utils"
 
 function PanelControlCard() {
     const firestore = useFirestore();
@@ -170,15 +171,6 @@ export default function AdminDashboardPage() {
     { title: t('admin.stats.pendingKyc'), value: pendingKyc.toString(), icon: ShieldCheck },
   ]
   
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Pending': return 'secondary'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
-  }
-
   const StatCard = ({ stat, isLoading }: { stat: typeof stats[0], isLoading: boolean }) => (
      <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -244,8 +236,13 @@ export default function AdminDashboardPage() {
                                 {new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(tx.amount)}
                             </TableCell>
                              <TableCell className="text-center">
-                                <Badge variant={getStatusVariant(tx.status)}>
-                                {tx.status}
+                                <Badge
+                                  variant={tx.status === 'Failed' ? 'destructive' : tx.status === 'Completed' ? 'default' : 'secondary'}
+                                  className={cn(
+                                    tx.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                                  )}
+                                >
+                                  {tx.status}
                                 </Badge>
                             </TableCell>
                         </TableRow>

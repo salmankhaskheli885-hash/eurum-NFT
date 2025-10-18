@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
 
 
 function Announcement() {
@@ -92,15 +93,6 @@ export default function PartnerDashboardPage() {
    const formatDate = (dateString: string | undefined) => {
       if (!dateString) return 'N/A';
       return new Date(dateString).toLocaleDateString();
-  }
-
-  const getStatusVariant = (status: Transaction['status']) => {
-    switch (status) {
-      case 'Completed': return 'default'
-      case 'Pending': return 'secondary'
-      case 'Failed': return 'destructive'
-      default: return 'outline'
-    }
   }
   
   const totalReferredUsers = referredUsers.length;
@@ -191,7 +183,12 @@ export default function PartnerDashboardPage() {
                             {formatCurrency(transaction.amount, false)}
                         </TableCell>
                         <TableCell className="text-center">
-                            <Badge variant={getStatusVariant(transaction.status)}>
+                            <Badge
+                              variant={transaction.status === 'Failed' ? 'destructive' : transaction.status === 'Completed' ? 'default' : 'secondary'}
+                              className={cn(
+                                transaction.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                              )}
+                            >
                                 {transaction.status}
                             </Badge>
                         </TableCell>

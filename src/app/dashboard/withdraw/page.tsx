@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import type { AppSettings, Transaction } from "@/lib/data"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 
 function WithdrawalHistory() {
     const { user, loading: userLoading } = useUser()
@@ -40,14 +41,6 @@ function WithdrawalHistory() {
 
     const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
     const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
-    const getStatusVariant = (status: Transaction['status']) => {
-        switch (status) {
-            case 'Completed': return 'default'
-            case 'Pending': return 'secondary'
-            case 'Failed': return 'destructive'
-            default: return 'outline'
-        }
-    }
     
     const isLoading = userLoading || loading;
 
@@ -87,7 +80,14 @@ function WithdrawalHistory() {
                                      </TableCell>
                                     <TableCell className="text-right font-medium text-red-600">{formatCurrency(tx.amount)}</TableCell>
                                     <TableCell className="text-center">
-                                        <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
+                                        <Badge
+                                          variant={tx.status === 'Failed' ? 'destructive' : tx.status === 'Completed' ? 'default' : 'secondary'}
+                                          className={cn(
+                                            tx.status === 'Completed' && 'bg-green-600 hover:bg-green-700'
+                                          )}
+                                        >
+                                          {tx.status}
+                                        </Badge>
                                     </TableCell>
                                 </TableRow>
                             ))
