@@ -140,19 +140,12 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     const handleSubmit = async () => {
         if (!firestore) return;
 
-        // Basic validation
         if (!formData.name || formData.dailyReturn <= 0 || formData.durationDays <= 0 || formData.minInvestment <= 0) {
             toast({ variant: "destructive", title: "Invalid Input", description: "Please fill all fields with valid values." });
             return;
         }
 
-        // For new plans, image is required. For edits, it's optional.
-        if (!plan && !imageFile) {
-            toast({ variant: "destructive", title: "Image Required", description: "Please upload an image for the new plan." });
-            return;
-        }
-
-        setUploadProgress(0); // Start progress indication
+        setUploadProgress(0);
 
         try {
             if (plan) { // This is an UPDATE operation
@@ -160,7 +153,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                     firestore,
                     plan.id,
                     formData,
-                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined, // Pass image if it exists
+                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined,
                     setUploadProgress
                 );
                 toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
@@ -169,7 +162,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                 await addInvestmentPlan(
                     firestore,
                     formData,
-                    { file: imageFile!, compressor: imageCompression }, // Image is guaranteed by the check above
+                    imageFile ? { file: imageFile, compressor: imageCompression } : undefined,
                     setUploadProgress
                 );
                 toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
@@ -227,7 +220,7 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                             
                             <div className="space-y-2">
-                                <Label htmlFor="imageFile">Plan Image</Label>
+                                <Label htmlFor="imageFile">Plan Image (Optional)</Label>
                                 <Input 
                                     id="imageFile" 
                                     name="imageFile" 
@@ -235,7 +228,11 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                     accept="image/*"
                                     onChange={handleFileChange}
                                 />
-                                {plan && <p className="text-xs text-muted-foreground">Upload a new image to replace the current one.</p>}
+                                {plan ? 
+                                    <p className="text-xs text-muted-foreground">Upload a new image to replace the current one.</p>
+                                    :
+                                    <p className="text-xs text-muted-foreground">If no image is uploaded, a random one will be generated.</p>
+                                }
                             </div>
 
                              {(currentImageUrl || imageFile) && (
@@ -436,7 +433,7 @@ export default function AdminInvestmentsPage() {
                             width={40} 
                             height={40} 
                             className="rounded-md object-cover"
-                            data-ai-hint="investment product"
+                            data-ai-hint="nft animal"
                         />
                     </TableCell>
                   <TableCell className="font-medium">{plan.name}</TableCell>

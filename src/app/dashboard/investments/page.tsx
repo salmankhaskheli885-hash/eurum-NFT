@@ -253,7 +253,7 @@ export default function InvestmentsPage() {
                         alt={plan.name}
                         fill
                         className="rounded-t-lg object-cover"
-                        data-ai-hint="investment product"
+                        data-ai-hint="nft animal"
                      />
                 </div>
                 <div className="flex justify-between items-start">

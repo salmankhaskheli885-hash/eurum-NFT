@@ -1,5 +1,4 @@
 
-
 'use client';
 import {
   getFirestore,
@@ -576,18 +575,28 @@ const uploadPlanImage = (planId: string, image: { file: File, compressor: (file:
 export async function addInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>,
-    image: { file: File, compressor: (file: File, options: any) => Promise<File> },
+    image: { file: File, compressor: (file: File, options: any) => Promise<File> } | undefined,
     onProgress: (progress: number) => void
 ): Promise<InvestmentPlan> {
     const newDocRef = doc(collection(firestore, 'investment_plans'));
     
-    const imageUrl = await uploadPlanImage(newDocRef.id, image, onProgress);
+    let imageUrl;
+
+    if (image?.file) {
+        onProgress(0); // Start progress
+        imageUrl = await uploadPlanImage(newDocRef.id, image, onProgress);
+        onProgress(100); // Mark as complete
+    } else {
+        // If no image is provided, use a placeholder from picsum.photos with the doc ID as a seed
+        imageUrl = `https://picsum.photos/seed/${newDocRef.id}/600/400`;
+    }
     
     const finalPlanData = { ...planData, imageUrl };
     await setDoc(newDocRef, finalPlanData);
 
     return { ...finalPlanData, id: newDocRef.id };
 }
+
 
 
 export async function updateInvestmentPlan(
@@ -601,7 +610,7 @@ export async function updateInvestmentPlan(
     
     const finalUpdates: Partial<InvestmentPlan> = { ...updates };
 
-    if (image && onProgress) {
+    if (image?.file && onProgress) {
         const newImageUrl = await uploadPlanImage(planId, image, onProgress);
         finalUpdates.imageUrl = newImageUrl;
     }
