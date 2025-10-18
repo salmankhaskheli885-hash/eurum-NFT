@@ -127,7 +127,8 @@ export default function DepositPage() {
                 amount: parseFloat(amount),
                 status: 'Pending', 
                 receiptFile: receiptFile,
-                details: `Deposit via ${yourNumber} with TID: ${tid}`
+                details: `Deposit via ${yourNumber} with TID: ${tid}`,
+                userRole: user.role,
             });
 
              toast({

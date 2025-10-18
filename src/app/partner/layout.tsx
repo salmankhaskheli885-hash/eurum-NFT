@@ -42,19 +42,6 @@ export default function DashboardLayout({
   const pathname = usePathname()
   const { t } = useTranslation()
 
-  const isPartner = pathname.startsWith('/partner');
-
-  const userMenuItems = [
-    { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
-    { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
-    { href: "/dashboard/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
-    { href: "/dashboard/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
-    { href: "/dashboard/transactions", label: t('nav.transactions'), icon: History },
-    { href: "/dashboard/referrals", label: t('nav.referrals'), icon: Share2 },
-    { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
-    { href: "/dashboard/settings", label: t('nav.settings'), icon: Settings },
-  ]
-
   const partnerMenuItems = [
     { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
     { href: "/partner/investments", label: t('nav.investments'), icon: TrendingUp },
@@ -68,13 +55,13 @@ export default function DashboardLayout({
     { href: "/partner/settings", label: t('nav.settings'), icon: Settings },
   ]
 
-  const menuItems = isPartner ? partnerMenuItems : userMenuItems;
+  const menuItems = partnerMenuItems;
 
   return (
     <SidebarProvider>
       <Sidebar collapsible="icon">
         <SidebarHeader>
-          <Link href={isPartner ? "/partner" : "/dashboard"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
+          <Link href={"/partner"} className="flex items-center gap-2 font-bold text-lg hover:text-primary transition-colors">
             <Logo className="w-8 h-8 text-primary" />
             <span className="group-data-[state=collapsed]:hidden">{t('appName')}</span>
           </Link>

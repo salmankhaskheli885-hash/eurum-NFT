@@ -12,6 +12,7 @@ import {
   User,
   History,
   Settings,
+  UserCheck
 } from "lucide-react"
 
 import {
@@ -42,7 +43,7 @@ export default function DashboardLayout({
 
   const isPartner = pathname.startsWith('/partner');
 
-  const userMenuItems = [
+  const menuItems = [
     { href: "/dashboard", label: t('nav.dashboard'), icon: LayoutDashboard },
     { href: "/dashboard/investments", label: t('nav.investments'), icon: TrendingUp },
     { href: "/dashboard/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
@@ -52,19 +53,6 @@ export default function DashboardLayout({
     { href: "/dashboard/profile", label: t('nav.profile'), icon: User },
     { href: "/dashboard/settings", label: t('nav.settings'), icon: Settings },
   ]
-
-  const partnerMenuItems = [
-    { href: "/partner", label: t('nav.partner.dashboard'), icon: LayoutDashboard },
-    { href: "/partner/deposit", label: t('nav.deposit'), icon: ArrowDownToLine },
-    { href: "/partner/withdraw", label: t('nav.withdraw'), icon: ArrowUpFromLine },
-    { href: "/partner/transactions", label: t('nav.transactions'), icon: History },
-    { href: "/partner/referrals", label: t('nav.referrals'), icon: Share2 },
-    { href: "/partner/kyc", label: t('kyc.title'), icon: User },
-    { href: "/partner/profile", label: t('nav.profile'), icon: User },
-    { href: "/partner/settings", label: t('nav.settings'), icon: Settings },
-  ]
-
-  const menuItems = isPartner ? partnerMenuItems : userMenuItems;
 
   return (
     <SidebarProvider>

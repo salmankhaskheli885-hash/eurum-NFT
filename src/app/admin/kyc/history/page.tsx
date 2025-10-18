@@ -35,8 +35,8 @@ export default function AdminKycHistoryPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-        // Only show processed KYC from partners
-        setUsers(allUsers.filter(u => u.role === 'partner' && (u.kycStatus === 'approved' || u.kycStatus === 'rejected')));
+        // Only show processed KYC
+        setUsers(allUsers.filter(u => u.kycStatus === 'approved' || u.kycStatus === 'rejected'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -65,13 +65,13 @@ export default function AdminKycHistoryPage() {
   return (
     <Card>
         <CardHeader>
-          <CardTitle>Partner KYC History</CardTitle>
-          <CardDescription>A list of all processed (Approved/Rejected) KYC submissions from partners.</CardDescription>
+          <CardTitle>User KYC History</CardTitle>
+          <CardDescription>A list of all processed (Approved/Rejected) KYC submissions.</CardDescription>
            <div className="relative pt-2">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by partner name or email..."
+              placeholder="Search by user name or email..."
               className="w-full pl-8"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -82,7 +82,7 @@ export default function AdminKycHistoryPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Partner Name</TableHead>
+                <TableHead>User Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead className="text-center">Final Status</TableHead>
               </TableRow>
@@ -110,7 +110,7 @@ export default function AdminKycHistoryPage() {
                 ))
               ) : (
                 <TableRow>
-                    <TableCell colSpan={3} className="h-24 text-center">No processed partner KYC submissions found.</TableCell>
+                    <TableCell colSpan={3} className="h-24 text-center">No processed user KYC submissions found.</TableCell>
                 </TableRow>
               )}
             </TableBody>

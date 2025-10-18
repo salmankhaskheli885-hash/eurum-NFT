@@ -747,6 +747,14 @@ export async function updatePartnerRequestStatus(firestore: ReturnType<typeof ge
 
 
 export async function sendPartnerRequest(firestore: ReturnType<typeof getFirestore>, user: User) {
+    // Check if a pending request already exists for this user
+    const q = query(collection(firestore, "partner_requests"), where("userId", "==", user.uid), where("status", "==", "pending"));
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+        throw new Error("You already have a pending partner request.");
+    }
+    
     const request: Omit<PartnerRequest, 'id' | 'requestDate'> = {
         userId: user.uid,
         userName: user.displayName || 'Unknown',

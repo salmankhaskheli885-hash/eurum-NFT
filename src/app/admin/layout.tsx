@@ -42,8 +42,8 @@ import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions, listenToAllUsers, listenToPartnerRequests } from "@/lib/firestore"
-import type { Transaction, User as UserType, PartnerRequest } from "@/lib/data"
+import { listenToAllTransactions, listenToAllUsers } from "@/lib/firestore"
+import type { Transaction, User as UserType } from "@/lib/data"
 
 export default function AdminLayout({
   children,
@@ -71,17 +71,12 @@ export default function AdminLayout({
     });
     
     const unsubKyc = listenToAllUsers(firestore, (users: UserType[]) => {
-      setPendingKyc(users.filter(u => u.role === 'partner' && u.kycStatus === 'pending').length);
+      setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
     });
     
-    const unsubPartner = listenToPartnerRequests(firestore, (reqs: PartnerRequest[]) => {
-       setPendingPartnerReqs(reqs.filter(r => r.status === 'pending').length);
-    })
-
     return () => {
       unsubscribeTransactions();
       unsubKyc();
-      unsubPartner();
     };
   }, [firestore]);
 
@@ -105,6 +100,12 @@ export default function AdminLayout({
                 icon: Landmark,
                 badge: pendingWithdrawals,
             },
+             { 
+                href: "/admin/kyc", 
+                label: "User KYC", 
+                icon: UserCheck,
+                badge: pendingKyc
+            },
         ] 
     },
      { 
@@ -112,13 +113,6 @@ export default function AdminLayout({
         icon: Handshake,
         subItems: [
             { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
-            { href: "/admin/partner-requests", label: "Partner Requests", icon: UserPlus, badge: pendingPartnerReqs },
-             { 
-                href: "/admin/kyc", 
-                label: "Partner KYC", 
-                icon: UserCheck,
-                badge: pendingKyc
-            },
         ] 
     },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
