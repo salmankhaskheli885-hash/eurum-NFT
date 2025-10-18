@@ -42,7 +42,7 @@ export default function AdminWithdrawalsPage() {
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
         // Only show PENDING withdrawals from standard USERS
-        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();

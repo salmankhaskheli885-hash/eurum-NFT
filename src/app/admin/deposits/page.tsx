@@ -43,7 +43,7 @@ export default function AdminDepositsPage() {
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
         // Show only PENDING deposits from standard USERS for action
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
