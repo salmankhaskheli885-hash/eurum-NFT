@@ -24,6 +24,7 @@ import { Megaphone } from "lucide-react"
 import { useFirestore } from "@/firebase/provider"
 import { listenToLatestAnnouncement, listenToUserTransactions } from "@/lib/firestore"
 import { cn } from "@/lib/utils"
+import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 function Announcement() {
     const firestore = useFirestore();
@@ -92,60 +93,9 @@ function DashboardContent() {
       tx => tx.type === 'Investment' || tx.type === 'Payout'
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-
-  if (userLoading) {
-      return (
-        <div className="grid auto-rows-max items-start gap-4 md:gap-8 lg:col-span-2">
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
-                <Card className="sm:col-span-2">
-                    <CardHeader className="pb-3">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-full mt-2" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-10 w-36" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>{t('dashboard.balance')}</CardDescription>
-                         <Skeleton className="h-10 w-3/4" />
-                    </CardHeader>
-                    <CardContent>
-                       <Skeleton className="h-4 w-1/2" />
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="pb-2">
-                        <CardDescription>{t('dashboard.vipLevel')}</CardDescription>
-                        <Skeleton className="h-10 w-1/2" />
-                    </CardHeader>
-                    <CardContent>
-                        <Skeleton className="h-4 w-full" />
-                         <Skeleton className="h-3 w-1/2 mt-2" />
-                    </CardContent>
-                </Card>
-            </div>
-             <Card>
-                <CardHeader>
-                    <CardTitle>Investment History</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="space-y-4">
-                      {[...Array(5)].map((_, i) => (
-                        <div className="flex justify-between items-center" key={i}>
-                          <div className="flex flex-col gap-2">
-                             <Skeleton className="h-4 w-24" />
-                             <Skeleton className="h-3 w-32" />
-                          </div>
-                          <Skeleton className="h-6 w-20" />
-                        </div>
-                      ))}
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-      )
+  const isLoading = userLoading || transactionsLoading;
+  if (isLoading) {
+      return <PageTransitionLoader />
   }
 
   if (!user) {
@@ -273,7 +223,7 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<PageTransitionLoader />}>
       <DashboardContent />
     </Suspense>
   )

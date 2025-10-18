@@ -46,7 +46,6 @@ import { LanguageSwitcher } from "@/components/language-switcher"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, listenToAllUsers, listenToPartnerRequests } from "@/lib/firestore"
 import type { Transaction, User as UserType, PartnerRequest } from "@/lib/data"
-import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 export default function AdminLayout({
   children,
@@ -209,9 +208,7 @@ export default function AdminLayout({
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <React.Suspense fallback={<PageTransitionLoader />}>
-              {children}
-            </React.Suspense>
+            {children}
         </main>
       </SidebarInset>
     </SidebarProvider>

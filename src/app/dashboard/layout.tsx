@@ -33,7 +33,6 @@ import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { LiveChat } from "@/components/live-chat"
-import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 export default function DashboardLayout({
   children,
@@ -103,9 +102,7 @@ export default function DashboardLayout({
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            <React.Suspense fallback={<PageTransitionLoader />}>
-              {children}
-            </React.Suspense>
+            {children}
         </main>
         <LiveChat />
       </SidebarInset>

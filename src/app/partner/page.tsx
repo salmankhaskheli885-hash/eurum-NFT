@@ -20,6 +20,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
+import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 
 function Announcement() {
@@ -110,6 +111,10 @@ export default function PartnerDashboardPage() {
 
 
   const isLoading = userLoading || loading;
+
+  if (isLoading) {
+    return <PageTransitionLoader />
+  }
 
   const stats = [
     { title: t('partner.dashboard.totalUsers'), value: totalReferredUsers.toString(), icon: Users },
