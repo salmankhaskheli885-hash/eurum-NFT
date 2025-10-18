@@ -42,8 +42,8 @@ import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { useFirestore } from "@/firebase/provider"
-import { listenToAllTransactions, listenToAllUsers } from "@/lib/firestore"
-import type { Transaction, User as UserType } from "@/lib/data"
+import { listenToAllTransactions, listenToAllUsers, listenToPartnerRequests } from "@/lib/firestore"
+import type { Transaction, User as UserType, PartnerRequest } from "@/lib/data"
 
 export default function AdminLayout({
   children,
@@ -74,47 +74,46 @@ export default function AdminLayout({
       setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
     });
     
+    const unsubPartnerReqs = listenToPartnerRequests(firestore, (requests: PartnerRequest[]) => {
+        setPendingPartnerReqs(requests.filter(r => r.status === 'pending').length);
+    });
+
     return () => {
       unsubscribeTransactions();
       unsubKyc();
+      unsubPartnerReqs();
     };
   }, [firestore]);
 
 
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
-     { 
-        label: 'User Management', 
-        icon: Users,
-        subItems: [
-            { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
-            { 
-                href: "/admin/deposits", 
-                label: "User Deposits", 
-                icon: DollarSign,
-                badge: pendingDeposits,
-            },
-            { 
-                href: "/admin/withdrawals", 
-                label: "User Withdrawals", 
-                icon: Landmark,
-                badge: pendingWithdrawals,
-            },
-             { 
-                href: "/admin/kyc", 
-                label: "User KYC", 
-                icon: UserCheck,
-                badge: pendingKyc
-            },
-        ] 
+    { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
+    { 
+        href: "/admin/deposits", 
+        label: "User Deposits", 
+        icon: DollarSign,
+        badge: pendingDeposits,
     },
-     { 
-        label: 'Partner Management', 
-        icon: Handshake,
-        subItems: [
-            { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
-        ] 
+    { 
+        href: "/admin/withdrawals", 
+        label: "User Withdrawals", 
+        icon: Landmark,
+        badge: pendingWithdrawals,
     },
+    { 
+        href: "/admin/kyc", 
+        label: "User KYC", 
+        icon: UserCheck,
+        badge: pendingKyc
+    },
+    { 
+        href: "/admin/partner-requests", 
+        label: "Partner Requests", 
+        icon: UserPlus,
+        badge: pendingPartnerReqs
+    },
+    { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
     { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
@@ -126,10 +125,6 @@ export default function AdminLayout({
     { href: "/partner", label: "View Partner Panel", icon: Handshake },
     { href: "/agent", label: "View Agent Panel", icon: MessageSquare },
   ]
-
-  const isSubItemActive = (subItems: any[]) => {
-      return subItems.some(item => pathname.startsWith(item.href));
-  }
 
   return (
     <SidebarProvider>
@@ -143,45 +138,19 @@ export default function AdminLayout({
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item, index) => (
-              <SidebarMenuItem key={index}>
-                {item.href ? (
-                    <Link href={item.href}>
-                        <SidebarMenuButton
-                            isActive={pathname === item.href}
-                            tooltip={item.label}
-                        >
-                            <item.icon />
-                            <span>{item.label}</span>
-                        </SidebarMenuButton>
-                    </Link>
-                ) : (
+              <SidebarMenuItem key={item.href}>
+                <Link href={item.href}>
                     <SidebarMenuButton
-                        isSub
-                        isActive={isSubItemActive(item.subItems!)}
+                        isActive={pathname === item.href}
                         tooltip={item.label}
                     >
                         <item.icon />
                         <span>{item.label}</span>
+                         {item.badge != null && item.badge > 0 ? (
+                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                            ) : null}
                     </SidebarMenuButton>
-                )}
-
-                {item.subItems && (
-                  <SidebarMenuSub>
-                    {item.subItems.map(subItem => (
-                      <SidebarMenuSubItem key={subItem.href}>
-                        <Link href={subItem.href}>
-                           <SidebarMenuSubButton isActive={pathname.startsWith(subItem.href)}>
-                              {subItem.icon && <subItem.icon />}
-                              <span>{subItem.label}</span>
-                               {subItem.badge != null && subItem.badge > 0 ? (
-                                <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
-                                ) : null}
-                          </SidebarMenuSubButton>
-                        </Link>
-                      </SidebarMenuSubItem>
-                    ))}
-                  </SidebarMenuSub>
-                )}
+                </Link>
               </SidebarMenuItem>
             ))}
              <SidebarMenuItem>
