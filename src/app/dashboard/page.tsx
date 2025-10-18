@@ -67,14 +67,17 @@ function DashboardContent() {
   const [transactionsLoading, setTransactionsLoading] = useState(true);
 
   useEffect(() => {
-    if (!firestore || !user?.uid) return;
+    if (!firestore || !user?.uid) {
+        if (!userLoading) setTransactionsLoading(false);
+        return;
+    };
     setTransactionsLoading(true);
     const unsubscribe = listenToUserTransactions(firestore, user.uid, (newTransactions) => {
         setTransactions(newTransactions);
         setTransactionsLoading(false);
     }); // Fetch all transactions
     return () => unsubscribe();
-  }, [firestore, user?.uid]);
+  }, [firestore, user?.uid, userLoading]);
 
 
   const formatCurrency = (amount: number) => {
@@ -94,6 +97,7 @@ function DashboardContent() {
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const isLoading = userLoading || transactionsLoading;
+  
   if (isLoading) {
       return <PageTransitionLoader />
   }
@@ -175,17 +179,7 @@ function DashboardContent() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {transactionsLoading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
-                        </TableRow>
-                    ))
-                ) : investmentTransactions.length > 0 ? (
+                {investmentTransactions.length > 0 ? (
                     investmentTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                         <TableCell className="font-medium">
@@ -223,8 +217,6 @@ function DashboardContent() {
 
 export default function Dashboard() {
   return (
-    <Suspense fallback={<PageTransitionLoader />}>
       <DashboardContent />
-    </Suspense>
   )
 }

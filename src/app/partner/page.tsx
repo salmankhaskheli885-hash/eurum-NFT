@@ -60,29 +60,36 @@ export default function PartnerDashboardPage() {
 
   const [referredUsers, setReferredUsers] = React.useState<User[]>([])
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
-  const [loading, setLoading] = React.useState(true)
+  const [dataLoading, setDataLoading] = React.useState(true)
 
   React.useEffect(() => {
-    if (!firestore || !currentUser) return;
+    if (!firestore || !currentUser) {
+        if (!userLoading) setDataLoading(false);
+        return;
+    };
     
-    setLoading(true);
+    setDataLoading(true);
 
     const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         const myReferrals = allUsers.filter(u => u.referredBy === currentUser.uid);
         setReferredUsers(myReferrals);
-        setLoading(false); // Set loading false after users are fetched
+        if(transactions.length > 0) setDataLoading(false);
     });
 
     const unsubscribeTransactions = listenToUserTransactions(firestore, currentUser.uid, (transactions) => {
         setTransactions(transactions);
+        if(referredUsers.length > 0 || transactions.length > 0) setDataLoading(false);
     });
+    
+    const timer = setTimeout(() => setDataLoading(false), 3000);
 
     return () => {
         unsubscribeUsers();
         unsubscribeTransactions();
+        clearTimeout(timer);
     };
 
-  }, [firestore, currentUser])
+  }, [firestore, currentUser, userLoading, transactions.length, referredUsers.length])
 
   const formatCurrency = (amount: number, compact = true) => {
     return new Intl.NumberFormat("en-US", {
@@ -110,7 +117,7 @@ export default function PartnerDashboardPage() {
   ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
 
-  const isLoading = userLoading || loading;
+  const isLoading = userLoading || dataLoading;
 
   if (isLoading) {
     return <PageTransitionLoader />
@@ -166,17 +173,7 @@ export default function PartnerDashboardPage() {
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {isLoading ? (
-                    [...Array(5)].map((_, i) => (
-                        <TableRow key={i}>
-                            <TableCell><Skeleton className="h-5 w-24" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-16" /></TableCell>
-                            <TableCell><Skeleton className="h-5 w-20" /></TableCell>
-                            <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
-                            <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
-                        </TableRow>
-                    ))
-                ) : investmentTransactions.length > 0 ? (
+                {investmentTransactions.length > 0 ? (
                     investmentTransactions.map((transaction) => (
                         <TableRow key={transaction.id}>
                         <TableCell className="font-medium">

@@ -44,6 +44,7 @@ import { Label } from "@/components/ui/label"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAllInvestmentPlans, addTransaction } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 
 function InvestmentConfirmationDialog({ plan, onConfirm }: { plan: InvestmentPlan, onConfirm: (plan: InvestmentPlan, amount: number) => void }) {
@@ -229,33 +230,7 @@ export default function PartnerInvestmentsPage() {
   const isLoading = userLoading || plansLoading;
 
   if (isLoading) {
-      return (
-        <div className="flex flex-col gap-4">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">{t('investments.title')}</h1>
-                <p className="text-muted-foreground">{t('investments.description')}</p>
-            </div>
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {[...Array(3)].map((_, i) => (
-                    <Card key={i} className="flex flex-col">
-                        <CardHeader>
-                            <Skeleton className="h-40 w-full mb-4 rounded-t-lg"/>
-                            <Skeleton className="h-7 w-3/4" />
-                            <Skeleton className="h-4 w-1/2 mt-1" />
-                        </CardHeader>
-                        <CardContent className="flex-grow grid gap-4">
-                            <Skeleton className="h-5 w-full"/>
-                            <Skeleton className="h-5 w-full"/>
-                            <Skeleton className="h-5 w-full"/>
-                        </CardContent>
-                        <CardFooter>
-                            <Skeleton className="h-10 w-full"/>
-                        </CardFooter>
-                    </Card>
-                ))}
-            </div>
-        </div>
-      )
+      return <PageTransitionLoader />
   }
 
   return (
@@ -323,7 +298,7 @@ export default function PartnerInvestmentsPage() {
             </Card>
           )
         })}
-        {!plansLoading && plans.length === 0 && (
+        {plans.length === 0 && (
             <Card className="md:col-span-3 text-center">
                 <CardHeader>
                     <CardTitle>No Plans Available</CardTitle>

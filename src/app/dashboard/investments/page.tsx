@@ -298,7 +298,7 @@ export default function InvestmentsPage() {
             </Card>
           )
         })}
-        {!plansLoading && plans.length === 0 && (
+        {plans.length === 0 && (
             <Card className="md:col-span-3 text-center">
                 <CardHeader>
                     <CardTitle>No Plans Available</CardTitle>
