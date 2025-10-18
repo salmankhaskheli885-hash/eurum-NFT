@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { initializeFirebase } from '@/firebase';
 import { FirebaseProvider, type FirebaseContextValue } from '@/firebase/provider';
-import { Loader2 } from 'lucide-react';
+import { Logo } from '@/components/icons';
 
 /**
  * This is the most important provider. It ensures that Firebase is initialized
@@ -34,12 +34,12 @@ export function FirebaseClientProvider({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
-  // While Firebase is initializing, show a loading indicator.
-  // This is the key to preventing the "client is offline" error.
+  // While Firebase is initializing, show a branded loading indicator.
   if (!firebase) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader2 className="h-20 w-20 animate-spin text-primary" />
+      <div className="flex h-screen w-screen flex-col items-center justify-center gap-4 bg-background">
+        <Logo className="h-24 w-24 animate-pulse text-primary duration-2000" />
+        <p className="text-muted-foreground">Loading AurumNFT...</p>
       </div>
     );
   }

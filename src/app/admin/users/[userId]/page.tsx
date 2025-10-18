@@ -15,6 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { ArrowLeft } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export default function AdminUserDetailsPage() {
     const params = useParams()
@@ -99,15 +100,18 @@ export default function AdminUserDetailsPage() {
 
     if (loading) {
         return (
-             <div className="flex flex-col gap-4">
-                <Skeleton className="h-8 w-48" />
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+             <div className="flex flex-col gap-8">
+                 <div className="flex items-center gap-4">
+                    <Skeleton className="h-7 w-7 rounded-md" />
+                    <Skeleton className="h-8 w-48" />
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                     <Card className="lg:col-span-1">
                         <CardHeader>
                             <Skeleton className="h-7 w-1/2"/>
                             <Skeleton className="h-4 w-3/4 mt-1"/>
                         </CardHeader>
-                        <CardContent className="space-y-4">
+                        <CardContent className="space-y-6">
                             {[...Array(5)].map((_, i) => (
                                 <div key={i} className="space-y-2">
                                     <Skeleton className="h-4 w-1/4"/>
@@ -120,7 +124,7 @@ export default function AdminUserDetailsPage() {
                     <div className="lg:col-span-2 space-y-8">
                         <Card>
                              <CardHeader><Skeleton className="h-7 w-1/3"/></CardHeader>
-                             <CardContent><Skeleton className="h-24 w-full"/></CardContent>
+                             <CardContent><Skeleton className="h-32 w-full"/></CardContent>
                         </Card>
                          <Card>
                              <CardHeader><Skeleton className="h-7 w-1/3"/></CardHeader>
@@ -254,7 +258,11 @@ export default function AdminUserDetailsPage() {
                                             <TableCell className={`${tx.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>PKR {tx.amount.toLocaleString()}</TableCell>
                                             <TableCell>{formatDate(tx.date)}</TableCell>
                                             <TableCell>
-                                                <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
+                                                <Badge variant={getStatusVariant(tx.status)} 
+                                                    className={cn(tx.status === 'Completed' && 'bg-green-600 hover:bg-green-700')}
+                                                >
+                                                    {tx.status}
+                                                </Badge>
                                             </TableCell>
                                         </TableRow>
                                     )) : (
