@@ -31,6 +31,7 @@ export function FirebaseClientProvider({
       init();
     }
   // We ONLY want this to run once, so we leave the dependency array empty.
+  // This is the fix for the "Pending promise was never set" error.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); 
 
