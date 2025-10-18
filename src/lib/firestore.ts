@@ -30,6 +30,25 @@ import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, Chat
 import { UserProfile } from './schema';
 import { updateProfile } from 'firebase/auth';
 import { extractTid } from '@/ai/flows/extract-tid-flow';
+import imageCompression from 'browser-image-compression';
+
+// Helper function to optimize images before upload
+async function optimizeImage(imageFile: File): Promise<File> {
+    const options = {
+        maxSizeMB: 1,          // (default: Number.POSITIVE_INFINITY)
+        maxWidthOrHeight: 1920, // (default: undefined)
+        useWebWorker: true,      // (default: true)
+    };
+    try {
+        const compressedFile = await imageCompression(imageFile, options);
+        console.log(`Compressed file size: ${compressedFile.size / 1024 / 1024} MB`);
+        return compressedFile;
+    } catch (error) {
+        console.error("Image compression error:", error);
+        return imageFile; // Return original file if compression fails
+    }
+}
+
 
 // USER FUNCTIONS
 export async function getOrCreateUser(
@@ -77,12 +96,9 @@ export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, cal
     const usersCollection = collection(firestore, 'users');
     const q = query(usersCollection);
     
-    let usersLoaded = false;
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const users = snapshot.docs.map(doc => ({...doc.data(), uid: doc.id } as User));
         callback(users);
-        usersLoaded = true;
     });
 
     return unsubscribe;
@@ -117,10 +133,11 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 // Separate function to handle background receipt upload
 const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof getFirestore>, transactionId: string, userId: string, receiptFile: File) => {
     try {
+        const optimizedFile = await optimizeImage(receiptFile);
         const storage = getStorage();
-        const receiptPath = `receipts/${userId}/${transactionId}_${receiptFile.name}`;
+        const receiptPath = `receipts/${userId}/${transactionId}_${optimizedFile.name}`;
         const storageRef = ref(storage, receiptPath);
-        const snapshot = await uploadBytes(storageRef, receiptFile);
+        const snapshot = await uploadBytes(storageRef, optimizedFile);
         const receiptUrl = await getDownloadURL(snapshot.ref);
 
         const transactionRef = doc(firestore, 'transactions', transactionId);
@@ -501,9 +518,6 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection);
 
-    let transactionsLoaded = false;
-    let timeout: NodeJS.Timeout;
-
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => {
             const data = doc.data()
@@ -513,16 +527,7 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
             } as Transaction
         });
         callback(transactions);
-        transactionsLoaded = true;
-        clearTimeout(timeout);
     });
-
-    timeout = setTimeout(() => {
-        if (!transactionsLoaded) {
-            console.warn("Firestore 'listenToAllTransactions' timed out after 10 seconds.");
-            callback([]); // Return empty array on timeout
-        }
-    }, 10000);
 
     return unsubscribe;
 }
@@ -544,11 +549,12 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
 
 // INVESTMENT PLAN FUNCTIONS
 const uploadPlanImage = (planId: string, imageFile: File, onProgress: (progress: number) => void): Promise<string> => {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
+        const optimizedFile = await optimizeImage(imageFile);
         const storage = getStorage();
-        const imagePath = `investment_plans/${planId}/${Date.now()}_${imageFile.name}`;
+        const imagePath = `investment_plans/${planId}/${Date.now()}_${optimizedFile.name}`;
         const storageRef = ref(storage, imagePath);
-        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+        const uploadTask = uploadBytesResumable(storageRef, optimizedFile);
 
         uploadTask.on(
             'state_changed',
@@ -574,7 +580,7 @@ export async function addInvestmentPlan(
     imageFile: File,
     onProgress: (progress: number) => void
 ): Promise<InvestmentPlan> {
-    const newDocRef = doc(collection(firestore, 'investment_plans')); // Get a new doc ref with an ID first
+    const newDocRef = doc(collection(firestore, 'investment_plans'));
     
     const imageUrl = await uploadPlanImage(newDocRef.id, imageFile, onProgress);
     
@@ -790,10 +796,11 @@ export async function sendMessage(firestore: ReturnType<typeof getFirestore>, ro
     
     let imageUrl: string | undefined = undefined;
     if (imageFile) {
+        const optimizedFile = await optimizeImage(imageFile);
         const storage = getStorage();
-        const imagePath = `chat_images/${roomId}/${Date.now()}_${imageFile.name}`;
+        const imagePath = `chat_images/${roomId}/${Date.now()}_${optimizedFile.name}`;
         const storageRef = ref(storage, imagePath);
-        const snapshot = await uploadBytes(storageRef, imageFile);
+        const snapshot = await uploadBytes(storageRef, optimizedFile);
         imageUrl = await getDownloadURL(snapshot.ref);
     }
 
