@@ -8,13 +8,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useTranslation } from "@/hooks/use-translation"
-import { Copy } from "lucide-react"
+import { Copy, Loader2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { type AppSettings } from "@/lib/data"
+import { type AppSettings, type Transaction } from "@/lib/data"
 import { useUser } from "@/hooks/use-user"
 import { useFirestore } from "@/firebase/provider"
-import { addTransaction, listenToAppSettings } from "@/lib/firestore"
+import { addTransaction, listenToAppSettings, listenToUserTransactions } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Badge } from "@/components/ui/badge"
+
 
 export default function DepositPage() {
     const { t } = useTranslation()
@@ -30,7 +33,12 @@ export default function DepositPage() {
     const [yourNumber, setYourNumber] = useState("")
     const [amount, setAmount] = useState("")
     const [tid, setTid] = useState("")
-    const [receipt, setReceipt] = useState<File | null>(null)
+    const [receiptFile, setReceiptFile] = useState<File | null>(null)
+    const [isSubmitting, setIsSubmitting] = useState(false)
+
+    // State for deposit history
+    const [transactions, setTransactions] = useState<Transaction[]>([])
+    const [historyLoading, setHistoryLoading] = useState(true)
 
     useEffect(() => {
         if (!firestore) return;
@@ -41,7 +49,23 @@ export default function DepositPage() {
         });
         return () => unsubscribe();
     }, [firestore]);
-
+    
+    // useEffect for fetching deposit history
+    useEffect(() => {
+        if (!user || !firestore) {
+            if (!userLoading) setHistoryLoading(false);
+            return;
+        };
+        setHistoryLoading(true);
+        const unsubscribe = listenToUserTransactions(firestore, user.uid, (allTransactions) => {
+            const depositTxs = allTransactions
+                .filter(tx => tx.type === 'Deposit')
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setTransactions(depositTxs);
+            setHistoryLoading(false);
+        });
+        return () => unsubscribe();
+    }, [user, firestore, userLoading]);
 
     const handleCopy = () => {
         if (!settings) return;
@@ -60,7 +84,17 @@ export default function DepositPage() {
     
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!user || !firestore) {
+
+        if (!receiptFile) {
+             toast({
+                variant: "destructive",
+                title: "Receipt Required",
+                description: "Please upload a payment receipt to continue.",
+            })
+            return
+        }
+
+        if (!user || !firestore || !settings) {
             toast({
                 variant: "destructive",
                 title: "Not Logged In",
@@ -69,6 +103,23 @@ export default function DepositPage() {
             return
         }
         
+        const depositAmount = parseFloat(amount);
+        if (isNaN(depositAmount) || depositAmount <= 0) {
+            toast({ variant: 'destructive', title: 'Invalid Amount', description: 'Please enter a valid positive number for the amount.' });
+            return;
+        }
+
+        if (settings.minDeposit && depositAmount < settings.minDeposit) {
+            toast({ variant: 'destructive', title: `Minimum deposit is PKR ${settings.minDeposit}` });
+            return;
+        }
+        if (settings.maxDeposit && depositAmount > settings.maxDeposit) {
+            toast({ variant: 'destructive', title: `Maximum deposit is PKR ${settings.maxDeposit}` });
+            return;
+        }
+        
+        setIsSubmitting(true);
+        
         try {
             await addTransaction(firestore, {
                 userId: user.uid,
@@ -76,28 +127,49 @@ export default function DepositPage() {
                 userRole: user.role, // Pass the user's role
                 type: 'Deposit',
                 amount: parseFloat(amount),
-                status: 'Pending',
+                status: 'Pending', 
+                receiptFile: receiptFile,
+                details: `Deposit via ${yourNumber} with TID: ${tid}`,
             });
 
-            toast({
+             toast({
                 title: "Deposit Request Submitted",
-                description: "Your deposit is being reviewed and will be processed shortly.",
-            })
-
-            router.push('/partner/transactions')
-        } catch (error) {
+                description: "Your deposit is being processed and will reflect in your balance shortly.",
+            });
+            // Clear form
+            setAmount("");
+            setYourNumber("");
+            setTid("");
+            setReceiptFile(null);
+        } catch (error: any) {
+            console.error("Deposit submission error:", error);
             toast({
                 variant: "destructive",
                 title: "Submission Failed",
-                description: "Could not submit your deposit request.",
+                description: error.message || "Could not submit your deposit request.",
             })
+        } finally {
+            setIsSubmitting(false);
+        };
+    }
+    
+    // Helper functions for rendering history
+    const formatDate = (dateString: string) => new Date(dateString).toLocaleString();
+    const formatCurrency = (amount: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "PKR" }).format(amount);
+    const getStatusVariant = (status: Transaction['status']) => {
+        switch (status) {
+            case 'Completed': return 'default'
+            case 'Pending': return 'secondary'
+            case 'Failed': return 'destructive'
+            default: return 'outline'
         }
     }
 
-  const isLoading = userLoading || settingsLoading;
+    const isLoading = userLoading || settingsLoading;
+    const isHistoryLoading = userLoading || historyLoading;
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto">
+    <div className="flex flex-col gap-8 max-w-2xl mx-auto">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('deposit.title')}</h1>
         <p className="text-muted-foreground">{t('deposit.description')}</p>
@@ -152,21 +224,73 @@ export default function DepositPage() {
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="amount">{t('deposit.amount')}</Label>
                     <Input id="amount" type="number" placeholder="5000" value={amount} onChange={(e) => setAmount(e.target.value)} required />
+                    {settings && (settings.minDeposit) && (
+                        <p className="text-xs text-muted-foreground pt-1">
+                           Minimum deposit is PKR {settings.minDeposit || 0}.
+                        </p>
+                    )}
                 </div>
                 <div className="grid w-full items-center gap-1.5">
                     <Label htmlFor="tid-number">{t('deposit.tidNumber')}</Label>
                     <Input id="tid-number" type="text" placeholder="A1B2C3D4E5" value={tid} onChange={(e) => setTid(e.target.value)} required />
                 </div>
                  <div className="grid w-full items-center gap-1.5">
-                    <Label htmlFor="receipt">Payment Receipt</Label>
-                    <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceipt(e.target.files ? e.target.files[0] : null)} />
+                    <Label htmlFor="receipt">Payment Receipt (Required)</Label>
+                    <Input id="receipt" type="file" accept="image/*" onChange={(e) => setReceiptFile(e.target.files ? e.target.files[0] : null)} required />
                 </div>
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                    {t('deposit.submitButton')}
+                <Button type="submit" className="w-full" disabled={isLoading || isSubmitting}>
+                    {isSubmitting ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                        t('deposit.submitButton')
+                    )}
                 </Button>
             </form>
         </CardContent>
       </Card>
+      
+      <Card>
+            <CardHeader>
+                <CardTitle>Deposit History</CardTitle>
+                <CardDescription>A list of your past deposits.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Date & Time</TableHead>
+                            <TableHead className="text-right">Amount</TableHead>
+                            <TableHead className="text-center">Status</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isHistoryLoading ? (
+                            [...Array(3)].map((_, i) => (
+                                <TableRow key={i}>
+                                    <TableCell><Skeleton className="h-5 w-24" /></TableCell>
+                                    <TableCell className="text-right"><Skeleton className="h-5 w-16 ml-auto" /></TableCell>
+                                    <TableCell className="text-center"><Skeleton className="h-6 w-20 rounded-full mx-auto" /></TableCell>
+                                </TableRow>
+                            ))
+                        ) : transactions.length > 0 ? (
+                            transactions.map((tx) => (
+                                <TableRow key={tx.id}>
+                                    <TableCell>{formatDate(tx.date)}</TableCell>
+                                    <TableCell className="text-right font-medium text-green-600">{formatCurrency(tx.amount)}</TableCell>
+                                    <TableCell className="text-center">
+                                        <Badge variant={getStatusVariant(tx.status)}>{tx.status}</Badge>
+                                    </TableCell>
+                                </TableRow>
+                            ))
+                        ) : (
+                            <TableRow>
+                                <TableCell colSpan={3} className="h-24 text-center">No deposits found.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
     </div>
   )
 }

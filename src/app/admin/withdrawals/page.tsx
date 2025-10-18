@@ -17,7 +17,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { useTranslation } from "@/hooks/use-translation"
 import { type Transaction } from "@/lib/data"
 import { Search, CheckCircle, XCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -31,7 +30,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
 export default function AdminWithdrawalsPage() {
-  const { t } = useTranslation()
   const firestore = useFirestore()
   const { toast } = useToast()
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
