@@ -535,8 +535,10 @@ export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestor
     const plansCollection = collection(firestore, 'investment_plans');
     const newDocRef = doc(plansCollection); // Create ref with ID first
     
+    // First, upload the image with the new ID
     const imageUrl = await uploadPlanImage(newDocRef.id, imageFile);
     
+    // Then, create the document with the image URL
     const finalPlanData = { ...planData, imageUrl };
     await setDoc(newDocRef, finalPlanData);
 
@@ -545,7 +547,8 @@ export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestor
 
 export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planId: string, updates: Partial<Omit<InvestmentPlan, 'id'>>, imageFile?: File) {
     const planRef = doc(firestore, 'investment_plans', planId);
-    let finalUpdates = { ...updates };
+    
+    const finalUpdates: Partial<InvestmentPlan> = { ...updates };
 
     if (imageFile) {
         const newImageUrl = await uploadPlanImage(planId, imageFile);
@@ -597,7 +600,7 @@ export function listenToAppSettings(firestore: ReturnType<typeof getFirestore>, 
             callback({
                 adminWalletNumber: "0300-1234567",
                 adminWalletName: "JazzCash",
-                adminAccountHolderName: "Fynix Pro Admin",
+                adminAccountHolderName: "AurumNFT Admin",
                 withdrawalFee: 2,
                 isUserPanelEnabled: true,
                 isPartnerPanelEnabled: true,
@@ -924,5 +927,3 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
-
-    
