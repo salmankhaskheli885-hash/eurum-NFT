@@ -18,7 +18,6 @@ const handleError = (e: any) => {
 export const ai = genkit({
   plugins: [
     googleAI({
-      apiVersion: 'v1beta',
       maxOutputTokens: 256,
       errorHandler: handleError,
     }),
