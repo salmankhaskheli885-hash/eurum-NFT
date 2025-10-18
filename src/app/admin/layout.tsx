@@ -18,7 +18,9 @@ import {
   History,
   MessageSquare,
   ListChecks,
-  UserPlus
+  UserPlus,
+  ArrowDownToLine,
+  ArrowUpFromLine
 } from "lucide-react"
 
 import {
@@ -54,8 +56,8 @@ export default function AdminLayout({
   const { t } = useTranslation()
   const firestore = useFirestore()
 
-  const [pendingDeposits, setPendingDeposits] = React.useState(0);
-  const [pendingWithdrawals, setPendingWithdrawals] = React.useState(0);
+  const [pendingUserDeposits, setPendingUserDeposits] = React.useState(0);
+  const [pendingUserWithdrawals, setPendingUserWithdrawals] = React.useState(0);
   const [pendingKyc, setPendingKyc] = React.useState(0);
   const [pendingPartnerReqs, setPendingPartnerReqs] = React.useState(0);
 
@@ -64,51 +66,53 @@ export default function AdminLayout({
     if (!firestore) return;
 
     const unsubscribeTransactions = listenToAllTransactions(firestore, (transactions: Transaction[]) => {
-      const deposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending').length;
-      const withdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending').length;
-      setPendingDeposits(deposits);
-      setPendingWithdrawals(withdrawals);
+      const userDeposits = transactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user').length;
+      const userWithdrawals = transactions.filter(tx => tx.type === 'Withdrawal' && tx.status === 'Pending' && tx.userRole === 'user').length;
+      setPendingUserDeposits(userDeposits);
+      setPendingUserWithdrawals(userWithdrawals);
     });
     
     const unsubKyc = listenToAllUsers(firestore, (users: UserType[]) => {
       setPendingKyc(users.filter(u => u.kycStatus === 'pending').length);
     });
     
-    // Partner Requests are not part of the simplified setup
-    // const unsubPartnerReqs = listenToPartnerRequests(firestore, (requests: PartnerRequest[]) => {
-    //     setPendingPartnerReqs(requests.filter(r => r.status === 'pending').length);
-    // });
+    const unsubPartnerReqs = listenToPartnerRequests(firestore, (requests: PartnerRequest[]) => {
+        setPendingPartnerReqs(requests.filter(r => r.status === 'pending').length);
+    });
 
     return () => {
       unsubscribeTransactions();
       unsubKyc();
-      // unsubPartnerReqs();
+      unsubPartnerReqs();
     };
   }, [firestore]);
 
 
   const menuItems = [
     { href: "/admin", label: t('admin.nav.dashboard'), icon: LayoutDashboard },
-    { href: "/admin/users", label: t('admin.nav.users'), icon: Users },
     { 
-        href: "/admin/deposits", 
-        label: "User Deposits", 
-        icon: DollarSign,
-        badge: pendingDeposits,
+      label: "User Management", 
+      icon: Users,
+      subItems: [
+        { href: "/admin/users", label: "All Users" },
+        { href: "/admin/deposits", label: "Deposits", badge: pendingUserDeposits },
+        { href: "/admin/withdrawals", label: "Withdrawals", badge: pendingUserWithdrawals },
+      ]
     },
     { 
-        href: "/admin/withdrawals", 
-        label: "User Withdrawals", 
-        icon: Landmark,
-        badge: pendingWithdrawals,
+      label: "Partner Management", 
+      icon: Handshake,
+      subItems: [
+        { href: "/admin/partner-requests", label: "Partner Requests", badge: pendingPartnerReqs },
+        { href: "/admin/tasks", label: "Partner Tasks" },
+      ]
     },
-    { 
+     { 
         href: "/admin/kyc", 
-        label: "User KYC", 
+        label: "KYC Management", 
         icon: UserCheck,
         badge: pendingKyc
     },
-    { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
     { href: "/admin/agents", label: "Chat Agents", icon: MessageSquare },
     { href: "/admin/security", label: t('admin.nav.security'), icon: ShieldAlert },
@@ -133,20 +137,43 @@ export default function AdminLayout({
         <SidebarContent>
           <SidebarMenu>
             {menuItems.map((item, index) => (
-              <SidebarMenuItem key={item.href}>
-                <Link href={item.href}>
-                    <SidebarMenuButton
-                        isActive={pathname === item.href}
-                        tooltip={item.label}
-                    >
+              item.subItems ? (
+                <SidebarMenuItem key={item.label}>
+                    <SidebarMenuButton isSub>
                         <item.icon />
                         <span>{item.label}</span>
-                         {item.badge != null && item.badge > 0 ? (
-                            <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
-                            ) : null}
                     </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
+                    <SidebarMenuSub>
+                        {item.subItems.map(subItem => (
+                            <SidebarMenuSubItem key={subItem.href}>
+                                <Link href={subItem.href}>
+                                    <SidebarMenuSubButton isActive={pathname === subItem.href}>
+                                      {subItem.label}
+                                      {subItem.badge != null && subItem.badge > 0 ? (
+                                        <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
+                                      ) : null}
+                                    </SidebarMenuSubButton>
+                                </Link>
+                            </SidebarMenuSubItem>
+                        ))}
+                    </SidebarMenuSub>
+                </SidebarMenuItem>
+              ) : (
+                <SidebarMenuItem key={item.href}>
+                  <Link href={item.href!}>
+                      <SidebarMenuButton
+                          isActive={pathname === item.href}
+                          tooltip={item.label}
+                      >
+                          <item.icon />
+                          <span>{item.label}</span>
+                           {item.badge != null && item.badge > 0 ? (
+                              <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
+                              ) : null}
+                      </SidebarMenuButton>
+                  </Link>
+                </SidebarMenuItem>
+              )
             ))}
              <SidebarMenuItem>
               <hr className="my-2 border-sidebar-border" />

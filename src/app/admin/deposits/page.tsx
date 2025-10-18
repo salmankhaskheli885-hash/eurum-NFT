@@ -42,8 +42,8 @@ export default function AdminDepositsPage() {
     if (!firestore) return;
     setLoading(true);
     const unsubscribe = listenToAllTransactions(firestore, (allTransactions) => {
-        // Show only PENDING deposits.
-        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending'));
+        // Show only PENDING deposits from users.
+        setTransactions(allTransactions.filter(tx => tx.type === 'Deposit' && tx.status === 'Pending' && tx.userRole === 'user'));
         setLoading(false);
     });
     return () => unsubscribe();
@@ -80,8 +80,8 @@ export default function AdminDepositsPage() {
   return (
     <div className="flex flex-col gap-4">
        <div>
-        <h1 className="text-3xl font-bold tracking-tight">User & Partner Deposits</h1>
-        <p className="text-muted-foreground">Review and approve pending deposits.</p>
+        <h1 className="text-3xl font-bold tracking-tight">User Deposits</h1>
+        <p className="text-muted-foreground">Review and approve pending deposits from regular users.</p>
       </div>
         <Tabs defaultValue="pending">
             <TabsList className="grid w-full grid-cols-2">
@@ -91,8 +91,8 @@ export default function AdminDepositsPage() {
             <TabsContent value="pending">
                  <Card>
                     <CardHeader>
-                    <CardTitle>Pending Deposit Requests</CardTitle>
-                    <CardDescription>A list of all deposits awaiting approval.</CardDescription>
+                    <CardTitle>Pending User Deposit Requests</CardTitle>
+                    <CardDescription>A list of all user deposits awaiting approval.</CardDescription>
                     <div className="relative pt-2">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
@@ -163,7 +163,7 @@ export default function AdminDepositsPage() {
                             ))
                         ) : (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center">No pending deposits found.</TableCell>
+                                <TableCell colSpan={5} className="h-24 text-center">No pending user deposits found.</TableCell>
                             </TableRow>
                         )}
                         </TableBody>
