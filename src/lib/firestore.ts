@@ -76,10 +76,25 @@ export function listenToUser(firestore: ReturnType<typeof getFirestore>, userId:
 export function listenToAllUsers(firestore: ReturnType<typeof getFirestore>, callback: (users: User[]) => void): Unsubscribe {
     const usersCollection = collection(firestore, 'users');
     const q = query(usersCollection);
-    return onSnapshot(q, (snapshot) => {
+    
+    let usersLoaded = false;
+    let timeout: NodeJS.Timeout;
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
         const users = snapshot.docs.map(doc => ({...doc.data(), uid: doc.id } as User));
         callback(users);
+        usersLoaded = true;
+        clearTimeout(timeout);
     });
+    
+    timeout = setTimeout(() => {
+        if (!usersLoaded) {
+            console.warn("Firestore 'listenToAllUsers' timed out after 10 seconds.");
+            callback([]); // Return empty array on timeout
+        }
+    }, 10000);
+
+    return unsubscribe;
 }
 
 export async function updateUser(firestore: ReturnType<typeof getFirestore>, userId: string, updates: Partial<User>) {
@@ -494,7 +509,11 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
 export function listenToAllTransactions(firestore: ReturnType<typeof getFirestore>, callback: (transactions: Transaction[]) => void): Unsubscribe {
     const transactionsCollection = collection(firestore, 'transactions');
     const q = query(transactionsCollection);
-    return onSnapshot(q, (snapshot) => {
+
+    let transactionsLoaded = false;
+    let timeout: NodeJS.Timeout;
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
         const transactions = snapshot.docs.map(doc => {
             const data = doc.data()
             return {
@@ -503,7 +522,18 @@ export function listenToAllTransactions(firestore: ReturnType<typeof getFirestor
             } as Transaction
         });
         callback(transactions);
+        transactionsLoaded = true;
+        clearTimeout(timeout);
     });
+
+    timeout = setTimeout(() => {
+        if (!transactionsLoaded) {
+            console.warn("Firestore 'listenToAllTransactions' timed out after 10 seconds.");
+            callback([]); // Return empty array on timeout
+        }
+    }, 10000);
+
+    return unsubscribe;
 }
 
 export function listenToUserTransactions(firestore: ReturnType<typeof getFirestore>, userId: string, callback: (transactions: Transaction[]) => void, count?: number): Unsubscribe {
@@ -533,7 +563,7 @@ const uploadPlanImage = async (planId: string, imageFile: File): Promise<string>
 
 export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>, imageFile: File): Promise<InvestmentPlan> {
     const plansCollection = collection(firestore, 'investment_plans');
-    const newDocRef = doc(plansCollection); // Create ref with ID first
+    const newDocRef = doc(plansCollection); // Correct way to get a new doc ref with an ID
     
     // First, upload the image with the new ID
     const imageUrl = await uploadPlanImage(newDocRef.id, imageFile);
@@ -544,6 +574,7 @@ export async function addInvestmentPlan(firestore: ReturnType<typeof getFirestor
 
     return { ...finalPlanData, id: newDocRef.id };
 }
+
 
 export async function updateInvestmentPlan(firestore: ReturnType<typeof getFirestore>, planId: string, updates: Partial<Omit<InvestmentPlan, 'id'>>, imageFile?: File) {
     const planRef = doc(firestore, 'investment_plans', planId);
