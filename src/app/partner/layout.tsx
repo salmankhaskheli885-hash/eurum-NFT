@@ -2,6 +2,7 @@
 "use client"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import React from "react"
 import {
   ArrowDownToLine,
   ArrowUpFromLine,
@@ -33,6 +34,7 @@ import { UserNav } from "@/components/user-nav"
 import { useTranslation } from "@/hooks/use-translation"
 import { LanguageSwitcher } from "@/components/language-switcher"
 import { LiveChat } from "@/components/live-chat"
+import { PageTransitionLoader } from "@/components/page-transition-loader"
 
 export default function DashboardLayout({
   children,
@@ -104,7 +106,9 @@ export default function DashboardLayout({
           <UserNav />
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 md:gap-8">
-            {children}
+             <React.Suspense fallback={<PageTransitionLoader />}>
+              {children}
+            </React.Suspense>
         </main>
         <LiveChat />
       </SidebarInset>
