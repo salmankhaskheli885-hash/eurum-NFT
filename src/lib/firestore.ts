@@ -156,40 +156,40 @@ export async function addTransaction(
             // Decide if you want to proceed without AI TID or throw an error
         }
     }
+    
+    if (!dataToSave.userRole) {
+        throw new Error("User role is required to create a transaction.");
+    }
 
-    await runTransaction(firestore, async (transaction) => {
-        if (!dataToSave.userRole) {
-            throw new Error("User role is required to create a transaction.");
-        }
+    // Agent Assignment Logic (outside transaction)
+    const settingsRef = doc(firestore, "app", "settings");
+    const settingsSnap = await getDoc(settingsRef);
+    const settings = settingsSnap.data() as AppSettings;
+    const lastAssignedIndex = settings?.lastAssignedAgentIndex ?? -1;
 
-        const settingsRef = doc(firestore, "app", "settings");
-        const settingsSnap = await transaction.get(settingsRef);
-        const settings = settingsSnap.data() as AppSettings;
-        const lastAssignedIndex = settings.lastAssignedAgentIndex ?? -1;
+    const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
+    const agentsSnap = await getDocs(agentsQuery);
+    const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
+    
+    let assignedAgentId: string | undefined = undefined;
+    if (activeAgents.length > 0) {
+        const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
+        assignedAgentId = activeAgents[nextAgentIndex].uid;
+        await updateDoc(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
+    }
 
-        const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
-        const agentsSnap = await getDocs(agentsQuery);
-        const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
-
-        let assignedAgentId: string | undefined = undefined;
-        if (activeAgents.length > 0) {
-            const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
-            assignedAgentId = activeAgents[nextAgentIndex].uid;
-            transaction.update(settingsRef, { lastAssignedAgentIndex: nextAgentIndex });
-        }
-
-        const transactionObject: Partial<Transaction> = {
-            ...dataToSave,
-            id: newTransactionRef.id,
-            date: new Date().toISOString(),
-            status: dataToSave.status || 'Pending',
-            userRole: dataToSave.userRole,
-            assignedAgentId: assignedAgentId,
-            details: extractedTid ? `TID: ${extractedTid}` : dataToSave.details,
-        };
-
-        transaction.set(newTransactionRef, transactionObject);
-    });
+    const transactionObject: Partial<Transaction> = {
+        ...dataToSave,
+        id: newTransactionRef.id,
+        date: new Date().toISOString(),
+        status: dataToSave.status || 'Pending',
+        userRole: dataToSave.userRole,
+        assignedAgentId: assignedAgentId,
+        details: extractedTid ? `TID: ${extractedTid}` : dataToSave.details,
+    };
+    
+    // Save the new transaction
+    await setDoc(newTransactionRef, transactionObject);
 
     if (receiptFile) {
         // Upload happens after the main transaction is committed
@@ -637,7 +637,6 @@ export function listenToAllChatAgents(firestore: ReturnType<typeof getFirestore>
 
 // CHAT SYSTEM FUNCTIONS
 export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirestore>, user: UserProfile): Promise<ChatRoom> {
-  // Always create a new chat room.
   return runTransaction(firestore, async (transaction) => {
     const settingsRef = doc(firestore, "app", "settings");
     const settingsSnap = await transaction.get(settingsRef);
@@ -864,3 +863,5 @@ export async function sendPartnerRequest(firestore: ReturnType<typeof getFiresto
 }
 
 export { type ChatMessage };
+
+    
