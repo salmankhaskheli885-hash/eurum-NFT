@@ -2,7 +2,7 @@
 // NOTE: This is a public-facing configuration object.
 // No sensitive data should be stored here.
 export const firebaseConfig = {
-  apiKey: "AIzaSyCrYsSYOHRscaRRel3Jrw29v1xNaz8k1p0",
+  apiKey: "AIzaSyDVdiPQ_CWI6KbdXjTd1-VxzsNSdMgXQFA",
   authDomain: "fynixpro222.firebaseapp.com",
   projectId: "fynixpro222",
   storageBucket: "fynixpro222.appspot.com",
