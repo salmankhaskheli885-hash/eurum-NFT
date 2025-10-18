@@ -69,27 +69,34 @@ export default function PartnerDashboardPage() {
     };
     
     setDataLoading(true);
+    let usersLoaded = false;
+    let transactionsLoaded = false;
+
+    const checkLoading = () => {
+        if (usersLoaded && transactionsLoaded) {
+            setDataLoading(false);
+        }
+    }
 
     const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         const myReferrals = allUsers.filter(u => u.referredBy === currentUser.uid);
         setReferredUsers(myReferrals);
-        if(transactions.length > 0) setDataLoading(false);
+        usersLoaded = true;
+        checkLoading();
     });
 
     const unsubscribeTransactions = listenToUserTransactions(firestore, currentUser.uid, (transactions) => {
         setTransactions(transactions);
-        if(referredUsers.length > 0 || transactions.length > 0) setDataLoading(false);
+        transactionsLoaded = true;
+        checkLoading();
     });
     
-    const timer = setTimeout(() => setDataLoading(false), 3000);
-
     return () => {
         unsubscribeUsers();
         unsubscribeTransactions();
-        clearTimeout(timer);
     };
 
-  }, [firestore, currentUser, userLoading, transactions.length, referredUsers.length])
+  }, [firestore, currentUser, userLoading])
 
   const formatCurrency = (amount: number, compact = true) => {
     return new Intl.NumberFormat("en-US", {
@@ -208,3 +215,5 @@ export default function PartnerDashboardPage() {
     </div>
   )
 }
+
+    

@@ -117,31 +117,36 @@ export default function AdminDashboardPage() {
   const [transactions, setTransactions] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
 
-  React.useEffect(() => {
+ React.useEffect(() => {
     if (!firestore) return;
     
     setLoading(true);
+    let usersLoaded = false;
+    let transactionsLoaded = false;
+
+    const checkLoading = () => {
+        if (usersLoaded && transactionsLoaded) {
+            setLoading(false);
+        }
+    }
 
     const unsubscribeUsers = listenToAllUsers(firestore, (allUsers) => {
         setUsers(allUsers);
-        // We can set loading to false once one of the listeners returns data
-        if (transactions.length > 0) setLoading(false); 
+        usersLoaded = true;
+        checkLoading();
     });
     
     const unsubscribeTransactions = listenToAllTransactions(firestore, (allTransactions) => {
         setTransactions(allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-         if (users.length > 0 || allTransactions.length > 0) setLoading(false);
+        transactionsLoaded = true;
+        checkLoading();
     });
-
-    // Initial loading fallback
-    const timer = setTimeout(() => setLoading(false), 3000);
 
     return () => {
         unsubscribeUsers();
         unsubscribeTransactions();
-        clearTimeout(timer);
     };
-  }, [firestore, users.length, transactions.length]);
+  }, [firestore]);
 
 
   const totalUsers = users.length;
@@ -298,3 +303,5 @@ export default function AdminDashboardPage() {
     </div>
   )
 }
+
+    
