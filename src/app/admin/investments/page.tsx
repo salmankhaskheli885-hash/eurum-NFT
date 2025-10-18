@@ -49,7 +49,7 @@ import {
 
 
 import { Button } from "@/components/ui/button"
-import { MoreHorizontal, PlusCircle, Search } from "lucide-react"
+import { MoreHorizontal, PlusCircle, Search, Loader2 } from "lucide-react"
 import { useTranslation } from "@/hooks/use-translation"
 import type { InvestmentPlan } from "@/lib/data"
 import { useToast } from "@/hooks/use-toast"
@@ -62,16 +62,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-
-const imageThemeOptions = [
-    { value: 'treasure-chest', label: 'Treasure Chest (سونے کی پیٹی)' },
-    { value: 'gold-mining', label: 'Gold Mining (سونے کی کان کنی)' },
-    { value: 'gold-mountain', label: 'Gold Mountain (سونے کا پہاڑ)' },
-    { value: 'coins-treasure', label: 'Coins & Treasure (سکے اور خزانہ)' },
-    { value: 'investment-growth', label: 'General Investment' },
-];
+import { generateNft } from "@/ai/flows/generate-nft-flow"
 
 
 // Component for Add/Edit Plan Dialog
@@ -92,7 +83,9 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
     };
 
     const [formData, setFormData] = React.useState<Omit<InvestmentPlan, 'id'>>(initialFormData);
-    const [imageSeed, setImageSeed] = React.useState(plan ? 'custom' : imageThemeOptions[0].value);
+    const [nftPrompt, setNftPrompt] = React.useState("");
+    const [isGeneratingImage, setIsGeneratingImage] = React.useState(false);
+
 
     React.useEffect(() => {
         if (open) {
@@ -107,12 +100,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                   isActive: plan.isActive,
                   visibleToRoles: plan.visibleToRoles || ['user', 'partner'] // Fallback for old plans
               });
-              const match = plan.imageUrl.match(/picsum\.photos\/seed\/([^/]+)/);
-              const seed = match ? match[1] : imageThemeOptions[0].value;
-              setImageSeed(imageThemeOptions.some(opt => opt.value === seed) ? seed : 'custom-url');
+              setNftPrompt(""); // Reset prompt on edit
           } else {
               setFormData(initialFormData);
-              setImageSeed(imageThemeOptions[0].value);
+              setNftPrompt("");
           }
         }
     }, [open, plan]);
@@ -122,10 +113,6 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         const { name, value, type } = e.target;
         setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
     };
-
-    const handleImageSeedChange = (value: string) => {
-        setImageSeed(value);
-    }
     
     const handleSwitchChange = (checked: boolean) => {
         setFormData(prev => ({ ...prev, isActive: checked }));
@@ -154,9 +141,33 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
             return;
         }
 
-        const finalImageUrl = imageSeed === 'custom-url' 
-            ? formData.imageUrl
-            : `https://picsum.photos/seed/${encodeURIComponent(imageSeed)}/600/400`;
+        let finalImageUrl = formData.imageUrl;
+        if (nftPrompt) {
+            setIsGeneratingImage(true);
+            try {
+                const result = await generateNft({ prompt: nftPrompt });
+                finalImageUrl = result.imageDataUri;
+            } catch (error) {
+                console.error("NFT Generation failed:", error);
+                toast({
+                    variant: "destructive",
+                    title: "Image Generation Failed",
+                    description: "Could not generate NFT image. Please try a different prompt or save without a new image.",
+                });
+                setIsGeneratingImage(false);
+                return; // Stop the save process if image generation fails
+            }
+            setIsGeneratingImage(false);
+        }
+
+        if (!finalImageUrl && !plan) {
+            toast({
+                variant: "destructive",
+                title: "Image Required",
+                description: "Please generate an NFT image using a prompt before saving.",
+            });
+            return;
+        }
 
         const dataToSave = { ...formData, imageUrl: finalImageUrl };
 
@@ -226,34 +237,34 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                                     <Input id="requiredVipLevel" name="requiredVipLevel" type="number" value={formData.requiredVipLevel} onChange={handleChange} />
                                 </div>
                             </div>
+                            
                             <div className="space-y-2">
-                                <Label htmlFor="imageSeed">Image Theme</Label>
-                                <Select value={imageSeed} onValueChange={handleImageSeedChange}>
-                                    <SelectTrigger id="imageSeed">
-                                        <SelectValue placeholder="Select an image theme" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {imageThemeOptions.map(option => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                         <SelectItem value="custom-url">Custom URL</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                                <Label htmlFor="nftPrompt">NFT Image Prompt</Label>
+                                <Input 
+                                    id="nftPrompt" 
+                                    name="nftPrompt" 
+                                    value={nftPrompt}
+                                    onChange={(e) => setNftPrompt(e.target.value)}
+                                    placeholder={plan ? "Enter new prompt to change image" : "e.g., A golden lion with a crown"}
+                                />
+                                <p className="text-xs text-muted-foreground">Describe the NFT art you want to generate for this plan.</p>
                             </div>
-                            {imageSeed === 'custom-url' && (
-                                <div className="space-y-2">
-                                    <Label htmlFor="imageUrl">Custom Image URL</Label>
-                                    <Input
-                                        id="imageUrl"
-                                        name="imageUrl"
-                                        value={formData.imageUrl}
-                                        onChange={handleChange}
-                                        placeholder="https://example.com/image.png"
-                                    />
+
+                             {formData.imageUrl && !isGeneratingImage && (
+                                <div>
+                                    <Label>Current Image</Label>
+                                    <div className="mt-2 aspect-video w-full relative rounded-md overflow-hidden border">
+                                        <Image src={formData.imageUrl} alt={formData.name} fill className="object-cover"/>
+                                    </div>
                                 </div>
-                            )}
+                             )}
+                             {isGeneratingImage && (
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Loader2 className="h-4 w-4 animate-spin"/>
+                                    <span>Generating NFT... Please wait.</span>
+                                </div>
+                             )}
+
                             <div className="space-y-3 rounded-lg border p-4">
                                 <Label>Visibility</Label>
                                 <p className="text-sm text-muted-foreground">Who should see this plan?</p>
@@ -278,7 +289,10 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
                             </div>
                         </div>
                         <DialogFooter>
-                            <Button type="submit" onClick={handleSubmit}>Save changes</Button>
+                            <Button type="submit" onClick={handleSubmit} disabled={isGeneratingImage}>
+                               {isGeneratingImage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                               Save changes
+                            </Button>
                         </DialogFooter>
                     </div>
                 </ScrollArea>

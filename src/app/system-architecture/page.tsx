@@ -149,7 +149,7 @@ export default function SystemArchitecturePage() {
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8">
       <div className="flex flex-col items-center text-center mb-12">
-        <h1 className="text-4xl font-bold tracking-tight text-primary">Fynix Pro - System Architecture</h1>
+        <h1 className="text-4xl font-bold tracking-tight text-primary">AurumNFT - System Architecture</h1>
         <p className="mt-2 text-lg text-muted-foreground max-w-2xl">
           Full Auto + Partial Manual System Script for a robust and scalable application.
         </p>

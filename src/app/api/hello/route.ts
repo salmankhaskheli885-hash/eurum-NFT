@@ -18,7 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
  *               properties:
  *                 message:
  *                   type: string
- *                   example: Hello from Fynix Pro API!
+ *                   example: Hello from AurumNFT API!
  *       401:
  *         description: Unauthorized. API Key is missing or invalid.
  */
@@ -37,5 +37,5 @@ export async function GET(request: NextRequest) {
   }
 
   // 4. If keys match, proceed with the original logic
-  return NextResponse.json({ message: 'Hello from Fynix Pro API!' });
+  return NextResponse.json({ message: 'Hello from AurumNFT API!' });
 }

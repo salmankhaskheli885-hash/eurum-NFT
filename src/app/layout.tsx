@@ -19,8 +19,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Fynix Pro',
-  description: 'The next generation investment platform.',
+  title: 'AurumNFT',
+  description: 'The next generation NFT investment platform.',
 };
 
 export default function RootLayout({

@@ -1,6 +1,6 @@
 
 {
-    "appName": "Fynix Pro",
+    "appName": "AurumNFT",
     "nav": {
         "dashboard": "Dashboard",
         "investments": "Investments",
@@ -38,7 +38,8 @@
         "yourNumber": "Your Number (from which you sent money)",
         "amount": "Amount Sent (PKR)",
         "tidNumber": "Transaction ID (TID)",
-        "submitButton": "Submit Deposit Request"
+        "submitButton": "Submit Deposit Request",
+        "verifyingButton": "Verifying Receipt..."
     },
     "withdraw": {
         "title": "Withdraw Funds",
@@ -159,7 +160,7 @@
         "services": {
             "title": "Terms of Service",
             "description": "Read our terms and conditions.",
-            "content": "This is a placeholder for the Terms of Service content. In a real application, this would contain the full legal terms governing the use of Fynix Pro."
+            "content": "This is a placeholder for the Terms of Service content. In a real application, this would contain the full legal terms governing the use of AurumNFT."
         },
         "privacy": {
             "title": "Privacy Policy",
@@ -197,7 +198,7 @@
     },
     "register": {
         "title": "Create Account",
-        "description": "Start your journey with Fynix Pro today",
+        "description": "Start your journey with AurumNFT today",
         "nameLabel": "Full Name",
         "emailLabel": "Email",
         "passwordLabel": "Password",
@@ -277,7 +278,7 @@
             "settings": "Settings"
         },
         "dashboardTitle": "Admin Dashboard",
-        "dashboardDescription": "Manage all aspects of the Fynix Pro application.",
+        "dashboardDescription": "Manage all aspects of the AurumNFT application.",
         "stats": {
             "totalUsers": "Total Users",
             "totalDeposits": "Total Deposits (PKR)",
