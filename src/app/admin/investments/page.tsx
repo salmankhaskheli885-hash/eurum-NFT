@@ -63,6 +63,7 @@ import { Switch } from "@/components/ui/switch"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
+import imageCompression from 'browser-image-compression';
 
 
 // Component for Add/Edit Plan Dialog
@@ -154,11 +155,11 @@ function PlanForm({ plan, onSave, children }: { plan?: InvestmentPlan | null, on
         try {
             if (plan) {
                 // Updating an existing plan
-                await updateInvestmentPlan(firestore, plan.id, formData, imageFile || undefined, setUploadProgress);
+                await updateInvestmentPlan(firestore, plan.id, formData, imageFile ? { file: imageFile, compressor: imageCompression } : undefined, setUploadProgress);
                 toast({ title: "Plan Updated", description: `The plan "${formData.name}" has been updated.` });
             } else {
                 // Adding a new plan
-                await addInvestmentPlan(firestore, formData, imageFile!, setUploadProgress);
+                await addInvestmentPlan(firestore, formData, { file: imageFile!, compressor: imageCompression }, setUploadProgress);
                 toast({ title: "New Plan Added", description: `The plan "${formData.name}" has been created.` });
             }
             onSave();
@@ -492,5 +493,7 @@ export default function AdminInvestmentsPage() {
     </div>
   )
 }
+
+    
 
     

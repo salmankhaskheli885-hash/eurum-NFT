@@ -18,6 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import imageCompression from 'browser-image-compression';
 
 
 export default function DepositPage() {
@@ -128,7 +129,7 @@ export default function DepositPage() {
                 type: 'Deposit',
                 amount: parseFloat(amount),
                 status: 'Pending', 
-                receiptFile: receiptFile,
+                receiptFile: { file: receiptFile, compressor: imageCompression },
                 details: `Deposit from ${yourNumber}`,
             });
 
@@ -291,3 +292,5 @@ export default function DepositPage() {
     </div>
   )
 }
+
+    

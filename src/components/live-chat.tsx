@@ -16,6 +16,7 @@ import { getOrCreateChatRoom, listenToMessages, sendMessage, type ChatMessage } 
 import { cn } from '@/lib/utils'
 import { UserProfile } from '@/lib/schema'
 import { Label } from './ui/label'
+import imageCompression from 'browser-image-compression';
 
 export function LiveChat() {
     const { t } = useTranslation()
@@ -66,7 +67,7 @@ export function LiveChat() {
         
         setIsSending(true);
         try {
-            await sendMessage(firestore, roomId, user.uid, 'user', input.trim(), imageFile || undefined);
+            await sendMessage(firestore, roomId, user.uid, 'user', input.trim(), imageFile ? { file: imageFile, compressor: imageCompression } : undefined);
             setInput('');
             setImageFile(null);
              if (fileInputRef.current) {
@@ -158,3 +159,5 @@ export function LiveChat() {
         </Popover>
     )
 }
+
+    

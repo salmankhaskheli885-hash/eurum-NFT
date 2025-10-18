@@ -30,17 +30,16 @@ import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, Chat
 import { UserProfile } from './schema';
 import { updateProfile } from 'firebase/auth';
 import { extractTid } from '@/ai/flows/extract-tid-flow';
-import imageCompression from 'browser-image-compression';
 
 // Helper function to optimize images before upload
-async function optimizeImage(imageFile: File): Promise<File> {
+async function optimizeImage(imageFile: File, compressor: (file: File, options: any) => Promise<File>): Promise<File> {
     const options = {
         maxSizeMB: 1,          // (default: Number.POSITIVE_INFINITY)
         maxWidthOrHeight: 1920, // (default: undefined)
         useWebWorker: true,      // (default: true)
     };
     try {
-        const compressedFile = await imageCompression(imageFile, options);
+        const compressedFile = await compressor(imageFile, options);
         console.log(`Compressed file size: ${compressedFile.size / 1024 / 1024} MB`);
         return compressedFile;
     } catch (error) {
@@ -131,9 +130,9 @@ export async function updateKycStatus(firestore: ReturnType<typeof getFirestore>
 }
 
 // Separate function to handle background receipt upload
-const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof getFirestore>, transactionId: string, userId: string, receiptFile: File) => {
+const uploadReceiptAndUpdateTransaction = async (firestore: ReturnType<typeof getFirestore>, transactionId: string, userId: string, image: { file: File, compressor: (file: File, options: any) => Promise<File> }) => {
     try {
-        const optimizedFile = await optimizeImage(receiptFile);
+        const optimizedFile = await optimizeImage(image.file, image.compressor);
         const storage = getStorage();
         const receiptPath = `receipts/${userId}/${transactionId}_${optimizedFile.name}`;
         const storageRef = ref(storage, receiptPath);
@@ -163,7 +162,7 @@ const fileToDataUri = (file: File): Promise<string> => {
 
 export async function addTransaction(
     firestore: ReturnType<typeof getFirestore>,
-    transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
+    transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: { file: File, compressor: (file: File, options: any) => Promise<File> } }
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
     let isFakeReceipt = false;
@@ -175,9 +174,9 @@ export async function addTransaction(
         const settings = settingsSnap.data() as AppSettings;
         const adminWalletNumber = settings?.adminWalletNumber;
 
-        if (receiptFile && adminWalletNumber) {
+        if (receiptFile) {
             try {
-                const receiptDataUri = await fileToDataUri(receiptFile);
+                const receiptDataUri = await fileToDataUri(receiptFile.file);
                 const aiResult = await extractTid({ receiptDataUri, adminWalletNumber });
                 if (!aiResult.transactionId) {
                     isFakeReceipt = true;
@@ -188,7 +187,7 @@ export async function addTransaction(
                 console.error("AI TID extraction failed:", error);
                 isFakeReceipt = true;
             }
-        } else if (!receiptFile) {
+        } else {
             isFakeReceipt = true;
         }
 
@@ -548,9 +547,9 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
 
 
 // INVESTMENT PLAN FUNCTIONS
-const uploadPlanImage = (planId: string, imageFile: File, onProgress: (progress: number) => void): Promise<string> => {
+const uploadPlanImage = (planId: string, image: { file: File, compressor: (file: File, options: any) => Promise<File> }, onProgress: (progress: number) => void): Promise<string> => {
     return new Promise(async (resolve, reject) => {
-        const optimizedFile = await optimizeImage(imageFile);
+        const optimizedFile = await optimizeImage(image.file, image.compressor);
         const storage = getStorage();
         const imagePath = `investment_plans/${planId}/${Date.now()}_${optimizedFile.name}`;
         const storageRef = ref(storage, imagePath);
@@ -577,12 +576,12 @@ const uploadPlanImage = (planId: string, imageFile: File, onProgress: (progress:
 export async function addInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>,
-    imageFile: File,
+    image: { file: File, compressor: (file: File, options: any) => Promise<File> },
     onProgress: (progress: number) => void
 ): Promise<InvestmentPlan> {
     const newDocRef = doc(collection(firestore, 'investment_plans'));
     
-    const imageUrl = await uploadPlanImage(newDocRef.id, imageFile, onProgress);
+    const imageUrl = await uploadPlanImage(newDocRef.id, image, onProgress);
     
     const finalPlanData = { ...planData, imageUrl };
     await setDoc(newDocRef, finalPlanData);
@@ -595,15 +594,15 @@ export async function updateInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planId: string,
     updates: Partial<Omit<InvestmentPlan, 'id'>>,
-    imageFile?: File,
+    image?: { file: File, compressor: (file: File, options: any) => Promise<File> },
     onProgress?: (progress: number) => void
 ) {
     const planRef = doc(firestore, 'investment_plans', planId);
     
     const finalUpdates: Partial<InvestmentPlan> = { ...updates };
 
-    if (imageFile && onProgress) {
-        const newImageUrl = await uploadPlanImage(planId, imageFile, onProgress);
+    if (image && onProgress) {
+        const newImageUrl = await uploadPlanImage(planId, image, onProgress);
         finalUpdates.imageUrl = newImageUrl;
     }
     
@@ -790,13 +789,13 @@ export async function getOrCreateChatRoom(firestore: ReturnType<typeof getFirest
   });
 }
 
-export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string, imageFile?: File) {
+export async function sendMessage(firestore: ReturnType<typeof getFirestore>, roomId: string, senderId: string, senderType: 'user' | 'agent' | 'system', text: string, image?: { file: File, compressor: (file: File, options: any) => Promise<File> }) {
     const roomRef = doc(firestore, 'chat_rooms', roomId);
     const messagesRef = collection(roomRef, 'messages');
     
     let imageUrl: string | undefined = undefined;
-    if (imageFile) {
-        const optimizedFile = await optimizeImage(imageFile);
+    if (image) {
+        const optimizedFile = await optimizeImage(image.file, image.compressor);
         const storage = getStorage();
         const imagePath = `chat_images/${roomId}/${Date.now()}_${optimizedFile.name}`;
         const storageRef = ref(storage, imagePath);
