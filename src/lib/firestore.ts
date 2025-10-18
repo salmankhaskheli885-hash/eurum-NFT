@@ -139,29 +139,69 @@ const fileToDataUri = (file: File): Promise<string> => {
 
 
 export async function addTransaction(
-  firestore: ReturnType<typeof getFirestore>,
-  transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
+    firestore: ReturnType<typeof getFirestore>,
+    transactionData: Omit<Transaction, 'id' | 'date'> & { receiptFile?: File }
 ) {
     const { receiptFile, ...dataToSave } = transactionData;
-    const newTransactionRef = doc(collection(firestore, 'transactions'));
+    let isFakeReceipt = false;
     let extractedTid = '';
 
     if (receiptFile) {
         try {
             const receiptDataUri = await fileToDataUri(receiptFile);
             const aiResult = await extractTid({ receiptDataUri });
-            extractedTid = aiResult.transactionId;
+            if (!aiResult.transactionId) {
+                isFakeReceipt = true; // AI failed to find a TID, mark as fake/unreadable
+            } else {
+                extractedTid = aiResult.transactionId;
+            }
         } catch (error) {
             console.error("AI TID extraction failed:", error);
-            // Decide if you want to proceed without AI TID or throw an error
+            isFakeReceipt = true; // Treat AI errors as a failure case
         }
+    } else {
+        isFakeReceipt = true; // No receipt file is also a failure case for deposits
     }
-    
+
+    if (isFakeReceipt) {
+        // If the receipt is fake, immediately fail the transaction and update user stats.
+        return runTransaction(firestore, async (transaction) => {
+            const userRef = doc(firestore, 'users', dataToSave.userId);
+            const userSnap = await transaction.get(userRef);
+
+            if (!userSnap.exists()) {
+                throw new Error("User not found to update failed deposit count.");
+            }
+
+            const user = userSnap.data() as User;
+            const newFailedCount = (user.failedDepositCount || 0) + 1;
+
+            const updates: Partial<User> = { failedDepositCount: newFailedCount };
+            if (newFailedCount >= 5) {
+                updates.status = 'Suspended';
+            }
+            transaction.update(userRef, updates);
+
+            const failedTxRef = doc(collection(firestore, 'transactions'));
+            const failedTxObject: Partial<Transaction> = {
+                ...dataToSave,
+                id: failedTxRef.id,
+                date: new Date().toISOString(),
+                status: 'Failed',
+                details: 'Failed AI receipt check or no receipt provided.',
+            };
+            transaction.set(failedTxRef, failedTxObject);
+        });
+    }
+
+    // --- Proceed with normal transaction if receipt is valid ---
+    const newTransactionRef = doc(collection(firestore, 'transactions'));
+
     if (!dataToSave.userRole) {
         throw new Error("User role is required to create a transaction.");
     }
 
-    // Agent Assignment Logic (outside transaction)
+    // Agent Assignment Logic
     const settingsRef = doc(firestore, "app", "settings");
     const settingsSnap = await getDoc(settingsRef);
     const settings = settingsSnap.data() as AppSettings;
@@ -170,7 +210,7 @@ export async function addTransaction(
     const agentsQuery = query(collection(firestore, "chat_agents"), where("isActive", "==", true));
     const agentsSnap = await getDocs(agentsQuery);
     const activeAgents = agentsSnap.docs.map(d => ({ id: d.id, ...d.data() } as ChatAgent));
-    
+
     let assignedAgentId: string | undefined = undefined;
     if (activeAgents.length > 0) {
         const nextAgentIndex = (lastAssignedIndex + 1) % activeAgents.length;
@@ -187,8 +227,7 @@ export async function addTransaction(
         assignedAgentId: assignedAgentId,
         details: extractedTid ? `TID: ${extractedTid}` : dataToSave.details,
     };
-    
-    // Save the new transaction
+
     await setDoc(newTransactionRef, transactionObject);
 
     if (receiptFile) {
