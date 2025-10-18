@@ -134,21 +134,7 @@ export async function addTransaction(
 
     // Agent assignment logic for deposit and withdrawal
     if (dataToSave.type === 'Deposit' || dataToSave.type === 'Withdrawal') {
-        const agentsCollection = collection(firestore, 'chat_agents');
-        const q = query(agentsCollection, where("isActive", "==", true));
-        const agentsSnap = await getDocs(q);
-        const activeAgents = agentsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as ChatAgent));
-
-        if (activeAgents.length > 0) {
-            const appSettingsRef = doc(firestore, 'app', 'settings');
-            const appSettingsSnap = await getDoc(appSettingsRef);
-            const lastIndex = appSettingsSnap.data()?.lastAssignedAgentIndex ?? -1;
-            
-            const newIndex = (lastIndex + 1) % activeAgents.length;
-            assignedAgentId = activeAgents[newIndex].uid;
-
-            await updateDoc(appSettingsRef, { lastAssignedAgentIndex: newIndex });
-        }
+       // Agent assignment logic removed for direct admin handling
     }
 
 
@@ -312,12 +298,12 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const agentDocRef = agentDocs.docs[0].ref;
                 let fieldToIncrement: string | null = null;
                 if (txData.type === 'Deposit') {
-                    fieldToIncrement = newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected';
+                    // fieldToIncrement = newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected';
                 } else if (txData.type === 'Withdrawal') {
-                    fieldToIncrement = newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected';
+                    // fieldToIncrement = newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected';
                 }
                 if (fieldToIncrement) {
-                    transaction.update(agentDocRef, { [fieldToIncrement]: increment(1) });
+                    // transaction.update(agentDocRef, { [fieldToIncrement]: increment(1) });
                 }
             }
         }
