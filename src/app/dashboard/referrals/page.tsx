@@ -26,7 +26,7 @@ import type { User, Transaction } from "@/lib/data"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
+import { useToast } from "@/hooks/use-toast"
 import { Label } from "@/components/ui/label"
 
 export default function ReferralsPage() {
