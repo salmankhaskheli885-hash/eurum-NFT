@@ -6,8 +6,6 @@ import React from "react"
 import {
   LayoutDashboard,
   Users,
-  DollarSign,
-  Landmark,
   ShieldAlert,
   FileCog,
   LogOut,
@@ -15,10 +13,8 @@ import {
   User,
   Handshake,
   UserCheck,
-  History,
   MessageSquare,
   ListChecks,
-  UserPlus,
   ArrowDownToLine,
   ArrowUpFromLine
 } from "lucide-react"
@@ -94,18 +90,18 @@ export default function AdminLayout({
       label: "User Management", 
       icon: Users,
       subItems: [
-        { href: "/admin/users", label: "All Users" },
-        { href: "/admin/deposits", label: "Deposits", badge: pendingUserDeposits },
-        { href: "/admin/withdrawals", label: "Withdrawals", badge: pendingUserWithdrawals },
-        { href: "/admin/kyc", label: "KYC Requests", badge: pendingKyc },
+        { href: "/admin/users", label: "All Users", icon: Users },
+        { href: "/admin/deposits", label: "Deposits", icon: ArrowDownToLine, badge: pendingUserDeposits },
+        { href: "/admin/withdrawals", label: "Withdrawals", icon: ArrowUpFromLine, badge: pendingUserWithdrawals },
+        { href: "/admin/kyc", label: "KYC Requests", icon: UserCheck, badge: pendingKyc },
       ]
     },
     { 
       label: "Partner Management", 
       icon: Handshake,
       subItems: [
-        { href: "/admin/partner-requests", label: "Partner Requests", badge: pendingPartnerReqs },
-        { href: "/admin/tasks", label: "Partner Tasks" },
+        { href: "/admin/partner-requests", label: "Partner Requests", icon: Handshake, badge: pendingPartnerReqs },
+        { href: "/admin/tasks", label: "Partner Tasks", icon: ListChecks },
       ]
     },
     { href: "/admin/investments", label: 'Plans (User + Partner)', icon: FileCog },
@@ -143,7 +139,8 @@ export default function AdminLayout({
                             <SidebarMenuSubItem key={subItem.href}>
                                 <Link href={subItem.href}>
                                     <SidebarMenuSubButton isActive={pathname === subItem.href}>
-                                      {subItem.label}
+                                      {subItem.icon && <subItem.icon />}
+                                      <span>{subItem.label}</span>
                                       {subItem.badge != null && subItem.badge > 0 ? (
                                         <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
                                       ) : null}
