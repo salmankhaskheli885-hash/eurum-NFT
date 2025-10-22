@@ -70,7 +70,7 @@ export default function AgentLayout({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -86,7 +86,7 @@ export default function AgentLayout({
                     isActive={pathname.startsWith(item.href)}
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -102,7 +102,7 @@ export default function AgentLayout({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -116,7 +116,7 @@ export default function AgentLayout({
             </div>
              <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip='Logout'>
-                    <LogOut/>
+                    <LogOut className="h-5 w-5 transition-transform group-hover:scale-110"/>
                     <span>Logout</span>
                 </SidebarMenuButton>
             </Link>

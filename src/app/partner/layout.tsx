@@ -76,7 +76,7 @@ export default function DashboardLayout({
                     isActive={pathname === item.href}
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -90,7 +90,7 @@ export default function DashboardLayout({
             </div>
              <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip={t('nav.logout')}>
-                    <LogOut/>
+                    <LogOut className="h-5 w-5 transition-transform group-hover:scale-110"/>
                     <span>{t('nav.logout')}</span>
                 </SidebarMenuButton>
             </Link>

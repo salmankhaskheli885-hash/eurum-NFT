@@ -32,7 +32,6 @@ import {
   SidebarFooter,
   SidebarMenuSub,
   SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarMenuBadge
 } from "@/components/ui/sidebar"
 import { Logo } from "@/components/icons"
@@ -131,7 +130,7 @@ export default function AdminLayout({
               item.subItems ? (
                 <SidebarMenuItem key={item.label}>
                     <SidebarMenuButton isSub>
-                        <item.icon />
+                        <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                         <span>{item.label}</span>
                     </SidebarMenuButton>
                     <SidebarMenuSub>
@@ -139,7 +138,7 @@ export default function AdminLayout({
                             <SidebarMenuSubItem key={subItem.href}>
                                 <Link href={subItem.href}>
                                     <SidebarMenuSubButton isActive={pathname === subItem.href}>
-                                      {subItem.icon && <subItem.icon />}
+                                      {subItem.icon && <subItem.icon className="h-5 w-5 transition-transform group-hover:scale-110" />}
                                       <span>{subItem.label}</span>
                                       {subItem.badge != null && subItem.badge > 0 ? (
                                         <SidebarMenuBadge>{subItem.badge}</SidebarMenuBadge>
@@ -157,7 +156,7 @@ export default function AdminLayout({
                           isActive={pathname === item.href}
                           tooltip={item.label}
                       >
-                          <item.icon />
+                          <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                           <span>{item.label}</span>
                            {item.badge != null && item.badge > 0 ? (
                               <SidebarMenuBadge>{item.badge}</SidebarMenuBadge>
@@ -176,7 +175,7 @@ export default function AdminLayout({
                   <SidebarMenuButton
                     tooltip={item.label}
                   >
-                    <item.icon />
+                    <item.icon className="h-5 w-5 transition-transform group-hover:scale-110" />
                     <span>{item.label}</span>
                   </SidebarMenuButton>
                 </Link>
@@ -190,7 +189,7 @@ export default function AdminLayout({
             </div>
              <Link href="/login" className="w-full group-data-[state=collapsed]:w-auto">
                 <SidebarMenuButton tooltip={t('nav.logout')}>
-                    <LogOut/>
+                    <LogOut className="h-5 w-5 transition-transform group-hover:scale-110"/>
                     <span>{t('nav.logout')}</span>
                 </SidebarMenuButton>
             </Link>
