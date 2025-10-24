@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea"
 import type { AppSettings } from "@/lib/data"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAppSettings, updateAppSettings, addAnnouncement } from "@/lib/firestore"
+import { CheckCircle } from "lucide-react"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
@@ -115,7 +116,10 @@ export default function AdminSettingsPage() {
               />
             </div>
              <div className="space-y-2">
-              <Label htmlFor="adminAccountHolderName">Account Holder Name</Label>
+                <div className="flex items-center gap-2">
+                   <Label htmlFor="adminAccountHolderName">Account Holder Name</Label>
+                   <CheckCircle className="h-4 w-4 text-blue-500" />
+                </div>
               <Input 
                 id="adminAccountHolderName" 
                 value={settings.adminAccountHolderName || ""} 
@@ -215,5 +219,3 @@ export default function AdminSettingsPage() {
     </div>
   )
 }
-
-    
