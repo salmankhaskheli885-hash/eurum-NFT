@@ -1,4 +1,5 @@
 
+
 'use client';
 import {
   getFirestore,
@@ -29,6 +30,7 @@ import type { User, InvestmentPlan, Transaction, AppSettings, Announcement, Chat
 import { UserProfile } from './schema';
 import { updateProfile } from 'firebase/auth';
 import { extractTid } from '@/ai/flows/extract-tid-flow';
+import imageCompression from 'browser-image-compression';
 
 // Helper function to optimize images before upload
 async function optimizeImage(imageFile: File, compressor: (file: File, options: any) => Promise<File>): Promise<File> {
@@ -247,7 +249,9 @@ export async function addTransaction(
         status: dataToSave.status || 'Pending',
         userRole: dataToSave.userRole,
         assignedAgentId: assignedAgentId,
-        details: extractedTid ? `TID: ${extractedTid}` : dataToSave.details,
+        // Only add details if they exist to avoid 'undefined' field error
+        ...(extractedTid && { details: `TID: ${extractedTid}` }),
+        ...(dataToSave.details && { details: dataToSave.details }),
     };
 
     await setDoc(newTransactionRef, transactionObject);
@@ -546,32 +550,6 @@ export function listenToUserTransactions(firestore: ReturnType<typeof getFiresto
 
 
 // INVESTMENT PLAN FUNCTIONS
-const uploadPlanImage = (planId: string, image: { file: File, compressor: (file: File, options: any) => Promise<File> }, onProgress: (progress: number) => void): Promise<string> => {
-    return new Promise(async (resolve, reject) => {
-        const optimizedFile = await optimizeImage(image.file, image.compressor);
-        const storage = getStorage();
-        const imagePath = `investment_plans/${planId}/${Date.now()}_${optimizedFile.name}`;
-        const storageRef = ref(storage, imagePath);
-        const uploadTask = uploadBytesResumable(storageRef, optimizedFile);
-
-        uploadTask.on(
-            'state_changed',
-            (snapshot: UploadTaskSnapshot) => {
-                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                onProgress(progress);
-            },
-            (error) => {
-                console.error("Upload failed:", error);
-                reject(error);
-            },
-            async () => {
-                const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                resolve(downloadURL);
-            }
-        );
-    });
-};
-
 export async function addInvestmentPlan(
     firestore: ReturnType<typeof getFirestore>,
     planData: Omit<InvestmentPlan, 'id' | 'imageUrl'>,
