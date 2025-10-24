@@ -19,6 +19,12 @@ import type { AppSettings } from "@/lib/data"
 import { useFirestore } from "@/firebase/provider"
 import { listenToAppSettings, updateAppSettings, addAnnouncement } from "@/lib/firestore"
 import { CheckCircle } from "lucide-react"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
@@ -90,6 +96,7 @@ export default function AdminSettingsPage() {
   }
 
   return (
+    <TooltipProvider>
     <div className="flex flex-col gap-4">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{t('admin.nav.settings')}</h1>
@@ -118,7 +125,14 @@ export default function AdminSettingsPage() {
              <div className="space-y-2">
                 <div className="flex items-center gap-2">
                    <Label htmlFor="adminAccountHolderName">Account Holder Name</Label>
-                   <CheckCircle className="h-4 w-4 text-blue-500" />
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <CheckCircle className="h-4 w-4 text-blue-500 cursor-pointer" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Verified by WhatsApp</p>
+                        </TooltipContent>
+                    </Tooltip>
                 </div>
               <Input 
                 id="adminAccountHolderName" 
@@ -217,5 +231,6 @@ export default function AdminSettingsPage() {
         </Card>
       </div>
     </div>
+    </TooltipProvider>
   )
 }
