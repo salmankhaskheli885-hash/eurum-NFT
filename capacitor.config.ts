@@ -6,8 +6,8 @@ const config: CapacitorConfig = {
   webDir: 'out',
   bundledWebRuntime: false,
   server: {
-    // This is required to make Capacitor work with Next.js export
-    // Do not change this unless you know what you are doing
+    // This is required for live-reloading during development.
+    // Do not change this unless you know what you are doing.
     "url": "http://localhost:3000",
     "cleartext": true
   }
