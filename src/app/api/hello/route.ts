@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
   const providedApiKey = authHeader?.split(' ')[1];
 
   // 3. Check if the keys match
-  if (!providedApiKey || providedApiKey !== SECRET_API_KEY) {
+  if (!SECRET_API_KEY || !providedApiKey || providedApiKey !== SECRET_API_KEY) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
