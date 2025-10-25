@@ -21,6 +21,13 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'AurumNFT',
   description: 'The next generation NFT investment platform.',
+  manifest: '/manifest.json',
+  themeColor: '#EAB308',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'AurumNFT',
+  },
 };
 
 export default function RootLayout({
