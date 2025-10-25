@@ -60,20 +60,24 @@ This document outlines the complete, step-by-step system architecture for the Au
 4.  **Auto Commission (10%):** The referral commission logic (from Section 1) automatically checks the referrer's role. If the role is "partner", it calculates a 10% commission instead of 5%.
 5.  **Team Tracking (Auto):** The system automatically tracks a partner's network via the `referredBy` field on each user document.
 
+---
+
 ## How to Build the "Proper" App using this Script
 
-This entire Next.js project is the "script" and "brain" of your app. Capacitor acts as the "body".
+This entire Next.js project **is** the "script" and "brain" of your app. Capacitor acts as the "body" that wraps your web code into a native mobile application.
 
-**Your Final Steps:**
+**Your Final Steps to Create the Android App:**
 
 1.  **Install Android Studio:** Make sure you have the official Android development tool installed on your computer.
-2.  **Run the Build Command:** Open a terminal in your project folder and run this command:
+
+2.  **Run the Build Command:** Open a terminal in your project folder and run this single command:
     ```bash
     npm run android
     ```
+
 3.  **Build the APK in Android Studio:**
     -   The command will automatically open your project in Android Studio.
     -   In Android Studio, go to the menu: `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`.
     -   Android Studio will create the `.apk` file for you, which you can then install on any Android phone.
 
-This process uses your existing web code to create a real, installable Android app.
+This process uses your existing web code to create a real, installable Android app that functions exactly like the website.
