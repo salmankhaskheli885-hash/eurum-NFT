@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
 import { PageTransitionLoader } from "@/components/page-transition-loader"
+import { InstallAppButton } from "@/components/install-app-button"
 
 
 function Announcement() {
@@ -152,9 +153,12 @@ export default function PartnerDashboardPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t('partner.dashboard.title')}</h1>
-        <p className="text-muted-foreground">{t('partner.dashboard.description')}</p>
+       <div className="flex flex-row items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">{t('partner.dashboard.title')}</h1>
+            <p className="text-muted-foreground pt-1">{t('partner.dashboard.description')}</p>
+          </div>
+          <InstallAppButton />
       </div>
       <Announcement />
       <div className="grid gap-4 md:grid-cols-4">

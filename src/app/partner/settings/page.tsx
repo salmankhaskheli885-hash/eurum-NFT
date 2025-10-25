@@ -165,23 +165,6 @@ function StaticContentCard({ titleKey, descriptionKey, contentKey }: { titleKey:
     )
 }
 
-function MobileAppSection() {
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle>Mobile App</CardTitle>
-                <CardDescription>Access your account on the go with our mobile app.</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <Button disabled>
-                    <Download className="mr-2 h-4 w-4" />
-                    Download for Android (Coming Soon)
-                </Button>
-            </CardContent>
-        </Card>
-    );
-}
-
 export default function SettingsPage() {
     const { t } = useTranslation()
 
@@ -192,9 +175,8 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">{t('settings.description')}</p>
             </div>
             <Tabs defaultValue="password" className="w-full">
-                <TabsList className="grid w-full grid-cols-6">
+                <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="password">{t('settings.tabs.password')}</TabsTrigger>
-                     <TabsTrigger value="mobile_app">Mobile App</TabsTrigger>
                     <TabsTrigger value="faq">{t('settings.tabs.faq')}</TabsTrigger>
                     <TabsTrigger value="services">{t('settings.tabs.services')}</TabsTrigger>
                     <TabsTrigger value="guidelines">{t('settings.tabs.guidelines')}</TabsTrigger>
@@ -202,9 +184,6 @@ export default function SettingsPage() {
                 </TabsList>
                 <TabsContent value="password" className="mt-6">
                     <ChangePasswordForm />
-                </TabsContent>
-                <TabsContent value="mobile_app" className="mt-6">
-                    <MobileAppSection />
                 </TabsContent>
                 <TabsContent value="faq" className="mt-6">
                     <FaqSection />

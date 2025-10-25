@@ -25,6 +25,7 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToLatestAnnouncement, listenToUserTransactions } from "@/lib/firestore"
 import { cn } from "@/lib/utils"
 import { PageTransitionLoader } from "@/components/page-transition-loader"
+import { InstallAppButton } from "@/components/install-app-button"
 
 function Announcement() {
     const firestore = useFirestore();
@@ -121,11 +122,14 @@ function DashboardContent() {
       <Announcement />
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
         <Card className="sm:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle>{t('dashboard.welcome', { name: userFirstName })}</CardTitle>
-            <CardDescription className="max-w-lg text-balance leading-relaxed">
-              {t('dashboard.welcomeSubtitle')}
-            </CardDescription>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle>{t('dashboard.welcome', { name: userFirstName })}</CardTitle>
+              <CardDescription className="max-w-lg text-balance leading-relaxed pt-2">
+                {t('dashboard.welcomeSubtitle')}
+              </CardDescription>
+            </div>
+            <InstallAppButton />
           </CardHeader>
           <CardContent>
             <Button asChild>
