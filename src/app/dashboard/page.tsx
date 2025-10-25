@@ -122,7 +122,7 @@ function DashboardContent() {
       <Announcement />
       <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4">
         <Card className="sm:col-span-2">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardHeader className="pb-3 flex flex-row items-start justify-between">
             <div>
               <CardTitle>{t('dashboard.welcome', { name: userFirstName })}</CardTitle>
               <CardDescription className="max-w-lg text-balance leading-relaxed pt-2">

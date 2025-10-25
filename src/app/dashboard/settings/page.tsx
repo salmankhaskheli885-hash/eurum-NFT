@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useTranslation } from "@/hooks/use-translation"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Download } from "lucide-react"
+import { InstallAppButton } from "@/components/install-app-button"
 
 function ChangePasswordForm() {
     const { t } = useTranslation()
@@ -122,6 +123,20 @@ function StaticContentCard({ titleKey, descriptionKey, contentKey }: { titleKey:
     )
 }
 
+function MobileAppCard() {
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Mobile App</CardTitle>
+                <CardDescription>Install the app on your device for a better experience.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <InstallAppButton />
+            </CardContent>
+        </Card>
+    )
+}
+
 
 export default function SettingsPage() {
     const { t } = useTranslation()
@@ -133,8 +148,9 @@ export default function SettingsPage() {
                 <p className="text-muted-foreground">{t('settings.description')}</p>
             </div>
             <Tabs defaultValue="password" className="w-full">
-                <TabsList className="grid w-full grid-cols-5">
+                <TabsList className="grid w-full grid-cols-6">
                     <TabsTrigger value="password">{t('settings.tabs.password')}</TabsTrigger>
+                    <TabsTrigger value="app">App</TabsTrigger>
                     <TabsTrigger value="faq">{t('settings.tabs.faq')}</TabsTrigger>
                     <TabsTrigger value="services">{t('settings.tabs.services')}</TabsTrigger>
                     <TabsTrigger value="privacy">{t('settings.tabs.privacy')}</TabsTrigger>
@@ -142,6 +158,9 @@ export default function SettingsPage() {
                 </TabsList>
                 <TabsContent value="password" className="mt-6">
                     <ChangePasswordForm />
+                </TabsContent>
+                 <TabsContent value="app" className="mt-6">
+                    <MobileAppCard />
                 </TabsContent>
                 <TabsContent value="faq" className="mt-6">
                     <FaqSection />
