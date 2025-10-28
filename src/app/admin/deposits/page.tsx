@@ -27,7 +27,7 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import AdminDepositsHistoryPage from "./history/page"
+import AdminDepositsHistoryPage from "./AdminDepositsHistory"
 
 export default function AdminDepositsPage() {
   const firestore = useFirestore()
