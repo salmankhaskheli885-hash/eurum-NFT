@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "firebase/auth"
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -29,7 +29,7 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start with loading true
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
 
   const handleAdminNavigation = (path: string) => {
@@ -52,46 +52,39 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     }
   }
 
-  // Handle the redirect result when the component mounts
-  React.useEffect(() => {
-    if (!auth || !firestore) return;
-
-    getRedirectResult(auth)
-      .then(async (result) => {
-        if (result) {
-          // User has successfully signed in via redirect.
-          const userProfile = await getOrCreateUser(firestore, result.user);
-          toast({ title: "Sign in successful!" });
-
-          if (userProfile.role === 'admin') {
-            setShowAdminPanelDialog(true);
-          } else {
-            handleNavigation(userProfile);
-          }
-        } else {
-            // No redirect result, so we are not in a loading state from a redirect.
-            setIsLoading(false);
-        }
-      })
-      .catch((error: any) => {
-        console.error("Google Redirect Sign-In Error:", error);
-        toast({
-          variant: "destructive",
-          title: "Sign-In Failed",
-          description: error.message || "An unknown error occurred during sign-in.",
-        });
-        setIsLoading(false);
-      });
-  }, [auth, firestore, router, toast]);
-
-
   const handleGoogleSignIn = async () => {
-    if (!auth || !firestore) return;
+    if (!auth || !firestore) {
+        toast({
+            variant: "destructive",
+            title: "Firebase not initialized.",
+            description: "Please wait a moment and try again.",
+        });
+        return;
+    }
     setIsLoading(true);
     
     const provider = new GoogleAuthProvider();
-    // Start the sign-in process by redirecting the user
-    await signInWithRedirect(auth, provider);
+
+    try {
+        const result = await signInWithPopup(auth, provider);
+        const userProfile = await getOrCreateUser(firestore, result.user);
+        toast({ title: "Sign in successful!" });
+
+        if (userProfile.role === 'admin') {
+            setShowAdminPanelDialog(true);
+        } else {
+            handleNavigation(userProfile);
+        }
+    } catch (error: any) {
+        console.error("Google Popup Sign-In Error:", error);
+        toast({
+            variant: "destructive",
+            title: "Sign-In Failed",
+            description: error.message || "An unknown error occurred during sign-in.",
+        });
+    } finally {
+        setIsLoading(false);
+    }
   }
   
   return (
