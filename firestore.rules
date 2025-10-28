@@ -2,33 +2,32 @@
  * @fileoverview Firestore Security Rules for the application.
  *
  * Core Philosophy:
- * This ruleset enforces a combination of user-ownership and role-based access control.
- * User-specific data is secured under the `/users/{userId}` path, accessible only to the authenticated user with a matching `uid`.
- * Some collections are public readable but restricted on writes to specific roles or owners.
+ * This ruleset enforces a user-ownership model for user-specific data,
+ * restricts access to investment plans based on roles,
+ * and provides role-based access to chat functionality.
+ * Global settings are only editable by authenticated users (TODO: should be restricted to admin roles only).
  *
  * Data Structure:
- * - /users/{userId}: User profile data, owned by the user.
- * - /investment_plans/{planId}: Publicly readable investment plans.
- * - /chat_agents/{agentId}: Chat support agents, managed by admins (not secured in this prototype).
- * - /chat_rooms/{roomId}: Chat sessions between users and agents.
- * - /chat_rooms/{roomId}/messages/{messageId}: Messages within a chat session.
- * - /app/settings: Global application settings.
- * - /tasks/{taskId}: Tasks for partners.
- * - /users/{userId}/user_tasks/{taskId}: User-specific task progress.
- * - /partner_requests/{requestId}: Requests to become a partner.
+ * - /users/{userId}: User profiles, accessible only to the user themselves.
+ * - /investment_plans/{planId}: Publicly readable investment plans, editable by admins (TODO).
+ * - /chat_agents/{agentId}: Chat agent profiles, accessible to authenticated users (TODO: should be restricted to admin roles only).
+ * - /chat_rooms/{roomId}: Chat rooms between users and agents. Users can only access their own chat rooms.
+ * - /chat_rooms/{roomId}/messages/{messageId}: Messages within a chat room, accessible to participants.
+ * - /app/settings: Global application settings, editable by authenticated users (TODO: should be restricted to admin roles only).
+ * - /tasks/{taskId}: Tasks for partners, accessible to authenticated users (TODO: should be restricted to admin roles only).
+ * - /users/{userId}/user_tasks/{taskId}: User-specific task progress, accessible only to the user themselves.
+ * - /partner_requests/{requestId}: User requests to become a partner, accessible to authenticated users (TODO: should be restricted to admin roles only).
  *
  * Key Security Decisions:
- * - Users can only read and write their own profile data under `/users/{userId}`.
- * - Investment plans are publicly readable but only writable by admins (not implemented).
- * - Chat agents are not secured in this prototype.
- * - Chat rooms and messages are not secured in this prototype.
- * - App settings are not secured in this prototype.
- * - Tasks are not secured in this prototype.
- * - User tasks are owned by the user and only accessible by them.
- * - Partner requests are not secured in this prototype.
- *
- * Denormalization for Authorization:
- *  - User profiles denormalize the user's UID as 'uid' within the document.
+ * - Users can only read and write their own profile data.
+ * - Investment plans are publicly readable but only editable by admins (TODO).
+ * - Chat agents can be created and modified only by authenticated users (TODO: should be restricted to admin roles only).
+ * - Chat rooms and messages are accessible only to the participants (user and agent).
+ * - Global app settings are accessible to authenticated users (TODO: should be restricted to admin roles only).
+ * - Listing all users is not permitted.
+ * - Tasks are accessible to authenticated users (TODO: should be restricted to admin roles only).
+ * - User tasks are accessible only to the user themselves.
+ * - Partner requests are accessible to authenticated users (TODO: should be restricted to admin roles only).
  */
 rules_version = '2';
 service cloud.firestore {
@@ -37,115 +36,197 @@ service cloud.firestore {
     /**
      * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (get, list) User with matching UID can read their own profile.
-     * @allow (create) User with matching UID can create their own profile.
-     * @allow (update) User with matching UID can update their own profile.
-     * @allow (delete) User with matching UID can delete their own profile.
-     * @deny (get, list) User tries to read another user's profile.
-     * @deny (create) User tries to create a profile with a mismatched UID.
-     * @deny (update) User tries to update another user's profile.
-     * @deny (delete) User tries to delete another user's profile.
-     * @principle Enforces document ownership for all operations.
+     * @allow (get, create, update, delete): if the user is the owner of the profile.
+     * @deny (create, update, delete): if the user is not the owner of the profile.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+          return isOwner(userId) && resource != null;
       }
 
+      // Read rules
       allow get: if isOwner(userId);
       allow list: if false;
+
+      // Write rules
       allow create: if isOwner(userId) && request.resource.data.uid == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
-     /**
-      * @description Controls access to investment plans.
-      * @path /investment_plans/{planId}
-      * @allow (get, list) Anyone can read investment plans.
-      * @deny (create, update, delete) Only admins should be able to manage investment plans.
-      * @principle Public read, restricted write.
-      */
+    /**
+     * @description Controls access to investment plans.
+     * @path /investment_plans/{planId}
+     * @allow get, list: if true (publicly readable).
+     * @deny create, update, delete: if false (only admins should be able to modify).
+     * @principle Public read, owner-only write (TODO: implement admin role check for writes).
+     */
     match /investment_plans/{planId} {
-      allow get, list: if true;
-      allow create, update, delete: if false; // TODO: Implement admin-only write access.
+        // Read rules
+        allow get: if true;
+        allow list: if true;
+
+        // Write rules
+        allow create: if false; // TODO: Add admin role check
+        allow update: if false; // TODO: Add admin role check
+        allow delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to chat agents.
+     * @description Controls access to chat agent profiles.
      * @path /chat_agents/{agentId}
-     * @allow (get, list, create, update, delete) Not secured in this prototype.
-     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+     * @allow get, list: if isSignedIn() (only signed-in users can view).
+     * @deny create, update, delete: if false (only admins should be able to modify).
+     * @principle Role-based access control (TODO: implement admin role check for writes).
      */
     match /chat_agents/{agentId} {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper agent role-based security.
+        function isSignedIn() {
+          return request.auth != null;
+        }
+
+        // Read rules
+        allow get: if isSignedIn();
+        allow list: if isSignedIn();
+
+        // Write rules
+        allow create: if false; // TODO: Add admin role check
+        allow update: if false; // TODO: Add admin role check
+        allow delete: if false; // TODO: Add admin role check
     }
 
     /**
      * @description Controls access to chat rooms.
      * @path /chat_rooms/{roomId}
-     * @allow (get, list, create, update, delete) Not secured in this prototype.
-     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+     * @allow get, list: if the user is a participant in the chat room.
+     * @deny create, update, delete: if the user is not a participant.
+     * @principle Shared access (closed collaborators).
      */
     match /chat_rooms/{roomId} {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper chat room security.
-    }
+      function isSignedIn() {
+        return request.auth != null;
+      }
 
-     /**
-      * @description Controls access to chat messages within a chat room.
-      * @path /chat_rooms/{roomId}/messages/{messageId}
-      * @allow (get, list, create, update, delete) Not secured in this prototype.
-      * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
-      */
-    match /chat_rooms/{roomId}/messages/{messageId} {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper chat message security.
+      // Function to check if the requesting user is either the user or the agent in the chat room
+      function isChatRoomParticipant() {
+          return isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.agentId == request.auth.uid);
+      }
+
+        // Read rules
+        allow get: if isChatRoomParticipant();
+        allow list: if isSignedIn() && request.auth.uid == request.query.userId;
+
+        // Write rules
+        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
+        allow update: if isChatRoomParticipant();
+        allow delete: if false;
     }
 
     /**
-     * @description Controls access to app settings.
+     * @description Controls access to chat messages within a chat room.
+     * @path /chat_rooms/{roomId}/messages/{messageId}
+     * @allow get, list: if the user is a participant in the parent chat room.
+     * @deny create, update, delete: if the user is not a participant.
+     * @principle Shared access (closed collaborators), inherited from parent.
+     */
+    match /chat_rooms/{roomId}/messages/{messageId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Function to check if the requesting user is either the user or the agent in the parent chat room
+      function isChatRoomParticipant() {
+        return isSignedIn() && get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.agentId == request.auth.uid;
+      }
+
+        // Read rules
+        allow get: if isChatRoomParticipant();
+        allow list: if isChatRoomParticipant();
+
+        // Write rules
+        allow create: if isSignedIn() && get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.userId == request.auth.uid || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.agentId == request.auth.uid;
+        allow update: if false;
+        allow delete: if false;
+    }
+
+    /**
+     * @description Controls access to global application settings.
      * @path /app/settings
-     * @allow (get, list, create, update, delete) Not secured in this prototype.
-     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+     * @allow get: if true;
+     * @deny list: if false;
+     * @allow create, update, delete: if isSignedIn() (only admins should be able to modify).
+     * @principle  Public read, owner-only write (TODO: implement admin role check for writes).
      */
     match /app/settings {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper app settings security.
+        function isSignedIn() {
+          return request.auth != null;
+        }
+
+        // Read rules
+        allow get: if true;
+        allow list: if false;
+
+        // Write rules
+        allow create: if isSignedIn(); // TODO: Add admin role check
+        allow update: if isSignedIn(); // TODO: Add admin role check
+        allow delete: if isSignedIn(); // TODO: Add admin role check
     }
 
     /**
      * @description Controls access to tasks.
      * @path /tasks/{taskId}
-     * @allow (get, list, create, update, delete) Not secured in this prototype.
-     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+     * @allow get, list: if isSignedIn() (accessible to signed-in users).
+     * @deny create, update, delete: if false (only admins should be able to modify).
+     * @principle Role-based access control (TODO: implement admin role check for writes).
      */
     match /tasks/{taskId} {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper task security.
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Read rules
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+
+      // Write rules
+      allow create: if false; // TODO: Add admin role check
+      allow update: if false; // TODO: Add admin role check
+      allow delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to user tasks.
+     * @description Controls access to user-specific task progress.
      * @path /users/{userId}/user_tasks/{taskId}
-     * @allow (get, list, create, update, delete) Only the owner can access their own tasks.
-     * @principle Enforces document ownership.
+     * @allow get, list: if the user is the owner.
+     * @deny create, update, delete: if the user is not the owner.
+     * @principle Enforces document ownership for writes.
      */
     match /users/{userId}/user_tasks/{taskId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
+          return isOwner(userId) && resource != null;
       }
 
+      // Read rules
       allow get: if isOwner(userId);
       allow list: if isOwner(userId);
+
+      // Write rules
       allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
@@ -154,11 +235,23 @@ service cloud.firestore {
     /**
      * @description Controls access to partner requests.
      * @path /partner_requests/{requestId}
-     * @allow (get, list, create, update, delete) Not secured in this prototype.
-     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+     * @allow get, list: if isSignedIn().
+     * @deny create, update, delete: if false.
+     * @principle Role-based access control (TODO: implement admin role check for writes).
      */
     match /partner_requests/{requestId} {
-      allow get, list, create, update, delete: if true; // TODO: Implement proper partner request security.
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      // Read rules
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+
+      // Write rules
+      allow create: if false; // TODO: Add admin role check
+      allow update: if false; // TODO: Add admin role check
+      allow delete: if false; // TODO: Add admin role check
     }
   }
 }
