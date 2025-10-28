@@ -2,183 +2,163 @@
  * @fileoverview Firestore Security Rules for the application.
  *
  * Core Philosophy:
- * This ruleset enforces a combination of user-ownership, role-based access, and public-read/owner-write patterns.
+ * This ruleset enforces a combination of user-ownership and role-based access control.
+ * User-specific data is secured under the `/users/{userId}` path, accessible only to the authenticated user with a matching `uid`.
+ * Some collections are public readable but restricted on writes to specific roles or owners.
  *
  * Data Structure:
- * - `/users/{userId}`: User profiles, owned by the corresponding user.
- * - `/investment_plans/{planId}`: Publicly readable investment plans.
- * - `/chat_agents/{agentId}`: Chat agent profiles, likely managed by admins.
- * - `/chat_rooms/{roomId}`: Chat sessions between users and agents.
- * - `/chat_rooms/{roomId}/messages/{messageId}`: Chat messages within a session.
- * - `/app/settings`: Global application settings.
- * - `/tasks/{taskId}`: Tasks for partners.
- * - `/users/{userId}/user_tasks/{taskId}`: User-specific task progress.
- * - `/partner_requests/{requestId}`: Requests to become a partner.
+ * - /users/{userId}: User profile data, owned by the user.
+ * - /investment_plans/{planId}: Publicly readable investment plans.
+ * - /chat_agents/{agentId}: Chat support agents, managed by admins (not secured in this prototype).
+ * - /chat_rooms/{roomId}: Chat sessions between users and agents.
+ * - /chat_rooms/{roomId}/messages/{messageId}: Messages within a chat session.
+ * - /app/settings: Global application settings.
+ * - /tasks/{taskId}: Tasks for partners.
+ * - /users/{userId}/user_tasks/{taskId}: User-specific task progress.
+ * - /partner_requests/{requestId}: Requests to become a partner.
  *
  * Key Security Decisions:
- * - Users can only read and write their own profiles.
- * - Investment plans are publicly readable but only modifiable by authorized users (e.g., admins).
- * - Chat agents are managed by admins.
- * - Chat rooms and messages are secured based on user and agent participation.
- * - Application settings are only modifiable by admins.
- * - Tasks are likely created and managed by admins.
- * - User tasks are owned by the user.
- * - Partner requests can be created by anyone and likely managed by admins.
+ * - Users can only read and write their own profile data under `/users/{userId}`.
+ * - Investment plans are publicly readable but only writable by admins (not implemented).
+ * - Chat agents are not secured in this prototype.
+ * - Chat rooms and messages are not secured in this prototype.
+ * - App settings are not secured in this prototype.
+ * - Tasks are not secured in this prototype.
+ * - User tasks are owned by the user and only accessible by them.
+ * - Partner requests are not secured in this prototype.
+ *
+ * Denormalization for Authorization:
+ *  - User profiles denormalize the user's UID as 'uid' within the document.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Manages user profile access. Users can only read and write their own profile.
+     * @description Controls access to user profile information.
      * @path /users/{userId}
-     * @allow (get, update, delete) if request.auth.uid == userId
-     * @allow (create) if request.auth.uid == userId
-     * @allow (list) if false;
-     * @deny (get) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces user-ownership for profile data.
+     * @allow (get, list) User with matching UID can read their own profile.
+     * @allow (create) User with matching UID can create their own profile.
+     * @allow (update) User with matching UID can update their own profile.
+     * @allow (delete) User with matching UID can delete their own profile.
+     * @deny (get, list) User tries to read another user's profile.
+     * @deny (create) User tries to create a profile with a mismatched UID.
+     * @deny (update) User tries to update another user's profile.
+     * @deny (delete) User tries to delete another user's profile.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
       function isSignedIn() {
         return request.auth != null;
       }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
       allow get: if isOwner(userId);
       allow list: if false;
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId);
-      allow delete: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
+      allow delete: if isExistingOwner(userId);
     }
 
      /**
-      * @description Manages investment plan access. Investment plans are publicly readable.
+      * @description Controls access to investment plans.
       * @path /investment_plans/{planId}
-      * @allow (get, list) if true
-      * @allow (create, update, delete) if false
-      * @deny (create, update, delete) if true
-      * @principle Investment plans are publicly readable, but only admins can modify them.
+      * @allow (get, list) Anyone can read investment plans.
+      * @deny (create, update, delete) Only admins should be able to manage investment plans.
+      * @principle Public read, restricted write.
       */
     match /investment_plans/{planId} {
-        allow get, list: if true;
-        allow create, update, delete: if false; // TODO: Add admin role check if needed
+      allow get, list: if true;
+      allow create, update, delete: if false; // TODO: Implement admin-only write access.
     }
 
     /**
-     * @description Manages chat agent profiles.  Likely only admins can manage these.
+     * @description Controls access to chat agents.
      * @path /chat_agents/{agentId}
-     * @allow (get, list) if false;
-     * @allow (create, update, delete) if false;
-     * @deny (get, list, create, update, delete) if true
-     * @principle Chat agents are managed by admins.
+     * @allow (get, list, create, update, delete) Not secured in this prototype.
+     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
      */
     match /chat_agents/{agentId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if true; // TODO: Implement proper agent role-based security.
     }
 
     /**
-     * @description Manages chat room access.  Only participants (user and agent) can read/write.
+     * @description Controls access to chat rooms.
      * @path /chat_rooms/{roomId}
-     * @allow (get, list) if false;
-     * @allow (create, update, delete) if false;
-     * @deny (get, list, create, update, delete) if true
-     * @principle Chat rooms are secured based on user and agent participation.
+     * @allow (get, list, create, update, delete) Not secured in this prototype.
+     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
      */
     match /chat_rooms/{roomId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if true; // TODO: Implement proper chat room security.
+    }
 
-        /**
-         * @description Manages chat messages within a room.
-         * @path /chat_rooms/{roomId}/messages/{messageId}
-         * @allow (get, list) if false;
-         * @allow (create, update, delete) if false;
-         * @deny (get, list, create, update, delete) if true
-         * @principle Chat messages inherit the security context of their parent room.
-         */
-        match /messages/{messageId} {
-          allow get: if false;
-          allow list: if false;
-          allow create: if false;
-          allow update: if false;
-          allow delete: if false;
-        }
+     /**
+      * @description Controls access to chat messages within a chat room.
+      * @path /chat_rooms/{roomId}/messages/{messageId}
+      * @allow (get, list, create, update, delete) Not secured in this prototype.
+      * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
+      */
+    match /chat_rooms/{roomId}/messages/{messageId} {
+      allow get, list, create, update, delete: if true; // TODO: Implement proper chat message security.
     }
 
     /**
-     * @description Manages global app settings. Only admins should be able to modify these.
+     * @description Controls access to app settings.
      * @path /app/settings
-     * @allow (get) if true;
-     * @allow (list) if false;
-     * @allow (create, update, delete) if false;
-     * @deny (create, update, delete) if true
-     * @principle Application settings are only modifiable by admins.
+     * @allow (get, list, create, update, delete) Not secured in this prototype.
+     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
      */
     match /app/settings {
-      allow get: if true;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if true; // TODO: Implement proper app settings security.
     }
 
     /**
-     * @description Manages tasks for partners.  Likely only admins can manage these.
+     * @description Controls access to tasks.
      * @path /tasks/{taskId}
-     * @allow (get, list) if false;
-     * @allow (create, update, delete) if false;
-     * @deny (get, list, create, update, delete) if true
-     * @principle Tasks are likely created and managed by admins.
+     * @allow (get, list, create, update, delete) Not secured in this prototype.
+     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
      */
     match /tasks/{taskId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if true; // TODO: Implement proper task security.
     }
 
     /**
-     * @description Tracks a user's progress on a specific task.
+     * @description Controls access to user tasks.
      * @path /users/{userId}/user_tasks/{taskId}
-     * @allow (get, update, delete) if request.auth.uid == userId
-     * @allow (create) if request.auth.uid == userId
-     * @allow (list) if isOwner(userId);
-     * @deny (get) if request.auth.uid != userId
-     * @deny (create, update, delete) if request.auth.uid != userId
-     * @principle Enforces user-ownership for task progress.
+     * @allow (get, list, create, update, delete) Only the owner can access their own tasks.
+     * @principle Enforces document ownership.
      */
     match /users/{userId}/user_tasks/{taskId} {
-        allow get: if isOwner(userId);
-        allow list: if isOwner(userId);
-        allow create: if isOwner(userId);
-        allow update: if isOwner(userId);
-        allow delete: if isOwner(userId);
+      function isSignedIn() {
+        return request.auth != null;
+      }
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Manages partner requests.  Anyone can create, admins can manage.
+     * @description Controls access to partner requests.
      * @path /partner_requests/{requestId}
-     * @allow (get, list) if false;
-     * @allow (create, update, delete) if false;
-     * @deny (get, list, create, update, delete) if true
-     * @principle Partner requests can be created by anyone and likely managed by admins.
+     * @allow (get, list, create, update, delete) Not secured in this prototype.
+     * @principle Insecure prototyping rules.  REMOVE IN PRODUCTION.
      */
     match /partner_requests/{requestId} {
-      allow get: if false;
-      allow list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list, create, update, delete: if true; // TODO: Implement proper partner request security.
     }
   }
 }
