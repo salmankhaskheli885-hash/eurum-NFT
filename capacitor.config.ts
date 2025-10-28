@@ -2,8 +2,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.aurumnft.app',
-  appName: 'AurumNFT',
+  appId: 'com.fynixpro.app',
+  appName: 'Fynix Pro',
   webDir: 'out',
   bundledWebRuntime: false,
   server: {
