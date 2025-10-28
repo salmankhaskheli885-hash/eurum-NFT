@@ -1,11 +1,23 @@
-
 // NOTE: This is a public-facing configuration object.
 // No sensitive data should be stored here.
+
+// TODO: PASTE YOUR FIREBASE CONFIGURATION OBJECT HERE.
+// 1. Go to your Firebase project console.
+// 2. Click on the gear icon (Project settings).
+// 3. In the "General" tab, scroll down to the "Your apps" section.
+// 4. Find your web app and look for the `firebaseConfig` object.
+// 5. Copy the entire object and paste it below, replacing this comment.
+//
+// For example:
+// export const firebaseConfig = {
+//   apiKey: "AIz...",
+//   authDomain: "your-project.firebaseapp.com",
+//   projectId: "your-project",
+//   storageBucket: "your-project.appspot.com",
+//   messagingSenderId: "...",
+//   appId: "1:..."
+// };
+
 export const firebaseConfig = {
-  apiKey: "AIzaSyDVdiPQ_CWI6KbdXjTd1-VxzsNSdMgXQFA",
-  authDomain: "fynixpro222.firebaseapp.com",
-  projectId: "fynixpro222",
-  storageBucket: "fynixpro222.appspot.com",
-  messagingSenderId: "367098418044",
-  appId: "1:367098418044:web:0f4e3c938c62c2f7b1b3a1"
+  // Your config object goes here
 };
