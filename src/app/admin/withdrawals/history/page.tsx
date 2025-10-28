@@ -24,7 +24,8 @@ import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
-export default function AdminWithdrawalsHistoryPage({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
+// This is now a regular component, not a page
+export default function AdminWithdrawalsHistory({ transactions, loading }: { transactions: Transaction[], loading: boolean }) {
   const [searchTerm, setSearchTerm] = React.useState("")
   
   const filteredWithdrawals = React.useMemo(() => {

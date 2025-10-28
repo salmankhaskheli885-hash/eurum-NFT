@@ -25,7 +25,7 @@ import { listenToAllTransactions, updateTransactionStatus } from "@/lib/firestor
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
-import AdminWithdrawalsHistoryPage from "./history/page"
+import AdminWithdrawalsHistory from "./history/page"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 
@@ -195,7 +195,7 @@ export default function AdminWithdrawalsPage() {
                 </Card>
             </TabsContent>
             <TabsContent value="history">
-                <AdminWithdrawalsHistoryPage transactions={processedWithdrawals} loading={loading} />
+                <AdminWithdrawalsHistory transactions={processedWithdrawals} loading={loading} />
             </TabsContent>
         </Tabs>
     </div>

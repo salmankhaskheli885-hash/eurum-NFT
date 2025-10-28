@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import AdminKycHistoryPage from "./history/page"
+import AdminKycHistory from "./history/page"
 
 function KycDetailsDialog({ user }: { user: User }) {
     return (
@@ -69,16 +69,15 @@ function KycDetailsDialog({ user }: { user: User }) {
 export default function AdminKycPage() {
     const firestore = useFirestore()
     const { toast } = useToast()
-    const [users, setUsers] = React.useState<User[]>([])
+    const [allUsers, setAllUsers] = React.useState<User[]>([])
     const [loading, setLoading] = React.useState(true)
     const [searchTerm, setSearchTerm] = React.useState("")
 
     React.useEffect(() => {
         if (!firestore) return;
         setLoading(true);
-        const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-            // Only show pending KYC requests
-            setUsers(allUsers.filter(u => u.kycStatus === 'pending'));
+        const unsubscribe = listenToAllUsers(firestore, (users) => {
+            setAllUsers(users);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -101,13 +100,19 @@ export default function AdminKycPage() {
         }
     }
 
-    const filteredUsers = React.useMemo(() => {
+    const pendingUsers = React.useMemo(() => {
+        const filtered = allUsers.filter(user => user.kycStatus === 'pending');
+        if (!searchTerm) return filtered;
         const lowercasedFilter = searchTerm.toLowerCase();
-        return users.filter(user => 
+        return filtered.filter(user => 
             user.displayName?.toLowerCase().includes(lowercasedFilter) ||
             user.email?.toLowerCase().includes(lowercasedFilter)
         );
-    }, [searchTerm, users]);
+    }, [searchTerm, allUsers]);
+
+    const processedUsers = React.useMemo(() => {
+        return allUsers.filter(user => user.kycStatus === 'approved' || user.kycStatus === 'rejected');
+    }, [allUsers]);
 
     return (
         <div className="flex flex-col gap-4">
@@ -158,8 +163,8 @@ export default function AdminKycPage() {
                                         <TableCell className="text-center"><Skeleton className="h-8 w-40 mx-auto" /></TableCell>
                                     </TableRow>
                                 ))
-                            ) : filteredUsers.length > 0 ? (
-                                filteredUsers.map((user) => (
+                            ) : pendingUsers.length > 0 ? (
+                                pendingUsers.map((user) => (
                                     <TableRow key={user.uid}>
                                         <TableCell className="font-medium">{user.displayName}</TableCell>
                                         <TableCell>{user.email}</TableCell>
@@ -194,7 +199,7 @@ export default function AdminKycPage() {
                     </Card>
                 </TabsContent>
                 <TabsContent value="history">
-                    <AdminKycHistoryPage />
+                    <AdminKycHistory users={processedUsers} loading={loading} />
                 </TabsContent>
             </Tabs>
         </div>

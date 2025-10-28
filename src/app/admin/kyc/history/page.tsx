@@ -25,33 +25,20 @@ import { useFirestore } from "@/firebase/provider"
 import { listenToAllUsers } from "@/lib/firestore"
 import { Skeleton } from "@/components/ui/skeleton"
 
-export default function AdminKycHistoryPage() {
-  const firestore = useFirestore()
-  const [users, setUsers] = React.useState<User[]>([])
-  const [loading, setLoading] = React.useState(true)
+// This is now a regular component, not a page
+export default function AdminKycHistory({ users: initialUsers, loading: initialLoading }: { users: User[], loading: boolean }) {
   const [searchTerm, setSearchTerm] = React.useState("")
   
-  React.useEffect(() => {
-    if (!firestore) return;
-    setLoading(true);
-    const unsubscribe = listenToAllUsers(firestore, (allUsers) => {
-        // Only show processed KYC
-        setUsers(allUsers.filter(u => u.kycStatus === 'approved' || u.kycStatus === 'rejected'));
-        setLoading(false);
-    });
-    return () => unsubscribe();
-  }, [firestore]);
-
   const filteredUsers = React.useMemo(() => {
-    if (!searchTerm) return users;
+    if (!searchTerm) return initialUsers;
     const lowercasedFilter = searchTerm.toLowerCase();
-    return users.filter(item => {
+    return initialUsers.filter(item => {
       return (
         item.displayName?.toLowerCase().includes(lowercasedFilter) ||
         item.email?.toLowerCase().includes(lowercasedFilter)
       );
     });
-  }, [searchTerm, users]);
+  }, [searchTerm, initialUsers]);
 
 
   const getStatusVariant = (status: User['kycStatus']) => {
@@ -88,7 +75,7 @@ export default function AdminKycHistoryPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loading ? (
+              {initialLoading ? (
                 [...Array(5)].map((_, i) => (
                     <TableRow key={i}>
                         <TableCell><Skeleton className="h-5 w-24" /></TableCell>
