@@ -2,21 +2,14 @@
 "use client"
 
 import * as React from "react"
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { signInWithPopup, GoogleAuthProvider, getRedirectResult } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth, useFirestore } from "@/firebase/provider"
 import { useRouter } from "next/navigation"
 import { getOrCreateUser } from "@/lib/firestore"
-import { Loader2, Shield, User, Handshake, MessageSquare } from "lucide-react"
-import {
-    AlertDialog,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogHeader,
-    AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { Loader2 } from "lucide-react"
 import type { UserProfile } from "@/lib/schema"
 
 interface AuthFormProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -29,15 +22,16 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
-  const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
-
-  const handleAdminNavigation = (path: string) => {
-    setShowAdminPanelDialog(false);
-    router.push(path);
-  }
+  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start loading to handle redirect
 
   const handleNavigation = (user: UserProfile) => {
+    // If the user is an admin, always redirect to the panel selector
+    if (user.role === 'admin') {
+        router.push('/admin/select-panel');
+        return;
+    }
+    
+    // For other roles, redirect to their specific dashboards
     switch (user.role) {
         case 'agent':
             router.push('/agent');
@@ -52,6 +46,45 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     }
   }
 
+  // Effect to handle the result of a redirect sign-in
+  React.useEffect(() => {
+    if (!auth || !firestore) return;
+
+    const processRedirectResult = async () => {
+        try {
+            const result = await getRedirectResult(auth);
+            if (result) {
+                // User has just signed in via redirect
+                const userProfile = await getOrCreateUser(firestore, result.user);
+                toast({ title: "Sign in successful!" });
+                handleNavigation(userProfile);
+            } else {
+                // No redirect result, user is just viewing the page
+                setIsLoading(false);
+            }
+        } catch (error: any) {
+            console.error("Google Redirect Sign-In Error:", error);
+            if (error.code === 'auth/unauthorized-domain') {
+                 toast({
+                    variant: "destructive",
+                    title: "Domain Not Authorized",
+                    description: "This domain has not been authorized for sign-in. Please contact the administrator.",
+                });
+            } else {
+                 toast({
+                    variant: "destructive",
+                    title: "Sign-In Failed",
+                    description: error.message || "An unknown error occurred during sign-in.",
+                });
+            }
+            setIsLoading(false);
+        }
+    };
+    
+    processRedirectResult();
+
+  }, [auth, firestore]); // Intentionally not including other dependencies to run once on mount
+
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
         toast({
@@ -64,17 +97,13 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     setIsLoading(true);
     
     const provider = new GoogleAuthProvider();
-
+    
+    // Use popup for a better user experience on desktop if not blocked
     try {
-        const result = await signInWithPopup(auth, provider);
-        const userProfile = await getOrCreateUser(firestore, result.user);
-        toast({ title: "Sign in successful!" });
-
-        if (userProfile.role === 'admin') {
-            setShowAdminPanelDialog(true);
-        } else {
-            handleNavigation(userProfile);
-        }
+      const result = await signInWithPopup(auth, provider);
+      const userProfile = await getOrCreateUser(firestore, result.user);
+      toast({ title: "Sign in successful!" });
+      handleNavigation(userProfile);
     } catch (error: any) {
         console.error("Google Popup Sign-In Error:", error);
         toast({
@@ -82,7 +111,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
             title: "Sign-In Failed",
             description: error.message || "An unknown error occurred during sign-in.",
         });
-    } finally {
         setIsLoading(false);
     }
   }
@@ -102,32 +130,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
         )}
         Sign In with Google
       </Button>
-
-       <AlertDialog open={showAdminPanelDialog}>
-            <AlertDialogContent>
-                <AlertDialogHeader>
-                    <AlertDialogTitle>Admin Access Detected</AlertDialogTitle>
-                    <AlertDialogDescription>
-                        Choose which panel you want to visit.
-                    </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-2 pt-4">
-                     <Button onClick={() => handleAdminNavigation('/admin')} className="w-full h-14 text-lg justify-between">
-                        Go to Admin Panel
-                        <Shield className="h-6 w-6" />
-                    </Button>
-                    <Button onClick={() => handleAdminNavigation('/dashboard')} variant="outline" className="w-full h-12 justify-between">
-                        View User Panel <User />
-                    </Button>
-                    <Button onClick={() => handleAdminNavigation('/partner')} variant="outline" className="w-full h-12 justify-between">
-                        View Partner Panel <Handshake />
-                    </Button>
-                    <Button onClick={() => handleAdminNavigation('/agent')} variant="outline" className="w-full h-12 justify-between">
-                        View Agent Panel <MessageSquare />
-                    </Button>
-                </div>
-            </AlertDialogContent>
-        </AlertDialog>
     </div>
   )
 }
