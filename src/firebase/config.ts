@@ -1,3 +1,4 @@
+
 // NOTE: This is a public-facing configuration object.
 // No sensitive data should be stored here.
 
@@ -7,6 +8,6 @@ export const firebaseConfig = {
   projectId: "fynix-pro",
   storageBucket: "fynix-pro.firebasestorage.app",
   messagingSenderId: "864439401863",
-  appId: "1:864439401863:web:1a7c38e25d939515d5a722",
-  measurementId: "G-KC5JWBPC1X"
+  appId: "1:864439401863:web:5ed4d0dc0ca9fbfdd5a722",
+  measurementId: "G-D13PLSZ6C4"
 };
