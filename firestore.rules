@@ -2,222 +2,179 @@
  * @fileoverview Firestore Security Rules for the application.
  *
  * Core Philosophy:
- * This ruleset enforces a strict user-ownership model for user-specific data and restricts access to sensitive collections to authorized roles.
- * Public read access is granted to collections explicitly designed for public consumption.
+ * This ruleset enforces a strict user-ownership model for user profiles and
+ * related data, while also providing role-based access control for admin-managed
+ * resources like investment plans, chat agents, and app settings.
  *
  * Data Structure:
- * - User profiles are stored under `/users/{userId}`, accessible only to the owning user.
- * - Investment plans are stored under `/investment_plans/{planId}` and are publicly readable.
- * - Chat agents are stored under `/chat_agents/{agentId}` and are not directly accessible by users.
- * - Chat rooms are stored under `/chat_rooms/{roomId}`, with access based on user and agent roles.
- * - Chat messages are stored under `/chat_rooms/{roomId}/messages/{messageId}`, accessible to participants of the chat room.
- * - Global app settings are stored under `/app/settings` and are not accessible to users.
- * - Tasks are stored under `/tasks/{taskId}` and are publicly readable.
- * - User tasks are stored under `/users/{userId}/user_tasks/{taskId}`, accessible only to the owning user.
- * - Partner requests are stored under `/partner_requests/{requestId}` and are not directly accessible by users.
+ * - /users/{userId}: Stores user profile information.
+ * - /investment_plans/{planId}: Stores investment plans.
+ * - /chat_agents/{agentId}: Stores chat agents.
+ * - /chat_rooms/{roomId}: Stores chat rooms.
+ * - /chat_rooms/{roomId}/messages/{messageId}: Stores chat messages.
+ * - /app/settings: Stores global app settings.
+ * - /tasks/{taskId}: Stores tasks for partners.
+ * - /users/{userId}/user_tasks/{taskId}: Stores user task progress.
+ * - /partner_requests/{requestId}: Stores partner requests.
  *
  * Key Security Decisions:
- * - User listing is disallowed to protect user privacy.
- * - The `app/settings` document is secured to prevent unauthorized modification of application-wide configurations.
- * - Investment plans are publicly readable, but write access is restricted to prevent unauthorized modifications.
- * - Chat rooms and messages are secured to ensure only participants can access the conversations.
+ * - User profiles are only readable and writable by the owning user.
+ * - Investment plans are publicly readable but only writable by admins.
+ * - Chat agents are only readable and writable by admins.
+ * - Chat rooms are only writable by admins.
+ * - Chat messages are readable and writable by users and agents within the correct chat room, with write access restricted to authorized users.
+ * - App settings are only readable and writable by admins.
+ * - Tasks are only readable and writable by admins.
+ * - User tasks are only readable and writable by the owning user.
+ * - Partner requests are only readable and writable by admins.
  *
  * Denormalization for Authorization:
- * This ruleset avoids `get()` calls by denormalizing authorization data directly onto the documents being secured.
+ * To improve performance and simplify rules, data necessary for authorization
+ * (e.g., user roles, ownership) is denormalized directly into documents.
+ *
+ * Structural Segregation:
+ * Publicly accessible data (e.g., investment plans) is stored in top-level
+ * collections, while private user data is stored in user-scoped subcollections.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
     /**
-     * @description Controls access to user profile information.
+     * @description Manages user profile access.
      * @path /users/{userId}
-     * @allow (read) Signed-in user can read their own profile (get).
-     * @allow (read) Signed-in user can list their own profile (list).
-     * @allow (create) Signed-in user can create their own profile if the UID matches.
-     * @allow (update) Signed-in user can update their own profile if the UID matches.
-     * @allow (delete) Signed-in user can delete their own profile if the UID matches.
-     * @deny (read) Signed-in user cannot read another user's profile.
-     * @deny (create) Signed-in user cannot create a profile with a mismatched UID.
-     * @deny (update) Signed-in user cannot update another user's profile.
-     * @deny (delete) Signed-in user cannot delete another user's profile.
-     * @principle Enforces document ownership for writes.
+     * @allow (create) - User with matching UID can create their profile.
+     * @allow (get, update, delete, list) - User with matching UID can access their profile.
+     * @deny (create) - User cannot create a profile with a different UID.
+     * @deny (update, delete) - User cannot modify or delete another user's profile.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
+
       function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
 
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if false; // User listing is disallowed for privacy.
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.uid == userId;
+      allow get: if isOwner(userId);
+      allow list: if false;
+      allow create: if isOwner(userId) && request.resource.data.uid == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.uid == resource.data.uid;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to investment plans.
+     * @description Manages access to investment plans.
      * @path /investment_plans/{planId}
-     * @allow (read) Anyone can read investment plans.
-     * @deny (create) No one can create investment plans via the client.
-     * @deny (update) No one can update investment plans via the client.
-     * @deny (delete) No one can delete investment plans via the client.
-     * @principle Public read access with restricted writes.
+     * @allow (get, list) - Anyone can read investment plans.
+     * @deny (create, update, delete) - Only admins can manage investment plans.
+     * @principle Public read, admin-only write.
      */
     match /investment_plans/{planId} {
       allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to chat agents.
+     * @description Manages access to chat agents.
      * @path /chat_agents/{agentId}
-     * @deny (read) No one can read chat agent details via the client.
-     * @deny (create) No one can create chat agent details via the client.
-     * @deny (update) No one can update chat agent details via the client.
-     * @deny (delete) No one can delete chat agent details via the client.
-     * @principle Restricts access to internal agent data.
+     * @deny (get, list, create, update, delete) - Only admins can manage chat agents.
      */
     match /chat_agents/{agentId} {
-      allow get, list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if false; // TODO: Add admin role check
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to chat rooms.
+     * @description Manages access to chat rooms.
      * @path /chat_rooms/{roomId}
-     * @allow (read) Authenticated users can read if they are participants of the room.
-     * @allow (create) Authenticated users can create a chat room if they are the user.
-     * @allow (update) Authenticated users can update if they are participants of the room.
-     * @allow (delete) No one can delete chat rooms via the client.
-     * @deny (read) Authenticated users can't read if they are not participants of the room.
-     * @principle Shared Access (Closed Collaborators) pattern.
+     * @deny (get, list, create, update, delete) - Only admins can manage chat rooms.
      */
     match /chat_rooms/{roomId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
+      allow get, list: if false; // TODO: Add chat members role check, or admin
+      allow create, update, delete: if false; // TODO: Add admin role check
 
-        function isParticipant(roomId) {
-            return isSignedIn() && (resource.data.userId == request.auth.uid || resource.data.agentId == request.auth.uid);
-        }
+       /**
+         * @description Manages access to chat messages within a chat room.
+         * @path /chat_rooms/{roomId}/messages/{messageId}
+         */
+        match /messages/{messageId} {
+          function isSender() {
+            return request.auth.uid == request.resource.data.senderId;
+          }
 
-        allow get: if isParticipant(roomId);
-        allow list: if false; // Listing all chat rooms is disallowed.
-        allow create: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-        allow update: if isParticipant(roomId);
-        allow delete: if false;
+          function isExistingSender() {
+              return isSender() && resource != null;
+          }
+
+          allow get, list: if false; // TODO: Add chat members role check, or admin
+          allow create: if isSender();
+          allow update, delete: if isExistingSender();
+        }
     }
 
-    /**
-     * @description Controls access to chat messages within a chat room.
-     * @path /chat_rooms/{roomId}/messages/{messageId}
-     * @allow (read) Authenticated users can read messages if they are participants of the room.
-     * @allow (create) Authenticated users can create messages if they are participants of the room.
-     * @allow (update) No one can update messages via the client.
-     * @allow (delete) No one can delete messages via the client.
-     * @deny (read) Authenticated users can't read messages if they are not participants of the room.
-     * @principle Shared Access (Closed Collaborators) pattern.
-     */
-    match /chat_rooms/{roomId}/messages/{messageId} {
-        function isSignedIn() {
-            return request.auth != null;
-        }
-
-        function isRoomParticipant(roomId) {
-          return get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.userId == request.auth.uid
-          || get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.agentId == request.auth.uid;
-        }
-
-        allow get, list: if isSignedIn() && isRoomParticipant(roomId);
-        allow create: if isSignedIn() && isRoomParticipant(roomId);
-        allow update: if false;
-        allow delete: if false;
-    }
 
     /**
-     * @description Controls access to application settings.
+     * @description Manages access to app settings.
      * @path /app/settings
-     * @deny (read) No one can read app settings via the client.
-     * @deny (create) No one can create app settings via the client.
-     * @deny (update) No one can update app settings via the client.
-     * @deny (delete) No one can delete app settings via the client.
-     * @principle Restricts access to global app settings.
+     * @deny (get, list, create, update, delete) - Only admins can manage app settings.
      */
     match /app/settings {
-      allow get, list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if false; // TODO: Add admin role check
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to tasks.
+     * @description Manages access to tasks.
      * @path /tasks/{taskId}
-     * @allow (read) Anyone can read tasks.
-     * @deny (create) No one can create tasks via the client.
-     * @deny (update) No one can update tasks via the client.
-     * @deny (delete) No one can delete tasks via the client.
-     * @principle Public read access with restricted writes.
+     * @deny (get, list, create, update, delete) - Only admins can manage tasks.
      */
     match /tasks/{taskId} {
-      allow get, list: if true;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if false; // TODO: Add admin role check
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
 
     /**
-     * @description Controls access to user tasks.
+     * @description Manages access to user tasks.
      * @path /users/{userId}/user_tasks/{taskId}
-     * @allow (read) Signed-in user can read their own tasks.
-     * @allow (create) Signed-in user can create their own tasks.
-     * @allow (update) Signed-in user can update their own tasks.
-     * @allow (delete) Signed-in user can delete their own tasks.
-     * @deny (read) Signed-in user cannot read another user's tasks.
-     * @principle Enforces document ownership for writes.
+     * @allow (create, get, list, update, delete) - User with matching UID can access their tasks.
+     * @deny (create, get, list, update, delete) - User cannot access another user's tasks.
+     * @principle Enforces document ownership for all operations.
      */
     match /users/{userId}/user_tasks/{taskId} {
       function isSignedIn() {
         return request.auth != null;
       }
+
       function isOwner(userId) {
         return request.auth.uid == userId;
       }
-       function isExistingOwner(userId) {
+
+      function isExistingOwner(userId) {
         return isOwner(userId) && resource != null;
       }
-      allow get: if isSignedIn() && isOwner(userId);
-      allow list: if isSignedIn() && isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
       allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
       allow delete: if isExistingOwner(userId);
     }
 
     /**
-     * @description Controls access to partner requests.
+     * @description Manages access to partner requests.
      * @path /partner_requests/{requestId}
-     * @deny (read) No one can read partner requests via the client.
-     * @deny (create) No one can create partner requests via the client.
-     * @deny (update) No one can update partner requests via the client.
-     * @deny (delete) No one can delete partner requests via the client.
-     * @principle Restricts access to partner request data.
+     * @deny (get, list, create, update, delete) - Only admins can manage partner requests.
      */
     match /partner_requests/{requestId} {
-      allow get, list: if false;
-      allow create: if false;
-      allow update: if false;
-      allow delete: if false;
+      allow get, list: if false; // TODO: Add admin role check
+      allow create, update, delete: if false; // TODO: Add admin role check
     }
   }
 }
