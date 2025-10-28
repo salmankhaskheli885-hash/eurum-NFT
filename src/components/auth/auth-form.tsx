@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
+import { signInWithRedirect, getRedirectResult, GoogleAuthProvider } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -29,14 +29,8 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(false);
+  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start with loading true
   const [showAdminPanelDialog, setShowAdminPanelDialog] = React.useState<boolean>(false);
-
-  // This effect will just handle the initial loading state
-  React.useEffect(() => {
-    setIsLoading(false)
-  }, []);
-
 
   const handleAdminNavigation = (path: string) => {
     setShowAdminPanelDialog(false);
@@ -58,38 +52,46 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     }
   }
 
+  // Handle the redirect result when the component mounts
+  React.useEffect(() => {
+    if (!auth || !firestore) return;
+
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result) {
+          // User has successfully signed in via redirect.
+          const userProfile = await getOrCreateUser(firestore, result.user);
+          toast({ title: "Sign in successful!" });
+
+          if (userProfile.role === 'admin') {
+            setShowAdminPanelDialog(true);
+          } else {
+            handleNavigation(userProfile);
+          }
+        } else {
+            // No redirect result, so we are not in a loading state from a redirect.
+            setIsLoading(false);
+        }
+      })
+      .catch((error: any) => {
+        console.error("Google Redirect Sign-In Error:", error);
+        toast({
+          variant: "destructive",
+          title: "Sign-In Failed",
+          description: error.message || "An unknown error occurred during sign-in.",
+        });
+        setIsLoading(false);
+      });
+  }, [auth, firestore, router, toast]);
+
+
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) return;
     setIsLoading(true);
     
     const provider = new GoogleAuthProvider();
-
-    try {
-        const result = await signInWithPopup(auth, provider);
-        if (result) {
-            const userProfile = await getOrCreateUser(firestore, result.user);
-            toast({ title: "Sign in successful!" });
-            
-            if (userProfile.role === 'admin') {
-                setShowAdminPanelDialog(true);
-            } else {
-                handleNavigation(userProfile);
-            }
-        }
-    } catch (error: any) {
-        console.error("Google Popup Sign-In Error:", error);
-        toast({
-            variant: "destructive",
-            title: "Sign-In Failed",
-            description: error.code === 'auth/popup-closed-by-user'
-                ? "The sign-in window was closed before completion."
-                : error.code === 'auth/account-exists-with-different-credential' 
-                ? "An account already exists with the same email address but different sign-in credentials."
-                : error.message || "An unknown error occurred.",
-        });
-    } finally {
-        setIsLoading(false);
-    }
+    // Start the sign-in process by redirecting the user
+    await signInWithRedirect(auth, provider);
   }
   
   return (
