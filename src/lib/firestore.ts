@@ -79,7 +79,7 @@ export async function getOrCreateUser(
             totalDeposits: 0,
             failedDepositCount: 0,
         };
-        await setDoc(userRef, newUser);
+        await setDoc(userRef, newUser, { merge: true });
         return newUser;
     }
 }
@@ -385,94 +385,74 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         const appSettingsDocSnap = await transaction.get(doc(firestore, 'app', 'settings'));
         const settings = appSettingsDocSnap.data() as AppSettings;
 
-        let referrerSnap: any = null;
-        if (user.referredBy) {
-            const referrerRef = doc(firestore, 'users', user.referredBy);
-            referrerSnap = await transaction.get(referrerRef);
-        }
-
         // --- WRITES SECOND ---
+        // Update the transaction status itself.
         transaction.update(txRef, { status: newStatus });
         
-        // Update Agent performance stats
+        // Update Agent performance stats if an agent was assigned
         if (txData.assignedAgentId) {
-            const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
-            // This needs to be outside the transaction's read phase
+             const agentQuery = query(collection(firestore, 'chat_agents'), where('uid', '==', txData.assignedAgentId), limit(1));
+            // This needs to be outside the transaction's read phase, so we await it after reads.
             const agentSnap = await getDocs(agentQuery);
+
             if (!agentSnap.empty) {
                 const agentDocRef = agentSnap.docs[0].ref;
                 if (txData.type === 'Deposit') {
-                    if (newStatus === 'Completed') {
-                        transaction.update(agentDocRef, { depositsApproved: increment(1) });
-                    } else {
-                        transaction.update(agentDocRef, { depositsRejected: increment(1) });
-                    }
+                    transaction.update(agentDocRef, { [newStatus === 'Completed' ? 'depositsApproved' : 'depositsRejected']: increment(1) });
                 } else if (txData.type === 'Withdrawal') {
-                    if (newStatus === 'Completed') {
-                        transaction.update(agentDocRef, { withdrawalsApproved: increment(1) });
-                    } else {
-                        transaction.update(agentDocRef, { withdrawalsRejected: increment(1) });
-                    }
+                     transaction.update(agentDocRef, { [newStatus === 'Completed' ? 'withdrawalsApproved' : 'withdrawalsRejected']: increment(1) });
                 }
             }
         }
         
-        if (newStatus !== 'Completed') {
+        // If the transaction failed, handle failure logic and stop.
+        if (newStatus === 'Failed') {
             if (txData.type === 'Deposit') {
-                const newFailedCount = increment(1);
-                const updates: Partial<User> = { failedDepositCount: newFailedCount as any };
-                if ((user.failedDepositCount || 0) + 1 >= 5) {
+                const newFailedCount = (user.failedDepositCount || 0) + 1;
+                const updates: Partial<User> = { failedDepositCount: newFailedCount };
+                if (newFailedCount >= 5) {
                     updates.status = 'Suspended';
                 }
                 transaction.update(userRef, updates);
             }
-            return;
+            return; // Stop processing further for failed transactions
         };
         
+        // If the transaction is COMPLETED, handle success logic.
         switch (txData.type) {
             case 'Deposit': {
-                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
+                // Update user's balance and total deposits
                 const newBalance = user.balance + txData.amount;
-                let newVipLevel = user.vipLevel;
-                let vipProgress = user.vipProgress;
+                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
+                transaction.update(userRef, { balance: newBalance, totalDeposits: newTotalDeposits });
 
-                if (user.vipLevel < 3 && newTotalDeposits >= 500) newVipLevel = 3;
-                else if (user.vipLevel < 2 && newTotalDeposits >= 100) newVipLevel = 2;
+                // Check for referral commission
+                if (user.referredBy) {
+                    const referrerRef = doc(firestore, 'users', user.referredBy);
+                    const referrerSnap = await transaction.get(referrerRef);
+                    if (referrerSnap.exists()) {
+                        const referrer = referrerSnap.data() as User;
+                        const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
+                        const commissionAmount = txData.amount * commissionRate;
+                        
+                        transaction.update(referrerRef, { balance: increment(commissionAmount) });
 
-                if (newVipLevel === 1) vipProgress = (newTotalDeposits / 100) * 100;
-                else if (newVipLevel === 2) vipProgress = ((newTotalDeposits - 100) / (500 - 100)) * 100;
-                else if (newVipLevel === 3) vipProgress = ((newTotalDeposits - 500) / (1000 - 500)) * 100;
-
-                transaction.update(userRef, { 
-                    balance: newBalance, 
-                    totalDeposits: newTotalDeposits, 
-                    vipLevel: newVipLevel,
-                    vipProgress: Math.min(100, Math.max(0, Math.floor(vipProgress)))
-                });
-
-                // Check for referral and commission
-                if (user.referredBy && referrerSnap && referrerSnap.exists()) {
-                    const referrer = referrerSnap.data() as User;
-                    const referrerRef = doc(firestore, 'users', user.referredBy); // get ref again for writing
-                    const commissionRate = referrer.role === 'partner' ? 0.10 : 0.05;
-                    const commissionAmount = txData.amount * commissionRate;
-                    
-                    const newReferrerBalance = referrer.balance + commissionAmount;
-                    transaction.update(referrerRef, { balance: newReferrerBalance });
-
-                    const commissionTxRef = doc(collection(firestore, 'transactions'));
-                    transaction.set(commissionTxRef, {
-                        userId: referrer.uid,
-                        userName: referrer.displayName || 'N/A',
-                        userRole: referrer.role,
-                        type: 'Commission',
-                        amount: commissionAmount,
-                        status: 'Completed',
-                        date: new Date().toISOString(),
-                        details: `Commission from ${user.displayName}'s deposit`
-                    });
-                     // Call the task progress update function
-                    await updatePartnerTaskProgress(transaction, firestore, user, txData.amount, referrer.uid);
+                        // Log the commission transaction
+                        const commissionTxRef = doc(collection(firestore, 'transactions'));
+                        transaction.set(commissionTxRef, {
+                            userId: referrer.uid,
+                            userName: referrer.displayName || 'N/A',
+                            userRole: referrer.role,
+                            type: 'Commission',
+                            amount: commissionAmount,
+                            status: 'Completed',
+                            date: new Date().toISOString(),
+                            details: `Commission from ${user.displayName}'s deposit`
+                        });
+                        
+                        // Update task progress for the referrer
+                         await updatePartnerTaskProgress(transaction, firestore, user, txData.amount, referrer.uid);
+                    }
                 }
                 break;
             }
@@ -483,15 +463,19 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 const totalDeduction = withdrawalAmount + feeAmount;
 
                 if (user.balance < totalDeduction) {
+                    // Update original transaction to Failed and stop
                     transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${totalDeduction}, had ${user.balance}`});
-                    // throw new Error() is not needed, just update and return
                     return;
                 }
                 
+                // Update user's balance and last withdrawal date
                 transaction.update(userRef, { 
-                    lastWithdrawalDate: new Date().toISOString(),
-                    balance: user.balance - totalDeduction
+                    balance: user.balance - totalDeduction,
+                    lastWithdrawalDate: new Date().toISOString()
                 });
+                
+                // Update the transaction with the fee that was deducted
+                 transaction.update(txRef, { 'withdrawalDetails.fee': feeAmount });
                  break;
             }
              case 'Investment': {
@@ -502,8 +486,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                  }
                 const newBalance = user.balance - investmentAmount;
                 transaction.update(userRef, { balance: newBalance });
-                // We cannot call an async function with await inside the transaction.
-                // We'll call it outside.
+                // handleInvestmentPayout will be called outside the transaction
                  break;
             }
         }
