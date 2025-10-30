@@ -63,24 +63,21 @@ export async function getOrCreateUser(
         return userSnap.data() as User;
     } else {
         // The user document does not exist, create a new one with basic info.
-        const newUser: User = {
+        const newUser: UserProfile = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            role: 'user', // Default role for all new users.
-            shortUid: firebaseUser.uid.substring(0, 8),
+            role: 'user', // Default role
+            shortUid: firebaseUser.uid.substring(0, 8).toUpperCase(),
             balance: 0,
             currency: 'PKR',
             vipLevel: 1,
             vipProgress: 0,
             kycStatus: 'unsubmitted',
             referralLink: `https://aurumnft.com/ref/${firebaseUser.uid.substring(0, 8)}`,
-            status: 'Active',
-            totalDeposits: 0,
-            failedDepositCount: 0,
         };
-        await setDoc(userRef, newUser, { merge: true });
-        return newUser;
+        await setDoc(userRef, { ...newUser, status: 'Active', totalDeposits: 0, failedDepositCount: 0 }, { merge: true });
+        return newUser as User;
     }
 }
 
@@ -175,7 +172,7 @@ export async function addTransaction(
         const settings = settingsSnap.data() as AppSettings;
         const adminWalletNumber = settings?.adminWalletNumber;
 
-        if (receiptFile) {
+        if (receiptFile && adminWalletNumber) {
             try {
                 const receiptDataUri = await fileToDataUri(receiptFile.file);
                 const aiResult = await extractTid({ receiptDataUri, adminWalletNumber });
@@ -251,7 +248,7 @@ export async function addTransaction(
         assignedAgentId: assignedAgentId,
         // Only add details if they exist to avoid 'undefined' field error
         ...(extractedTid && { details: `TID: ${extractedTid}` }),
-        ...(dataToSave.details && { details: dataToSave.details }),
+        ...(dataToSave.details && !extractedTid && { details: dataToSave.details }),
     };
 
     await setDoc(newTransactionRef, transactionObject);
@@ -422,12 +419,13 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
         switch (txData.type) {
             case 'Deposit': {
                 // Update user's balance and total deposits
-                const newBalance = user.balance + txData.amount;
-                const newTotalDeposits = (user.totalDeposits || 0) + txData.amount;
-                transaction.update(userRef, { balance: newBalance, totalDeposits: newTotalDeposits });
+                transaction.update(userRef, { 
+                    balance: increment(txData.amount), 
+                    totalDeposits: increment(txData.amount) 
+                });
 
-                // Check for referral commission
-                if (user.referredBy) {
+                // Check for referral commission only on first deposit
+                if (user.referredBy && (user.totalDeposits || 0) === 0) {
                     const referrerRef = doc(firestore, 'users', user.referredBy);
                     const referrerSnap = await transaction.get(referrerRef);
                     if (referrerSnap.exists()) {
@@ -470,7 +468,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                 
                 // Update user's balance and last withdrawal date
                 transaction.update(userRef, { 
-                    balance: user.balance - totalDeduction,
+                    balance: increment(-totalDeduction),
                     lastWithdrawalDate: new Date().toISOString()
                 });
                 
@@ -484,8 +482,7 @@ export async function updateTransactionStatus(firestore: ReturnType<typeof getFi
                      transaction.update(txRef, { status: 'Failed', details: `Insufficient balance. Required ${investmentAmount}, had ${user.balance}`});
                      return;
                  }
-                const newBalance = user.balance - investmentAmount;
-                transaction.update(userRef, { balance: newBalance });
+                transaction.update(userRef, { balance: increment(-investmentAmount) });
                 // handleInvestmentPayout will be called outside the transaction
                  break;
             }
@@ -857,8 +854,7 @@ export async function claimTaskReward(firestore: ReturnType<typeof getFirestore>
         transaction.update(userTaskRef, { isClaimed: true });
 
         // Add reward to user balance
-        const newBalance = userSnap.data().balance + rewardAmount;
-        transaction.update(userRef, { balance: newBalance });
+        transaction.update(userRef, { balance: increment(rewardAmount) });
 
         // Create a transaction log for the reward
         const rewardTransaction: Omit<Transaction, 'id' | 'date'> = {

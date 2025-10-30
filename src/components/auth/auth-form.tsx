@@ -2,7 +2,7 @@
 "use client"
 
 import * as React from "react"
-import { signInWithPopup, GoogleAuthProvider, getRedirectResult } from "firebase/auth"
+import { signInWithPopup, GoogleAuthProvider } from "firebase/auth"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/hooks/use-toast"
@@ -22,7 +22,7 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
   const router = useRouter()
   const { toast } = useToast()
   
-  const [isLoading, setIsLoading] = React.useState<boolean>(true); // Start loading to handle redirect
+  const [isLoading, setIsLoading] = React.useState<boolean>(false);
 
   const handleNavigation = (user: UserProfile) => {
     // If the user is an admin, always redirect to the panel selector
@@ -46,45 +46,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     }
   }
 
-  // Effect to handle the result of a redirect sign-in
-  React.useEffect(() => {
-    if (!auth || !firestore) return;
-
-    const processRedirectResult = async () => {
-        try {
-            const result = await getRedirectResult(auth);
-            if (result) {
-                // User has just signed in via redirect
-                const userProfile = await getOrCreateUser(firestore, result.user);
-                toast({ title: "Sign in successful!" });
-                handleNavigation(userProfile);
-            } else {
-                // No redirect result, user is just viewing the page
-                setIsLoading(false);
-            }
-        } catch (error: any) {
-            console.error("Google Redirect Sign-In Error:", error);
-            if (error.code === 'auth/unauthorized-domain') {
-                 toast({
-                    variant: "destructive",
-                    title: "Domain Not Authorized",
-                    description: "This domain has not been authorized for sign-in. Please contact the administrator.",
-                });
-            } else {
-                 toast({
-                    variant: "destructive",
-                    title: "Sign-In Failed",
-                    description: error.message || "An unknown error occurred during sign-in.",
-                });
-            }
-            setIsLoading(false);
-        }
-    };
-    
-    processRedirectResult();
-
-  }, [auth, firestore]); // Intentionally not including other dependencies to run once on mount
-
   const handleGoogleSignIn = async () => {
     if (!auth || !firestore) {
         toast({
@@ -98,7 +59,6 @@ export function AuthForm({ className, intendedRole, ...props }: AuthFormProps) {
     
     const provider = new GoogleAuthProvider();
     
-    // Use popup for a better user experience on desktop if not blocked
     try {
       const result = await signInWithPopup(auth, provider);
       const userProfile = await getOrCreateUser(firestore, result.user);
