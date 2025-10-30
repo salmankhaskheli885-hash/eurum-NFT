@@ -1,154 +1,83 @@
-# AurumNFT - The Ultimate Master Script & System Blueprint
+# AurumNFT - System Architecture Blueprint
 
-This document is the definitive "master script" for the AurumNFT application. It provides an exhaustive, panel-by-panel breakdown of every feature, option, and workflow. This blueprint details both the automated processes (backend logic) and the manual user interactions, serving as a complete guide to the application's functionality.
-
----
-
-### **Application Structure (Panels)**
-
-The application is divided into five core access levels or "panels":
-
-1.  **Authentication** (Login / Register)
-2.  **Admin Panel** (`/admin`)
-3.  **User Panel** (`/dashboard`)
-4.  **Partner Panel** (`/partner`)
-5.  **Agent Panel** (`/agent`)
+This document outlines the complete, step-by-step system architecture for the AurumNFT application. It details the automated and manual processes for every feature, providing a clear "script" for how the web application functions and how it can be compiled into a native app using Capacitor.
 
 ---
 
-## 1. Authentication System (Login/Register)
+### **Summary (Automation Ratio)**
 
-This is the entry point for all users. The system is designed to intelligently route users based on their roles.
+- ✅ **90% System Automatic** (Powered by Firebase, Cloud Functions & AI)
+- 🧩 **10% Manual Control** (For Admin safety, verification, and critical decisions)
 
-| Feature               | Type   | Logic / Description                                                                                                                              |
-| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **User/Partner Login**| Auto   | Users can select a "User" or "Partner" tab. Login is handled by **Firebase Authentication** (Google Sign-In).                                      |
-| **Role-Based Routing**| Auto   | After login, the system checks the user's `role` in Firestore. It automatically redirects to `/admin`, `/partner`, `/agent`, or `/dashboard`.       |
-| **Admin Panel Dialog**| Auto   | If a user with the `admin` role logs in, a special dialog appears, allowing them to choose which panel to enter (Admin, User, Partner, or Agent). |
-| **New User Creation** | Auto   | On the very first login, a new user document is created in `firestore/users/{userId}` with default values (`role: 'user'`, `balance: 0`, etc.).    |
-| **Referral Handling** | Auto   | If a new user signs up using a referral link, the referrer's `userId` is saved in the new user's `referredBy` field in Firestore.                |
-
----
-
-## 2. Admin Panel (`/admin`)
-
-The central control hub for the entire application. Accessible only to users with the `admin` role.
-
-### **Dashboard (`/admin`)**
-| Feature                  | Type   | Description                                                                                             |
-| ------------------------ | ------ | ------------------------------------------------------------------------------------------------------- |
-| **Stat Cards**           | Auto   | Displays real-time stats: Total Users, Total Deposits, Pending Withdrawals, Total Invested, Pending KYC.    |
-| **Panel Control**        | Manual | Switches to enable or disable the User, Partner, and Agent panels globally. Changes are saved in Firestore. |
-| **Manual Action Links**  | Manual | Quick links to approve deposits, withdrawals, and KYC requests.                                           |
-| **Recent Activity Table**| Auto   | Shows the 5 most recent transactions from all users in the system.                                      |
-
-### **User Management (`/admin/users`)**
-| Feature                  | Type   | Description                                                                                        |
-| ------------------------ | ------ | -------------------------------------------------------------------------------------------------- |
-| **User List & Search**   | Auto   | Displays all users. Admin can search by name, email, or UID.                                       |
-| **View User Details**    | Manual | Takes the admin to a detailed page (`/admin/users/{userId}`) for a specific user.                    |
-| **Edit User Role**       | Manual | Admin can change a user's role to `user`, `partner`, or `admin` directly from the user list.         |
-| **Suspend/Activate User**| Manual | Admin can change a user's status between `Active` and `Suspended`.                                   |
-| **Delete User**          | Manual | Permanently deletes the user's document from Firestore.                                              |
-
-### **Deposit Management (`/admin/deposits`)**
-| Feature                | Type   | Description                                                                                                   |
-| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------------- |
-| **Pending Requests Tab** | Auto   | Shows all deposit requests with a `Pending` status. Includes user name, amount, and a link to the receipt. |
-| **Approve/Reject**     | Manual | Admin clicks "Approve" or "Reject". This triggers a Cloud Function to update the transaction status.        |
-| **History Tab**        | Auto   | Shows all `Completed` and `Failed` deposits for historical record.                                            |
-
-### **Withdrawal Management (`/admin/withdrawals`)**
-| Feature                | Type   | Description                                                                                                  |
-| ---------------------- | ------ | ------------------------------------------------------------------------------------------------------------ |
-| **Pending Requests Tab** | Auto   | Shows all pending withdrawal requests with user name, bank details, and amount.                              |
-| **Approve/Reject**     | Manual | Admin clicks "Approve" or "Reject". This triggers a Cloud Function to update the transaction status.         |
-| **History Tab**        | Auto   | Shows all `Completed` and `Failed` withdrawals.                                                              |
-
-### **KYC Management (`/admin/kyc`)**
-| Feature                | Type   | Description                                                                                               |
-| ---------------------- | ------ | --------------------------------------------------------------------------------------------------------- |
-| **Pending Requests Tab** | Auto   | Shows all users with a `kycStatus` of `pending`.                                                          |
-| **View Documents**     | Manual | A dialog opens to show the user's submitted CNIC and selfie images (placeholders for now).                |
-| **Approve/Reject**     | Manual | Admin clicks "Approve" or "Reject". This updates the user's `kycStatus` in Firestore to `approved` or `rejected`. |
-| **History Tab**        | Auto   | Shows all `approved` and `rejected` KYC submissions.                                                        |
-
-### **Partner Management (`/admin/partner-requests`, `/admin/tasks`)**
-| Feature               | Type   | Description                                                                                                               |
-| --------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------- |
-| **Partner Requests**  | Auto   | `/partner-requests` page shows all users who have requested to become a partner. Admin can approve or reject.           |
-| **Task Management**   | Manual | `/tasks` page allows admin to create, edit, and delete tasks (e.g., "Refer 10 users for a bonus").                  |
-| **Approve Request**   | Manual | Approving a partner request updates the user's `role` to `partner` in Firestore.                                        |
-
-### **Investment Plans (`/admin/investments`)**
-| Feature             | Type   | Description                                                                                                                             |
-| ------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Plan List**       | Auto   | Shows all investment plans with their details (daily return, duration, etc.).                                                         |
-| **Add/Edit Plan**   | Manual | A dialog allows the admin to create a new plan or edit an existing one. A placeholder image is automatically generated. |
-| **Set Visibility**  | Manual | Admin can set which roles (`user`, `partner`, `agent`) can see and invest in a plan.                                    |
-| **Activate/Lock**   | Manual | Admin can make a plan `isActive` (available for investment) or inactive (locked).                                           |
-| **Delete Plan**     | Manual | Permanently deletes the plan from Firestore.                                                                                      |
-
-### **Global Settings (`/admin/settings`)**
-| Feature                | Type   | Description                                                                                                                             |
-| ---------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------- |
-| **Payment Settings**   | Manual | Admin can set the master wallet details (account name, number), withdrawal fees, and min/max deposit/withdrawal amounts. |
-| **Post Announcement**  | Manual | Admin can write and broadcast a message that appears as a notification for all users on their dashboard.                  |
+| System Module      | Auto % | Manual % |
+| ------------------ | ------ | -------- |
+| User Module        | 100%   | 0%       |
+| Deposit System     | 90%    | 10%      |
+| Withdrawal System  | 70%    | 30%      |
+| Partner System     | 90%    | 10%      |
+| Admin Controls     | 50%    | 50%      |
+| AI Smart Actions   | 100%   | 0%       |
 
 ---
 
-## 3. User Panel (`/dashboard`)
+## 1. User System (100% Auto)
 
-This is the main interface for regular users.
+-   **Signup/Login:** Handled automatically by **Firebase Authentication** (Email/Google).
+-   **Profile Creation:** A new user document is created automatically in **Firestore** (`/users/{userId}`) on the first login. A short, user-friendly UID is also generated and saved.
+-   **VIP Level Progress:** A **Cloud Function** will run daily (or triggered on deposit completion) to calculate the user's total deposits and automatically update their `vipLevel` and `vipProgress` fields.
+-   **Referral Bonus (5% for users, 10% for partners):** When a new user makes their first deposit, a **Cloud Function** is triggered. It automatically checks who the referrer is, calculates the commission (5% or 10%), and adds it to the referrer's balance. A 'Commission' transaction is logged.
+-   **Password Reset:** Handled automatically via Firebase Auth's built-in email functionality.
 
-| Page / Feature        | Description                                                                                                                          |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| **Dashboard**         | Shows a welcome message, current balance, and VIP level progress. Contains a prominent "Install App" button.                           |
-| **Investments**       | Displays all investment plans visible to the `user` role. Users can click "Invest Now" to buy a plan.                                |
-| **Deposit**           | User can see admin's wallet details, fill a form with their transaction info, and upload a payment receipt to request a deposit.       |
-| **Withdraw**          | User can fill a form with their bank details and requested amount to request a withdrawal.                                             |
-| **Transactions**      | A complete history of all the user's transactions (deposits, withdrawals, investments, payouts, etc.), with filtering options.       |
-| **Referrals**         | Shows the user's unique referral link, total referred users, and commission earnings (5% rate for regular users).                        |
-| **Profile**           | Displays the user's name, email, and unique User ID.                                                                                 |
-| **Settings**          | Allows the user to change their password and view FAQs, Terms of Service, etc. Also contains another "Install App" button.            |
-| **Live Chat**         | A floating chat button on all pages that opens a chat window to talk directly with a support agent.                                    |
+## 2. Deposit System (90% Auto + AI Verification)
 
----
+1.  **User Submits Deposit:** User fills the form and uploads a receipt. The data is saved to the `/transactions` collection in Firestore with a "Pending" status. The receipt image is uploaded to Firebase Storage.
+2.  **AI Receipt Verification (Auto):** A **Cloud Function** is triggered when a new deposit transaction is created.
+    -   It calls a Genkit AI Flow (`extractTid`).
+    -   The AI extracts the Transaction ID (TID) and verifies that the recipient account number on the receipt matches the admin's wallet number.
+3.  **Auto-Approval:** If the AI finds a valid TID and the account number matches, the Cloud Function automatically updates the transaction status to "Completed".
+4.  **Balance Update (Auto):** The same Cloud Function securely updates the user's balance in their Firestore document.
+5.  **Manual Review Flag:** If the AI cannot find a TID or the account number is incorrect, it updates the transaction status to "Pending (Review Required)" and flags it for the admin.
 
-## 4. Partner Panel (`/partner`)
+## 3. Withdrawal System (70% Auto + Manual Approval)
 
-An enhanced dashboard for users with the `partner` role. It includes all User Panel features plus the following:
+1.  **User Submits Withdrawal:** A new document is created in the `/transactions` collection with a "Pending" status.
+2.  **Fee Calculation (Auto):** The system automatically calculates the withdrawal fee (e.g., 2%) based on the amount.
+3.  **Admin Approval (Manual):** The request appears in the Admin Panel. The admin must manually verify the request and click "Approve" or "Reject".
+4.  **Balance Deduction (Auto):** When the admin approves, a **Cloud Function** is triggered. It deducts the withdrawal amount AND the fee from the user's balance.
+5.  **User Notification (Auto):** A notification (via Firebase Cloud Messaging) is sent to the user informing them that their withdrawal has been processed.
 
-| Page / Feature        | Description                                                                                                                                |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Dashboard**         | Shows enhanced stats: total users in their network, total network investment, and total commission earned.                                   |
-| **Investments**       | Displays investment plans visible to the `partner` role (can be different from user plans).                                                  |
-| **Referrals**         | Commission rate is shown as **10%**.                                                                                                       |
-| **Tasks**             | `/partner/tasks` page. Shows a list of challenges (e.g., "Refer 5 users who deposit 1000 PKR") and tracks the partner's progress.        |
-| **KYC Submission**    | `/partner/kyc` page. Partners must submit their KYC documents to be verified. This is a requirement for being a trusted partner.             |
-| **Settings**          | Includes an additional "Contact Us" form for partners to send messages directly to the admin.                                              |
+## 4. Investment Plans (100% Auto)
 
----
+1.  **User Buys Plan:** User clicks "Invest". The system deducts the investment amount from their balance and creates an "Investment" transaction log in Firestore. The log includes `plan_id`, `investedAmount`, `startDate`, and `maturityDate`.
+2.  **Daily Earning Payouts (Auto):** A **Cloud Function** runs every 24 hours. It queries all active investments, calculates the `dailyReturn` for each, and adds it to the respective user's balance, creating a "Payout" transaction log.
+3.  **Maturity Payout (Auto):** The daily Cloud Function also checks for plans where `maturityDate` is today. For matured plans, it returns the principal investment amount to the user's balance and marks the investment as "Matured".
 
-## 5. Agent Panel (`/agent`)
+## 5. Partner System (90% Auto + Manual Request)
 
-A dedicated, simplified interface for support agents. Accessible only to users with the `agent` role.
-
-| Page / Feature        | Description                                                                                                                            |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| **Active Chats**      | The main page. Shows a list of active user chats. Clicking a chat opens the conversation window.                                       |
-| **Chat Window**       | Agent can send text and images to the user.                                                                                          |
-| **Chat History**      | A full log of all past conversations.                                                                                                |
-| **Manage Deposits**   | If the agent has permission, this page shows deposit requests assigned to them. They can approve or reject them.                      |
-| **Manage Withdrawals**| If the agent has permission, this page shows withdrawal requests assigned to them. They can approve or reject them.                   |
-| **Profile**           | Shows the agent's name, email, and their assigned permissions (e.g., "Can Handle Deposits").                                           |
+1.  **Request to Become Partner (Manual Trigger):** A user who meets the criteria (e.g., verified KYC) can click a button to request to become a partner. This creates a document in the `/partner_requests` collection.
+2.  **Admin Approval (Manual):** The admin reviews the request in the Admin Panel and approves it.
+3.  **Role Update (Auto):** When the admin approves, a Cloud Function triggers and updates the user's `role` from "user" to "partner".
+4.  **Auto Commission (10%):** The referral commission logic (from Section 1) automatically checks the referrer's role. If the role is "partner", it calculates a 10% commission instead of 5%.
+5.  **Team Tracking (Auto):** The system automatically tracks a partner's network via the `referredBy` field on each user document.
 
 ---
 
-## 6. How to Build the App from this Script
+## How to Build the "Proper" App using this Script
 
-This web project is the "script" and "brain". Capacitor is the "body" that turns it into a native app.
+This entire Next.js project **is** the "script" and "brain" of your app. Capacitor acts as the "body" that wraps your web code into a native mobile application.
 
-1.  **Install Android Studio:** Get the official Android development tool.
-2.  **Run Build Command:** In your project terminal, run `npm run android`. This command automatically opens your project in Android Studio.
-3.  **Build the APK:** In Android Studio, go to the menu: `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`. This will create the `.apk` file you can install on any Android phone.
+**Your Final Steps to Create the Android App:**
+
+1.  **Install Android Studio:** Make sure you have the official Android development tool installed on your computer.
+
+2.  **Run the Build Command:** Open a terminal in your project folder and run this single command:
+    ```bash
+    npm run android
+    ```
+
+3.  **Build the APK in Android Studio:**
+    -   The command will automatically open your project in Android Studio.
+    -   In Android Studio, go to the menu: `Build` -> `Build Bundle(s) / APK(s)` -> `Build APK(s)`.
+    -   Android Studio will create the `.apk` file for you, which you can then install on any Android phone.
+
+This process uses your existing web code to create a real, installable Android app that functions exactly like the website.
