@@ -63,11 +63,14 @@ export async function getOrCreateUser(
         return userSnap.data() as User;
     } else {
         // The user document does not exist, create a new one with basic info.
+        // Assign 'admin' role if the email matches, otherwise default to 'user'.
+        const userRole = firebaseUser.email === 'minulatie@gmail.com' ? 'admin' : 'user';
+
         const newUser: UserProfile = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            role: 'user', // Default role
+            role: userRole,
             shortUid: firebaseUser.uid.substring(0, 8).toUpperCase(),
             balance: 0,
             currency: 'PKR',
